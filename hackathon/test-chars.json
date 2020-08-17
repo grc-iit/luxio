@@ -1,0 +1,7 @@
+{"total_bytes_read": 100,
+ "total_bytes_written": 200,
+ "total_reads": 5,
+ "total_writes": 4,
+ "count_files": 1,
+ "total_read_time_est": 10,
+ "total_write_time_est": 15}
