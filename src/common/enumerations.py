@@ -7,3 +7,7 @@ class KVStoreType(Enum):
     def __str__(self):
         return self.value
 
+"""Serialization Libraries supported"""
+class SerializerType(Enum):
+    PICKLE = "Pickle"
+    MSGPACK = "MessagePack"

@@ -1,21 +1,17 @@
 
+#yas, cereal, boost, thrift-binary, yas-compact, protobuf, thrift-compact, msgpack
+#io-req-extractor
+
 from common.enumerations import *
 from common.error_codes import *
 from external_clients.serializer.serializer import *
 from external_clients.serializer.pickle_serializer import *
-from external_clients.serializer.cereal_serializer import *
-from external_clients.serializer.protobuf_serializer import *
+from external_clients.serializer.message_pack_serializer import *
 
 class SerializerFactory:
-
-    CEREAL=1
-    PICKLE=2
-    PROTOBUF=3
-
     _serial_classes = {
-        CEREAL: CerealSerializer,
-        PICKLE: PickleSerializer,
-        PROTOBUF: ProtobufSerializer
+        SerializerType.PICKLE: PickleSerializer,
+        SerializerType.MSGPACK: MessagePackSerializer
     }
 
     def __init__(self):
