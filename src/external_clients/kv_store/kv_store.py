@@ -32,6 +32,7 @@ class KVStore(ABC):
     def _get_impl(self, key: str) -> str:
         pass
 
+
     @abstractmethod
     def _query_impl(self, key: str) -> bool:
         pass
