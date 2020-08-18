@@ -21,5 +21,9 @@ class TestSerializer(unittest.TestCase):
         srl = SerializerFactory().get(SerializerFactory.PICKLE)
         self.assertEqual(TestSerializer.test_dict, srl.deserialize(srl.serialize(TestSerializer.test_dict)))
 
+    def test_msgpack(self):
+        srl = SerializerFactory().get(SerializerFactory.MSGPACK)
+        self.assertEqual(TestSerializer.test_dict, srl.deserialize(srl.serialize(TestSerializer.test_dict)))
+
 if __name__ == "__main__":
     unittest.main()
