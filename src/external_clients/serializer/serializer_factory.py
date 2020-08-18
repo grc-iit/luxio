@@ -4,15 +4,18 @@ from common.error_codes import *
 from external_clients.serializer.serializer import *
 from external_clients.serializer.pickle_serializer import *
 from external_clients.serializer.cereal_serializer import *
+from external_clients.serializer.protobuf_serializer import *
 
 class SerializerFactory:
 
     CEREAL=1
     PICKLE=2
+    PROTOBUF=3
 
     _serial_classes = {
         CEREAL: CerealSerializer,
         PICKLE: PickleSerializer,
+        PROTOBUF: ProtobufSerializer
     }
 
     def __init__(self):
