@@ -51,5 +51,5 @@ class DataBaseTestCase(unittest.TestCase):
         database = DataBase.get_instance();
         database1 = DataBase.get_instance();
         assert (database == database1)
+        print("hahahhaha")
 
-        
