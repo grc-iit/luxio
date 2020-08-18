@@ -6,6 +6,8 @@ A tool for submitting I/O requirements to Flux scheduler.
 
 ## Installation
 
+python3 -m pip install msgpack
+
 ## Usage
 
 ## Contribute to LUXIO
@@ -38,5 +40,11 @@ Keith
 - class names are same as parent package
 - inheritence [here](https://github.com/hariharan-devarajan/dlio_benchmark/blob/master/src/data_generator/data_generator.py#L10)
 - error codes: [here](https://github.com/hariharan-devarajan/dlio_benchmark/blob/master/src/common/error_code.py)
+
+### Test
+
+cd /path/to/luxio
+export PYTHONPATH="/path/to/luxio/src"
+python3 test/unit/external_clients/serializer/test.py
 
 ## License
