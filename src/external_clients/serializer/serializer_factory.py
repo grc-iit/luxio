@@ -9,13 +9,9 @@ from external_clients.serializer.pickle_serializer import *
 from external_clients.serializer.message_pack_serializer import *
 
 class SerializerFactory:
-
-    PICKLE=1
-    MSGPACK=2
-
     _serial_classes = {
-        PICKLE: PickleSerializer,
-        MSGPACK: MessagePackSerializer
+        SerializerType.PICKLE: PickleSerializer,
+        SerializerType.MSGPACK: MessagePackSerializer
     }
 
     def __init__(self):

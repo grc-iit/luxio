@@ -18,11 +18,11 @@ class TestSerializer(unittest.TestCase):
     }
 
     def test_pickle(self):
-        srl = SerializerFactory().get(SerializerFactory.PICKLE)
+        srl = SerializerFactory().get(SerializerType.PICKLE)
         self.assertEqual(TestSerializer.test_dict, srl.deserialize(srl.serialize(TestSerializer.test_dict)))
 
     def test_msgpack(self):
-        srl = SerializerFactory().get(SerializerFactory.MSGPACK)
+        srl = SerializerFactory().get(SerializerType.MSGPACK)
         self.assertEqual(TestSerializer.test_dict, srl.deserialize(srl.serialize(TestSerializer.test_dict)))
 
 if __name__ == "__main__":
