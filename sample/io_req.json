@@ -1,0 +1,12 @@
+{"read_data_percent": 0.83333333,
+ "write_data_percent": 0.16666667,
+ "read_time_percent": 0.78571429,
+ "write_time_percent": 0.21428571,
+ "read_op_percent": 0.83333333,
+ "write_op_percent": 0.16666667,
+ "read_seq_percent": 0.4,
+ "write_seq_percent": 1,
+ "read_bw_long": 0.75,
+ "write_bw_long": 0.66666667,
+ "read_bw": 0.90909091,
+ "write_bw": 0.66666667}
