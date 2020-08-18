@@ -1,0 +1,7 @@
+{
+  "read_data_percent": {
+    "dependencies": [],
+    "include": "",
+    "expr": "self.output['read_data_percent']['val'] = self.input['total_bytes_read'] / (self.input['total_bytes_read'] + self.input['total_bytes_written'])"
+  }
+}
