@@ -6,10 +6,10 @@ class LUXIO:
     def __init__(self):
         pass
 
-    def _initialize(self):
+    def _initialize(self) -> None:
         pass
 
-    def run(self):
+    def run(self) -> dict:
         self._initialize()
         # run io requirement extractor
         extractor = IORequirementExtractor()
@@ -23,9 +23,9 @@ class LUXIO:
         self._finalize()
         return configuration
 
-
-    def _finalize(self):
+    def _finalize(self) -> None:
         pass
+
 
 if __name__ == '__main__':
     """

@@ -3,16 +3,16 @@ from src.utils.mapper_manager import MapperManager
 
 
 class StorageRequirementBuilder:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def _initialize(self):
+    def _initialize(self) -> None:
         pass
 
-    def _finalize(self):
+    def _finalize(self) -> None:
         pass
 
-    def run(self, io_requirement):
+    def run(self, io_requirement: dict) -> dict:
         self._initialize()
         output = JSONClient().load("storage_requirement.json")
         mapper = MapperManager()

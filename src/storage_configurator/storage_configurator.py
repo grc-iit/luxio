@@ -8,13 +8,13 @@ class StorageConfigurator(ABC):
     def __init__(self):
         pass
 
-    def _initialize(self):
+    def _initialize(self) -> None:
         pass
 
-    def _finalize(self):
+    def _finalize(self) -> None:
         pass
 
-    def run(self, storage_requirement):
+    def run(self, storage_requirement: dict) -> dict:
         self._initialize()
         output = self.load_json()
         mapper = MapperManager()
@@ -23,5 +23,5 @@ class StorageConfigurator(ABC):
         return output
 
     @abstractmethod
-    def load_json(self):
+    def load_json(self) -> dict:
         pass
