@@ -5,22 +5,25 @@ from src.utils.mapper_manager import MapperManager
 
 class MyTestCase(unittest.TestCase):
     def test_cases(self):
-        input={
+        input = {
             "a": 2,
-            "b":10
+            "b": 10
         }
-        output={}
-        output["a_per"]={
-                "dependencies": [],
-                "include": "import numpy as np;",
-                "expr": "self.output['a_per']['val'] = self.input['a']/(self.input['a']+self.input['b'])"
-            }
+        output = {}
+        output["a_per"] = {
+            "dependencies": [],
+            "include": "import numpy as np;",
+            "expr": "self.output['a_per']['val'] = self.input['a']/(self.input['a']+self.input['b'])"
+        }
         output["a_per_a"] = {
-            "dependencies" : ["a_per"],
-            "include":"import numpy as np;",
+            "dependencies": ["a_per"],
+            "include": "import numpy as np;",
             "expr": "self.output['a_per_a']['val']=self.output['a_per']['val']*100.0",
-            "val":None
+            "val": None
         }
         mapper = MapperManager()
-        mapper.run(input,output)
+        mapper.run(input, output)
 
+
+if __name__ == "__main__":
+    unittest.main()
