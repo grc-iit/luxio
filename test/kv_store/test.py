@@ -3,6 +3,7 @@ import unittest
 from src.external_clients.kv_store.kv_store_factory import KVStoreFactory
 from src.external_clients.kv_store.kv_store import KVStore
 from src.external_clients.kv_store.redis import RedisDB
+from src.database.database import DataBase
 from src.common.enumerations import KVStoreType
 
 class KVStoreFactoryTestCase(unittest.TestCase):
@@ -45,3 +46,10 @@ class RedisDBTestCase(unittest.TestCase):
         result = redisdb._query_impl("name")
         assert (result == True)
 
+class DataBaseTestCase(unittest.TestCase):
+    def testCaseGetInstance(self):
+        database = DataBase.get_instance();
+        database1 = DataBase.get_instance();
+        assert (database == database1)
+
+        
