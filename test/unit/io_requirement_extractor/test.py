@@ -9,8 +9,8 @@ from typing import Dict
 
 
 class DarshanTraceParserTest(unittest.TestCase):
-    input_file = '../../../sample/vpic.darshan'
-    output_file = '../../../sample/vpic.json'
+    input_file = 'sample/vpic.darshan'
+    output_file = 'sample/vpic.json'
 
     def get_parse(self, file_: str) -> Dict:
         darshan_parser = DarshanTraceParser()
