@@ -51,5 +51,6 @@ export PYTHONPATH="$(pwd)/src"
 > python3 test/unit/external_clients/kv_store/test.py  
 > python3 test/unit/io_requirement_extractor/test.py  
 > python3 test/unit/mapper_manager/test.py  
+> python3 test/unit/luxio/test.py  
 
 ## License

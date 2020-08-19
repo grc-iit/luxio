@@ -28,3 +28,6 @@ class ErrorCode:
     INVALID_SERIAL_ID = {"id": 1000, "msg": "SerializerFactory: Invalid serializer ID: {}"}
     INVALID_SERIAL_DICT = {"id": 1001, "msg": "{}: Could not serialize dict"}
     INVALID_DESERIAL_STR = {"id": 1002, "msg": "{}: Could not deserialize string"}
+
+    #Mapper
+    MAPPER_EXEC_ERROR = {"id": 2000, "msg": "MapperManager: Generic execution error: {}"}

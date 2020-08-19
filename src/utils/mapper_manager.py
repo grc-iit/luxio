@@ -1,3 +1,5 @@
+from common.error_codes import *
+
 class MapperManager:
     def __init__(self):
         pass
@@ -22,5 +24,12 @@ class MapperManager:
             element = self.output[key]
             element["executed"]=False
             for variable in element["dependencies"]:
-                self._resolve_dependency(variable)
-            self._run_expr(key)
+                try:
+                    self._resolve_dependency(variable)
+                except:
+                    raise Error(ErrorCodes.MAPPER_EXEC_ERROR).format(variable)
+
+            try:
+                self._run_expr(key)
+            except:
+                raise Error(ErrorCodes.MAPPER_EXEC_ERROR).format(key)
