@@ -1,6 +1,6 @@
-from src.external_clients.kv_store.redis import RedisDB
-from src.external_clients.kv_store.kv_store import KVStore
-from src.common.enumerations import KVStoreType
+from external_clients.kv_store.redis import RedisDB
+from external_clients.kv_store.kv_store import KVStore
+from common.enumerations import KVStoreType
 
 import typing
 

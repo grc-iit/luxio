@@ -1,6 +1,6 @@
 import unittest
 
-from src.utils.mapper_manager import MapperManager
+from utils.mapper_manager import MapperManager
 
 
 class MyTestCase(unittest.TestCase):
