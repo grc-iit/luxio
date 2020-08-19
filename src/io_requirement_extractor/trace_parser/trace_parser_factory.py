@@ -10,7 +10,7 @@ class TraceParserFactory:
         pass
     @staticmethod
     def get_parser(self, parser_id: str) -> Type[TraceParser]:
-        if type == TraceParserType.DARSHAN
+        if type == TraceParserType.DARSHAN:
             return DarshanTraceParser()
         else:
             raise Error(ErrorCode.NOT_IMPLEMENTED)
