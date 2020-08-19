@@ -22,6 +22,7 @@ class ErrorCode:
 
     #General
     NOT_IMPLEMENTED = {"id": 1, "msg": "{} is not implemented"}
+    TOO_MANY_INSTANCES = {"id": 2, "msg": "{} is a singleton class, but has been initialized more than once"}
 
     #Serializers
     INVALID_SERIAL_ID = {"id": 1000, "msg": "SerializerFactory: Invalid serializer ID: {}"}

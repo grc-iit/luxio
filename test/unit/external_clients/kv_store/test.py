@@ -10,22 +10,6 @@ class KVStoreFactoryTestCase(unittest.TestCase):
     def testCase(self):
         kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
 
-
-class KVStoreTestCase(unittest.TestCase):
-    def testCasePut(self):
-        kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
-        kvstore.put()
-
-    def testCaseGet(self):
-        kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
-        kvstore.put()
-        kvstore.get("name")
-
-    def testCaseQuery(self):
-        kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
-        kvstore.put()
-        kvstore.query("name")
-
 class RedisDBTestCase(unittest.TestCase):
     def testCasePut(self):
         redisdb = RedisDB()
@@ -52,4 +36,5 @@ class DataBaseTestCase(unittest.TestCase):
         database1 = DataBase.get_instance();
         assert (database == database1)
 
-        
+if __name__ == "__main__":
+    unittest.main()

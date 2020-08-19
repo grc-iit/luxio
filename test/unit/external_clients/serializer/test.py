@@ -1,8 +1,8 @@
 
 import unittest
-from common.error_codes import *
-from external_clients.serializer.serializer_factory import *
-from common.enumerations import *
+from src.common.error_codes import *
+from src.external_clients.serializer.serializer_factory import *
+from src.common.enumerations import *
 
 class TestSerializer(unittest.TestCase):
     test_dict = {
@@ -18,11 +18,11 @@ class TestSerializer(unittest.TestCase):
     }
 
     def test_pickle(self):
-        srl = SerializerFactory().get(SerializerType.PICKLE)
+        srl = SerializerFactory.get(SerializerType.PICKLE)
         self.assertEqual(TestSerializer.test_dict, srl.deserialize(srl.serialize(TestSerializer.test_dict)))
 
     def test_msgpack(self):
-        srl = SerializerFactory().get(SerializerType.MSGPACK)
+        srl = SerializerFactory.get(SerializerType.MSGPACK)
         self.assertEqual(TestSerializer.test_dict, srl.deserialize(srl.serialize(TestSerializer.test_dict)))
 
 if __name__ == "__main__":
