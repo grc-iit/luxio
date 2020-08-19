@@ -1,4 +1,4 @@
-from src.io_requirement_extractor.trace_parser.darshan_trace_parser import darshan_trace_parser
+from io_requirement_extractor.trace_parser.darshan_trace_parser import darshan_trace_parser
 from common.error_codes import *
 from common.enumerations import *
 from common.configuration_manager import *
