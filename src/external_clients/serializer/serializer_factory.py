@@ -10,10 +10,10 @@ class SerializerFactory:
         pass
 
     @staticmethod
-    def get(serial_id: SerializerType) -> Serializer:
-        if serial_id == SerializerType.PICKLE:
+    def get(type: SerializerType) -> Serializer:
+        if type == SerializerType.PICKLE:
             return PickleSerializer()
-        elif serial_id == SerializerType.MSGPACK:
+        elif type == SerializerType.MSGPACK:
             return MessagePackSerializer()
         else:
-            raise Error(ErrorCode.INVALID_SERIAL_ID).format(serial_id)
+            raise Error(ErrorCode.INVALID_ENUM).format("SerializerFactory", type)

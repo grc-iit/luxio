@@ -18,7 +18,7 @@
     "write_time_percent": {
         "dependencies": [],
         "include": "",
-        "expr": "self.output['write_time_percent']['val'] = self.input['total_write_time_est']['val'] / (self.input['total_read_time_est']['val'] + self.input['total_write_time_est']['val']",
+        "expr": "self.output['write_time_percent']['val'] = self.input['total_write_time_est']['val'] / (self.input['total_read_time_est']['val'] + self.input['total_write_time_est']['val'])",
         "val": null},
     "read_op_percent": {
         "dependencies": [],
