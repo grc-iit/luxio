@@ -14,3 +14,9 @@ class TraceParserType(Enum):
 
     def __str__(self) -> str:
         return self.value
+
+
+"""Serialization Libraries supported"""
+class SerializerType(Enum):
+    PICKLE = "pickle"
+    MSGPACK = "message_pack"
