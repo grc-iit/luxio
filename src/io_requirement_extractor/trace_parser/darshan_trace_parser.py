@@ -1,5 +1,5 @@
 import darshan
-from io_requirement_extractor.trace_parser import TraceParser
+from io_requirement_extractor.trace_parser.trace_parser import TraceParser
 from typing import List, Dict, Tuple
 
 
@@ -38,7 +38,7 @@ class DarshanTraceParser(TraceParser):
     def _get_total_module_stats(self, module_: str) -> List[float]:
         """
         Gets the total aggregated stats in Darshan
-        return: [total_reads, total_writes, total_bytes_read, total_bytes_written, 
+        return: [total_reads, total_writes, total_bytes_read, total_bytes_written,
         total_read_time_est, total_write_time_est]
 
         """
