@@ -16,7 +16,7 @@ class StorageRequirementBuilder:
     def run(self, io_requirement: dict) -> dict:
         self._initialize()
         conf = ConfigurationManager.get_instance()
-        storage_requirement = JSONClient().load(conf.storage_req_path)
+        storage_requirement = JSONClient().load(conf.storage_req_out_path)
         mapper = MapperManager()
         mapper.run(io_requirement, storage_requirement)
         self._finalize()

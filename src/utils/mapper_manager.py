@@ -23,13 +23,14 @@ class MapperManager:
         for key in output:
             element = self.output[key]
             element["executed"]=False
+            print(element["expr"])
             for variable in element["dependencies"]:
                 try:
                     self._resolve_dependency(variable)
                 except:
-                    raise Error(ErrorCodes.MAPPER_EXEC_ERROR).format(variable)
+                    raise Error(ErrorCode.MAPPER_EXEC_ERROR).format(variable)
 
             try:
                 self._run_expr(key)
             except:
-                raise Error(ErrorCodes.MAPPER_EXEC_ERROR).format(key)
+                raise Error(ErrorCode.MAPPER_EXEC_ERROR).format(key)

@@ -19,7 +19,7 @@ class ConfigurationManager:
 
         self.darshan_trace_path = None
         self.io_req_out_path = None
-        self.storage_req_path = None
+        self.storage_req_out_path = None
         self.db_type = KVStoreType.REDIS
         self.db_addr = "127.0.0.1"
         self.db_port = "6379"
@@ -37,6 +37,7 @@ class ConfigurationManager:
         conf = ConfigurationManager.get_instance()
         conf.darshan_trace_path = dict["darshan_trace_path"]
         conf.io_req_out_path = dict["io_req_out_path"]
+        conf.storage_req_out_path = dict["storage_req_out_path"]
         conf.db_type = dict["db_type"]
         conf.db_addr = dict["db_addr"]
         conf.db_port = dict["db_port"]

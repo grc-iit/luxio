@@ -31,3 +31,6 @@ class ErrorCode:
 
     #Mapper
     MAPPER_EXEC_ERROR = {"id": 2000, "msg": "MapperManager: Generic execution error: {}"}
+
+    #Trace Parser
+    PARSER_ID = {"id": 3000, "msg": "ParserFactory: Invalid Parser ID: {}"}
