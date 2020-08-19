@@ -7,7 +7,7 @@ import abc
 class TraceParser(abc.ABC):
 
     @abc.abstractmethod
-    def parse(self, file_: str) -> None:
+    def parse(self) -> None:
         """
         Parse a Trace and return extracted variables
         """

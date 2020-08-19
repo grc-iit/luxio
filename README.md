@@ -6,6 +6,14 @@ A tool for submitting I/O requirements to Flux scheduler.
 
 ## Installation
 
+### Darshan
+
+> git clone https://xgitlab.cels.anl.gov/darshan/darshan   
+> cd /path/to/darshan   
+> cd darshan-util  
+>  ./configure --prefix=</path/to/wherever-you-want> --enable-pydarshan --enable-shared
+> 
+
 ## Dependencies
 
 python3 -m pip install msgpack
@@ -49,7 +57,9 @@ cd /path/to/luxio
 export PYTHONPATH="$(pwd)/src"  
 > python3 test/unit/external_clients/serializer/test.py  
 > python3 test/unit/external_clients/kv_store/test.py  
+> python3 test/unit/external_clients/json_client/test.py  
 > python3 test/unit/io_requirement_extractor/test.py  
 > python3 test/unit/mapper_manager/test.py  
+> python3 test/integration/luxio/test.py  
 
 ## License
