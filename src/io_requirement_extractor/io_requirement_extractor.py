@@ -22,10 +22,8 @@ class IORequirementExtractor:
         # call to database to check if key:input exists if true skip mapping
         db = DataBase.get_instance()
         try:
-            printf("HERE1")
             return db.get(input)
         except:
-            printf("HERE2")
             pass
 
         # load sample/io_req_output.json into output
@@ -35,8 +33,7 @@ class IORequirementExtractor:
         # call to database to store it key:input, val:output
         db.put(input, output)
         self._finalize()
-
-        print("HERE3")
+        
         return output
 
     def _finalize(self) -> None:
