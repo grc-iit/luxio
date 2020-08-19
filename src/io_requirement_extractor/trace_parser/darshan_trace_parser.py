@@ -1,5 +1,5 @@
 import darshan
-from io_requirement_extractor.trace_parser import TraceParser
+from io_requirement_extractor.trace_parser.trace_parser import TraceParser
 from typing import List, Dict, Tuple
 
 
@@ -8,14 +8,16 @@ class DarshanTraceParser(TraceParser):
     A Darshan Parser to extract certain Variables for Luxio
     """
     _extracted_variables = {}
+    _formatted_variables = {}
     _sum_counters = [
         'total_reads',
-        'total_writes'
+        'total_writes',
         'total_bytes_read',
         'total_bytes_written',
         'read_time',
         'write_time',
     ]
+
 
     def __init__(self) -> None:
         pass
@@ -38,7 +40,7 @@ class DarshanTraceParser(TraceParser):
     def _get_total_module_stats(self, module_: str) -> List[float]:
         """
         Gets the total aggregated stats in Darshan
-        return: [total_reads, total_writes, total_bytes_read, total_bytes_written, 
+        return: [total_reads, total_writes, total_bytes_read, total_bytes_written,
         total_read_time_est, total_write_time_est]
 
         """
@@ -77,12 +79,21 @@ class DarshanTraceParser(TraceParser):
             sum(all_write_time_est)
         ]
 
+    def _output_formatter(self):
+        """
+        Converts the extracted variables into the specific format
+        return: Dict[str, Dict[str, float]]
+        """
+        for k, v in self._extracted_variables.items():
+            self._formatted_variables[k] = {'val': v}
+        return self._formatted_variables
+
     def _get_max_op_time_size(self) -> List[Tuple[float, float]]:
         """
         Gets the max read bytes + time and max write bytes + time
         return: [(max_read_time, max_read_time_size), (max_write_time, max_write_time_size)]
         """
-        modules = ['POSIX', 'MPI-IO', 'H5D']
+        modules = {'POSIX', 'MPI-IO', 'H5D'}.intersection(self.modules_list)
         read_time = 0
         write_time = 0
         max_read = 0
@@ -121,31 +132,35 @@ class DarshanTraceParser(TraceParser):
         """
         self.report = darshan.DarshanReport(file_, read_all=True)
         self.dar_dict = self.report.records_as_dict()
-        modules_list = list(self.dar_dict.keys())
-        modules_list.remove('DXT_MPIIO')
-        modules_list.remove('H5F')
+        self.modules_list = list(self.dar_dict.keys())
+
+        if 'DXT_MPIIO' in self.modules_list:
+            self.modules_list.remove('DXT_MPIIO')
+        if 'DXT_POSIX' in self.modules_list:
+            self.modules_list.remove('DXT_POSIX')
+
+        if 'H5F' in self.modules_list:
+            self.modules_list.remove('H5F')
+
         total = []
-        for i in modules_list:
-            total.append(self._getTotalModuleStats(i))
+        for i in self.modules_list:
+            total.append(self._get_total_module_stats(i))
 
         for i, j in zip(self._sum_counters, map(sum, zip(*total))):
             self._extracted_variables[i] = j
 
         self._extracted_variables['total_consec_reads'], \
             self._extracted_variables['total_consec_writes'] \
-            = self._getConsecs()
+            = self._get_consecs()
 
         self._extracted_variables['max_byte_read'], \
             self._extracted_variables['max_byte_written'] \
-            = self._getMaxByteOp()
+            = self._get_max_byte_op()
 
         (self._extracted_variables['max_read_time'],
          self._extracted_variables['max_read_time_size']), \
             (self._extracted_variables['max_write_time'],
              self._extracted_variables['max_write_time_size']) \
-            = self._getMaxOpTimeSize()
+            = self._get_max_op_time_size()
 
-        return self._extracted_variables
-
-    def _finalize(self) -> None:
-        pass
+        return self._output_formatter()

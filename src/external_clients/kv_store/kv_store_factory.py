@@ -13,5 +13,5 @@ class KVStoreFactory(object):
         if type == KVStoreType.REDIS:
             return RedisDB()
         else:
-            raise Exception(str("Invalid key-value store type"))
+            raise Error(ErrorCode.INVALID_ENUM).format("KVStoreFactory", type)
 
