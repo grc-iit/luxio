@@ -13,13 +13,8 @@ class TestLuxio(unittest.TestCase):
         conf.db_type = KVStoreType.REDIS
         conf.db_addr="127.0.0.1"
         conf.db_port="6379"
-
         tool = LUXIO()
         tool.run()
-
-        input = JSONClient().load(conf.darshan_trace_path)
-        db = DataBase.get_instance()
-        output_db = db.get(input)
 
 if __name__ == "__main__":
     unittest.main()
