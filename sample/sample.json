@@ -1,0 +1,15 @@
+{
+  "total_reads": 30097,
+  "total_writestotal_bytes_read": 30074,
+  "total_bytes_written": 4800029222,
+  "read_time": 4800016794,
+  "write_time": 1.384383201599121,
+  "total_consec_reads": 9985,
+  "total_consec_writes": 10009,
+  "max_byte_read": 1600008191,
+  "max_byte_written": 1600008191,
+  "max_read_time": 0.0007560253143310547,
+  "max_read_time_size": 160000,
+  "max_write_time": 0.00030803680419921875,
+  "max_write_time_size": 160000
+}
