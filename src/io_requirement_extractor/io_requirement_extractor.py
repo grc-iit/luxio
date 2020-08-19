@@ -33,7 +33,6 @@ class IORequirementExtractor:
         # call to database to store it key:input, val:output
         db.put(input, output)
         self._finalize()
-
         return output
 
     def _finalize(self) -> None:
