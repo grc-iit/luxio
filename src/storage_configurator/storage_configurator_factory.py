@@ -8,8 +8,8 @@ class StorageConfiguratorFactory:
         pass
 
     @staticmethod
-    def get(storage_configurator_id: StorageConfiguratorType) -> StorageConfigurator:
-        if storage_configurator_id == StorageConfiguratorType.ORANGEFS:
+    def get(type: StorageConfiguratorType) -> StorageConfigurator:
+        if type == StorageConfiguratorType.ORANGEFS:
             return OrangefsConfigurator()
         else:
-            raise Error(ErrorCode.INVALID_ENUM).format("StorageConfiguratorFactory", storage_configurator_id)
+            raise Error(ErrorCode.INVALID_ENUM).format("StorageConfiguratorFactory", type)
