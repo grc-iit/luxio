@@ -23,7 +23,6 @@ class MapperManager:
         for key in output:
             element = self.output[key]
             element["executed"]=False
-            print(element["expr"])
             for variable in element["dependencies"]:
                 try:
                     self._resolve_dependency(variable)

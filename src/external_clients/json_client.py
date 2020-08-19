@@ -14,3 +14,6 @@ class JSONClient:
     def save(self, object, filename):
         with open(filename) as fp:
             json.dump(object, fp)
+
+    def strip(self):
+        pass

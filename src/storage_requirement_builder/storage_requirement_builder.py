@@ -20,4 +20,4 @@ class StorageRequirementBuilder:
         mapper = MapperManager()
         mapper.run(io_requirement, storage_requirement)
         self._finalize()
-        return output
+        return storage_requirement
