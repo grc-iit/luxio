@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from src.common.configuration_manager import ConfigurationManager
+from src.external_clients.serializer.serializer_factory import SerializerFactory
 
 
 class KVStore(ABC):
@@ -8,20 +10,24 @@ class KVStore(ABC):
     """
 
     def __init__(self):
-        serializer = None
+        conf = ConfigurationManager.get_instance()
+        self.serializer = SerializerFactory.get(conf.serializer_type)
 
     def put(self, key, value):
-        serialized_key = serializer.serialize(key)
-        serialized_value = serializer.serialize(value)
+        serialized_key = self.serializer.serialize(key)
+        serialized_value = self.serializer.serialize(value)
         self._put_impl(serialized_key,serialized_value)
 
     def get(self, key):
-        serialized_key = serializer.serialize(key)
+        serialized_key = self.serializer.serialize(key)
         serialized_value = self._get_impl(serialized_key)
-        return serializer.deserialize(serialized_value)
+        if serialized_value is None:
+            return None
+        else:
+            return self.serializer.deserialize(serialized_value)
 
     def query(self, key):
-        serialized_key = serializer.serialize(key)
+        serialized_key = self.serializer.serialize(key)
         return self._query_impl(serialized_key)
 
     @abstractmethod
@@ -32,8 +38,6 @@ class KVStore(ABC):
     def _get_impl(self, key: str) -> str:
         pass
 
-
     @abstractmethod
     def _query_impl(self, key: str) -> bool:
         pass
-

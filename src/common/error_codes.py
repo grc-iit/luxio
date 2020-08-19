@@ -22,8 +22,14 @@ class ErrorCode:
 
     #General
     NOT_IMPLEMENTED = {"id": 1, "msg": "{} is not implemented"}
+    TOO_MANY_INSTANCES = {"id": 2, "msg": "{} is a singleton class, but has been initialized more than once"}
 
     #Serializers
     INVALID_SERIAL_ID = {"id": 1000, "msg": "SerializerFactory: Invalid serializer ID: {}"}
     INVALID_PICKLE_DICT = {"id": 1001, "msg": "PickleSerializer: Could not serialize dict"}
     INVALID_UNPICKLE_STR = {"id": 1002, "msg": "PickleSerializer: Could not deserialize string"}
+
+    #DataBase
+    REDISDB_STORE_ERROR = {"id": 2000, "msg": "RedisDB: Failed to store data into Redis"}
+    REDISDB_GET_ERROR = {"id": 2001, "msg": "RedisDB: Failed to get data from Redis"}
+    REDISDB_QUERY_ERROR = {"id": 2002, "msg": "RedisDB: Failed to query data from Redis"}

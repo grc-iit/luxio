@@ -1,8 +1,8 @@
 
 import abc
 import pickle
-from common.error_codes import *
-from external_clients.serializer.serializer import *
+from src.common.error_codes import *
+from src.external_clients.serializer.serializer import *
 
 class ProtobufSerializer(Serializer):
     def __init__(self):
