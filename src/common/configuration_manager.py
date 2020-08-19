@@ -16,7 +16,7 @@ class ConfigurationManager:
             raise Error(ErrorCode.TOO_MANY_INSTANCES).format("ConfigurationManager")
         else:
             ConfigurationManager._instance = self
-
+        self.job_spec = None
         self.darshan_trace_path = None
         self.io_req_out_path = None
         self.storage_req_out_path = None
@@ -37,6 +37,7 @@ class ConfigurationManager:
         with open(filename) as fp:
             dict = json.load(fp)
         conf = ConfigurationManager.get_instance()
+        conf.job_spec = dict["job_spec_path"]
         conf.darshan_trace_path = dict["darshan_trace_path"]
         conf.io_req_out_path = dict["io_req_out_path"]
         conf.storage_req_out_path = dict["storage_req_out_path"]

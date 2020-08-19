@@ -125,11 +125,13 @@ class DarshanTraceParser(TraceParser):
             consec_write.append(i['counters']['POSIX_CONSEC_WRITES'])
         return [sum(consec_read), sum(consec_write)]
 
-    def parse(self, file_: str) -> Dict[str, float]:
+    def parse(self) -> Dict[str, float]:
         """
         Parses an inputted Darshan File and returns the relavent variables for Luxio
         return: darshan_variables
         """
+        conf = ConfigurationManager.get_instance()
+        file_ = conf.darshan_trace_path
         self.report = darshan.DarshanReport(file_, read_all=True)
         self.dar_dict = self.report.records_as_dict()
         self.modules_list = list(self.dar_dict.keys())
