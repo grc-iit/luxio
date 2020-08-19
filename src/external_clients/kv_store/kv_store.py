@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from src.external_clients.serializer.serializer_factory import *
-from src.common.configuration_manager import *
+from external_clients.serializer.serializer_factory import *
+from common.configuration_manager import *
 
 class KVStore(ABC):
     """Interface to key-value store.

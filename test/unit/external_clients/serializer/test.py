@@ -1,8 +1,8 @@
 
 import unittest
-from src.common.error_codes import *
-from src.external_clients.serializer.serializer_factory import *
-from src.common.enumerations import *
+from common.error_codes import *
+from external_clients.serializer.serializer_factory import *
+from common.enumerations import *
 
 class TestSerializer(unittest.TestCase):
     test_dict = {

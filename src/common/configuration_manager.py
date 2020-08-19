@@ -1,5 +1,5 @@
-from src.common.enumerations import *
-from src.common.error_codes import *
+from common.enumerations import *
+from common.error_codes import *
 
 class ConfigurationManager:
     _instance = None
@@ -28,8 +28,16 @@ class ConfigurationManager:
     """
     Configuration Varibales go here.
     """
-    def load(self) -> None:
-        """
-        This method loads up a json of configurations and sets it in the class.
-        """
-        pass
+
+    @staticmethod
+    def load(filename):
+        with open(filename) as fp:
+            dict = json.load(fp)
+        conf = ConfigurationManager.get_instance()
+        conf.darshan_trace_path = dict["darshan_trace_path"]
+        conf.io_req_path = dict["io_req_path"]
+        conf.db_type = dict["db_type"]
+        conf.db_addr = dict["db_addr"]
+        conf.db_port = dict["db_port"]
+        conf.serializer_type = dict["serializer_type"]
+        return conf

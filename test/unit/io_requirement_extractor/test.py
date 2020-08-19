@@ -1,8 +1,8 @@
 import unittest
-from src.common.error_codes import *
-from src.common.enumerations import *
-from src.common.configuration_manager import *
-from src.io_requirement_extractor.io_requirement_extractor import *
+from common.error_codes import *
+from common.enumerations import *
+from common.configuration_manager import *
+from io_requirement_extractor.io_requirement_extractor import *
 
 class TestIOequirementExtractor(unittest.TestCase):
     def test_redis_extract(self):

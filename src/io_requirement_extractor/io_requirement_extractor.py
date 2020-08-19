@@ -1,7 +1,7 @@
-from src.external_clients.json_client import JSONClient
-from src.utils.mapper_manager import MapperManager
-from src.common.configuration_manager import *
-from src.database.database import *
+from external_clients.json_client import JSONClient
+from utils.mapper_manager import MapperManager
+from common.configuration_manager import *
+from database.database import *
 
 class IORequirementExtractor:
     def __init__(self):
@@ -33,7 +33,7 @@ class IORequirementExtractor:
         # call to database to store it key:input, val:output
         db.put(input, output)
         self._finalize()
-        
+
         return output
 
     def _finalize(self) -> None:
