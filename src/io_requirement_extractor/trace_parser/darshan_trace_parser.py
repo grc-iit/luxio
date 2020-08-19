@@ -1,5 +1,5 @@
 import darshan
-from src.io_requirement_extractor.trace_parser import TraceParser
+from io_requirement_extractor.trace_parser import TraceParser
 from typing import List, Dict, Tuple
 
 
