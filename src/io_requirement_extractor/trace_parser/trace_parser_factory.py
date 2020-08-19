@@ -1,7 +1,7 @@
 
 from common.enumerations import TraceParserType
 from common.error_codes import Error, ErrorCode
-from io_requirement_extractor.trace_parser.darshan_trace_parser import *
+from io_requirement_extractor.trace_parser.darshan_trace_parser import DarshanTraceParser
 from type import Type
 
 
