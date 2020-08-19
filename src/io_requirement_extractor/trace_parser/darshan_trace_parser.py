@@ -8,6 +8,7 @@ class DarshanTraceParser(TraceParser):
     A Darshan Parser to extract certain Variables for Luxio
     """
     _extracted_variables = {}
+    _formatted_variables = {}
     _sum_counters = [
         'total_reads',
         'total_writes'
@@ -77,6 +78,15 @@ class DarshanTraceParser(TraceParser):
             sum(all_write_time_est)
         ]
 
+    def _output_formatter(self):
+        """
+        Converts the extracted variables into the specific format
+        return: Dict[str, Dict[str, float]]
+        """
+        for k, v in self._extracted_variables.items():
+            self._formatted_variables[k] = {'val': v}
+        return self._formatted_variables
+
     def _get_max_op_time_size(self) -> List[Tuple[float, float]]:
         """
         Gets the max read bytes + time and max write bytes + time
@@ -126,26 +136,26 @@ class DarshanTraceParser(TraceParser):
         modules_list.remove('H5F')
         total = []
         for i in modules_list:
-            total.append(self._getTotalModuleStats(i))
+            total.append(self._get_total_module_stats(i))
 
         for i, j in zip(self._sum_counters, map(sum, zip(*total))):
             self._extracted_variables[i] = j
 
         self._extracted_variables['total_consec_reads'], \
             self._extracted_variables['total_consec_writes'] \
-            = self._getConsecs()
+            = self._get_consecs()
 
         self._extracted_variables['max_byte_read'], \
             self._extracted_variables['max_byte_written'] \
-            = self._getMaxByteOp()
+            = self._get_max_byte_op()
 
         (self._extracted_variables['max_read_time'],
          self._extracted_variables['max_read_time_size']), \
             (self._extracted_variables['max_write_time'],
              self._extracted_variables['max_write_time_size']) \
-            = self._getMaxOpTimeSize()
+            = self._get_max_op_time_size()
 
-        return self._extracted_variables
+        return self._output_formatter()
 
     def _finalize(self) -> None:
         pass
