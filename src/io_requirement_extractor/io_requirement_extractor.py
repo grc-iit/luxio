@@ -23,6 +23,7 @@ class IORequirementExtractor:
         output = darshan_parser.parse(input_)
         # call to database to check if key:input exists if true skip mapping
         db = DataBase.get_instance()
+<<<<<<< HEAD
         exist = DataBase.query(input_)
         if exist:
             output = DataBase.get(input_)
@@ -34,7 +35,20 @@ class IORequirementExtractor:
             # call to database to store it key:input, val:output
             db.put(input, output)
         self._finalize()
+=======
+        try:
+            return db.get(input)
+        except:
+            pass
+>>>>>>> 66bdc06de58fb8479990052d6c6cd789a820a87e
 
+        # load sample/io_req_output.json into output
+        output = JSONClient().load(conf.io_req_out_path)
+        mapper = MapperManager()
+        mapper.run(input, output)
+        # call to database to store it key:input, val:output
+        db.put(input, output)
+        self._finalize()
         return output
 
     def _finalize(self) -> None:

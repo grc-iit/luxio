@@ -9,8 +9,9 @@ from typing import Dict
 
 
 class DarshanTraceParserTest(unittest.TestCase):
-    input_file = '../../../sample/vpic.darshan'
-    output_file = '../../../sample/vpic.json'
+
+    input_file = 'sample/vpic.darshan'
+    output_file = 'sample/vpic.json'
 
     def get_parse(self, file_: str) -> Dict:
         darshan_parser = DarshanTraceParser()
@@ -29,8 +30,8 @@ class DarshanTraceParserTest(unittest.TestCase):
 class TestIOequirementExtractor(unittest.TestCase):
     def test_redis_extract(self):
         conf = ConfigurationManager.get_instance()
-        conf.io_req_path = "sample/io_req_output.json"
-        conf.darshan_trace_path = "sample/darshan_trace.json"
+        conf.io_req_out_path="sample/io_req_output.json"
+        conf.darshan_trace_path="sample/darshan_trace.json"
         conf.db_type = KVStoreType.REDIS
         conf.db_addr = "127.0.0.1"
         conf.db_port = "6379"
