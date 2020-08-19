@@ -11,7 +11,7 @@ class DarshanTraceParser(TraceParser):
     _formatted_variables = {}
     _sum_counters = [
         'total_reads',
-        'total_writes'
+        'total_writes',
         'total_bytes_read',
         'total_bytes_written',
         'read_time',
