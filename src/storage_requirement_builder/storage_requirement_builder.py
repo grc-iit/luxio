@@ -1,5 +1,6 @@
 from external_clients.json_client import JSONClient
 from utils.mapper_manager import MapperManager
+from common.configuration_manager import *
 
 
 class StorageRequirementBuilder:
@@ -14,8 +15,9 @@ class StorageRequirementBuilder:
 
     def run(self, io_requirement: dict) -> dict:
         self._initialize()
-        output = JSONClient().load("storage_requirement.json")
+        conf = ConfigurationManager.get_instance()
+        storage_requirement = JSONClient().load(conf.storage_req_path)
         mapper = MapperManager()
-        mapper.run(io_requirement, output)
+        mapper.run(io_requirement, storage_requirement)
         self._finalize()
         return output
