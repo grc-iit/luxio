@@ -23,11 +23,21 @@ class ErrorCode:
     #General
     NOT_IMPLEMENTED = {"id": 1, "msg": "{} is not implemented"}
     TOO_MANY_INSTANCES = {"id": 2, "msg": "{} is a singleton class, but has been initialized more than once"}
+    INVALID_ENUM = {"id": 3, "msg": "{}: {} is not a valid enum"}
 
     #Serializers
-    INVALID_SERIAL_ID = {"id": 1000, "msg": "SerializerFactory: Invalid serializer ID: {}"}
+    INVALID_SERIAL_DICT = {"id": 1000, "msg": "{}: Could not serialize dict"}
+    INVALID_DESERIAL_STR = {"id": 1001, "msg": "{}: Could not deserialize string"}
 
-    INVALID_PICKLE_DICT = {"id": 1001, "msg": "PickleSerializer: Could not serialize dict"}
-    INVALID_UNPICKLE_STR = {"id": 1002, "msg": "PickleSerializer: Could not deserialize string"}
+    #Mapper
+    MAPPER_EXEC_ERROR = {"id": 2000, "msg": "MapperManager: Generic execution error in {}: {}"}
 
-    PARSER_ID = {"id": 2000, "msg": "ParserFactory: Invalid Parser ID: {}"}
+
+    #Trace Parser
+    PARSER_ID = {"id": 4000, "msg": "ParserFactory: Invalid Parser ID: {}"}
+
+    # DataBase
+    INVALID_KV_STORE_TYPE = {"id": 3000, "msg": "KVStoreFactory: Invalid key-value store type: {}"}
+    REDISDB_STORE_ERROR = {"id": 3001, "msg": "RedisDB: Failed to store data into Redis"}
+    REDISDB_GET_ERROR = {"id": 3002, "msg": "RedisDB: Failed to get data from Redis"}
+    REDISDB_QUERY_ERROR = {"id": 3003, "msg": "RedisDB: Failed to query data from Redis"}

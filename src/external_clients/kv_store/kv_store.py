@@ -12,17 +12,20 @@ class KVStore(ABC):
         conf = ConfigurationManager.get_instance()
         self.serializer = SerializerFactory.get(conf.serializer_type)
 
-    def put(self, key, value):
+    def put(self, key, value) -> None:
         serialized_key = self.serializer.serialize(key)
         serialized_value = self.serializer.serialize(value)
         self._put_impl(serialized_key,serialized_value)
 
-    def get(self, key):
+    def get(self, key) -> dict:
         serialized_key = self.serializer.serialize(key)
         serialized_value = self._get_impl(serialized_key)
-        return self.serializer.deserialize(serialized_value)
+        if serialized_value is None:
+            return None
+        else:
+            return self.serializer.deserialize(serialized_value)
 
-    def query(self, key):
+    def query(self, key) -> bool:
         serialized_key = self.serializer.serialize(key)
         return self._query_impl(serialized_key)
 
