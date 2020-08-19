@@ -1,7 +1,7 @@
 import darshan
 from io_requirement_extractor.trace_parser.trace_parser import TraceParser
 from typing import List, Dict, Tuple
-
+from common.configuration_manager import *
 
 class DarshanTraceParser(TraceParser):
     """
@@ -11,14 +11,16 @@ class DarshanTraceParser(TraceParser):
     _formatted_variables = {}
     _sum_counters = [
         'total_reads',
-        'total_writes'
+        'total_writes',
         'total_bytes_read',
         'total_bytes_written',
         'read_time',
         'write_time',
     ]
 
+
     def __init__(self) -> None:
+        darshan.enable_experimental()
         pass
 
     def _get_max_byte_op(self) -> List[int]:
@@ -92,7 +94,7 @@ class DarshanTraceParser(TraceParser):
         Gets the max read bytes + time and max write bytes + time
         return: [(max_read_time, max_read_time_size), (max_write_time, max_write_time_size)]
         """
-        modules = ['POSIX', 'MPI-IO', 'H5D']
+        modules = {'POSIX', 'MPI-IO', 'H5D'}.intersection(self.modules_list)
         read_time = 0
         write_time = 0
         max_read = 0
@@ -124,18 +126,27 @@ class DarshanTraceParser(TraceParser):
             consec_write.append(i['counters']['POSIX_CONSEC_WRITES'])
         return [sum(consec_read), sum(consec_write)]
 
-    def parse(self, file_: str) -> Dict[str, float]:
+    def parse(self) -> Dict[str, float]:
         """
         Parses an inputted Darshan File and returns the relavent variables for Luxio
         return: darshan_variables
         """
+        conf = ConfigurationManager.get_instance()
+        file_ = conf.darshan_trace_path
         self.report = darshan.DarshanReport(file_, read_all=True)
         self.dar_dict = self.report.records_as_dict()
-        modules_list = list(self.dar_dict.keys())
-        modules_list.remove('DXT_MPIIO')
-        modules_list.remove('H5F')
+        self.modules_list = list(self.dar_dict.keys())
+
+        if 'DXT_MPIIO' in self.modules_list:
+            self.modules_list.remove('DXT_MPIIO')
+        if 'DXT_POSIX' in self.modules_list:
+            self.modules_list.remove('DXT_POSIX')
+
+        if 'H5F' in self.modules_list:
+            self.modules_list.remove('H5F')
+
         total = []
-        for i in modules_list:
+        for i in self.modules_list:
             total.append(self._get_total_module_stats(i))
 
         for i, j in zip(self._sum_counters, map(sum, zip(*total))):
@@ -156,6 +167,3 @@ class DarshanTraceParser(TraceParser):
             = self._get_max_op_time_size()
 
         return self._output_formatter()
-
-    def _finalize(self) -> None:
-        pass

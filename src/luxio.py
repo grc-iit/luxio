@@ -1,6 +1,6 @@
 from io_requirement_extractor.io_requirement_extractor import IORequirementExtractor
-from storage_configurator.storage_configurator import StorageRequirementBuilder, StorageConfigurator
-
+from storage_configurator.storage_configurator_factory import *
+from storage_requirement_builder.storage_requirement_builder import *
 
 class LUXIO:
     def __init__(self):
@@ -13,13 +13,14 @@ class LUXIO:
         self._initialize()
         # run io requirement extractor
         extractor = IORequirementExtractor()
-        output = extractor.run()
+        io_requirement = extractor.run()
         #
         builder = StorageRequirementBuilder()
-        requirement = builder.run(output)
+        storage_requirement = builder.run(io_requirement)
         #
-        configurator = StorageConfigurator()
-        configuration = configurator.run(requirement)
+        conf = ConfigurationManager.get_instance()
+        configurator = StorageConfiguratorFactory.get(conf.storage_configurator_type)
+        configuration = configurator.run(storage_requirement)
         self._finalize()
         return configuration
 
