@@ -22,9 +22,11 @@ class ErrorCode:
 
     #General
     NOT_IMPLEMENTED = {"id": 1, "msg": "{} is not implemented"}
+    TOO_MANY_INSTANCES = {"id": 2, "msg": "{} is a singleton class, but has been initialized more than once"}
 
     #Serializers
     INVALID_SERIAL_ID = {"id": 1000, "msg": "SerializerFactory: Invalid serializer ID: {}"}
+
     INVALID_PICKLE_DICT = {"id": 1001, "msg": "PickleSerializer: Could not serialize dict"}
     INVALID_UNPICKLE_STR = {"id": 1002, "msg": "PickleSerializer: Could not deserialize string"}
 

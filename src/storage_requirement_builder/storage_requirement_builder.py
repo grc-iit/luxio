@@ -1,5 +1,5 @@
-from src.external_clients.json_client import JSONClient
-from src.utils.mapper_manager import MapperManager
+from external_clients.json_client import JSONClient
+from utils.mapper_manager import MapperManager
 
 
 class StorageRequirementBuilder:
