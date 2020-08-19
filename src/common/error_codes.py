@@ -31,3 +31,9 @@ class ErrorCode:
     INVALID_UNPICKLE_STR = {"id": 1002, "msg": "PickleSerializer: Could not deserialize string"}
 
     PARSER_ID = {"id": 2000, "msg": "ParserFactory: Invalid Parser ID: {}"}
+
+    # DataBase
+    INVALID_KV_STORE_TYPE = {"id": 3000, "msg": "KVStoreFactory: Invalid key-value store type: {}"}
+    REDISDB_STORE_ERROR = {"id": 3001, "msg": "RedisDB: Failed to store data into Redis"}
+    REDISDB_GET_ERROR = {"id": 3002, "msg": "RedisDB: Failed to get data from Redis"}
+    REDISDB_QUERY_ERROR = {"id": 3003, "msg": "RedisDB: Failed to query data from Redis"}

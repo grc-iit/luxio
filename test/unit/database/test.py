@@ -1,9 +1,8 @@
 import unittest
 
-from src.external_clients.kv_store.kv_store_factory import KVStoreFactory
-from src.common.enumerations import KVStoreType
+from src.database.database import DataBase
 
-class KVStoreTestCase(unittest.TestCase):
+class DataBaseTestCase(unittest.TestCase):
     check_dict = {
         "c": 15,
         "d": 17
@@ -28,13 +27,15 @@ class KVStoreTestCase(unittest.TestCase):
             "val": None
         }
 
-        kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
-        kvstore.put(input, output)
+        db = DataBase.get_instance()
+        db._initialize()
+        db.put(input, output)
+        db._finalize()
 
 
     def testCaseGet(self):
         input = {
-            "a": 1,
+            "a": 100,
             "b": 2
         }
 
@@ -50,12 +51,15 @@ class KVStoreTestCase(unittest.TestCase):
             "expr": "self.output['a_per_a']['val']=self.output['a_per']['val']*100.0",
             "val": None
         }
-        kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
-        kvstore.put(input, output)
-        result1 = kvstore.get(input)
+
+        db = DataBase.get_instance()
+        db._initialize()
+        db.put(input, output)
+        result1 = db.get(input)
         self.assertEqual(output, result1)
-        result2 = kvstore.get(KVStoreTestCase.check_dict)
+        result2 = db.get(DataBaseTestCase.check_dict)
         self.assertEqual(None, result2)
+        db._finalize()
 
     def testCaseQuery(self):
         input = {
@@ -76,12 +80,14 @@ class KVStoreTestCase(unittest.TestCase):
             "val": None
         }
 
-        kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
-        kvstore.put(input, output)
-        result1 = kvstore.query(input)
+        db = DataBase.get_instance()
+        db._initialize()
+        db.put(input, output)
+        result1 = db.query(input)
         self.assertEqual(True, result1)
-        result2 = kvstore.query(KVStoreTestCase.check_dict)
+        result2 = db.query(DataBaseTestCase.check_dict)
         self.assertEqual(False, result2)
+        db._finalize()
 
 if __name__ == "__main__":
     unittest.main()
