@@ -19,7 +19,7 @@ class RedisDB(KVStore):
         return self.database.set(key, value)
 
     def _get_impl(self, key: str) -> str:
-        return self.database.get(key).decode("utf-8")
+        return self.database.get(key)
 
     def _query_impl(self, key: str) -> bool:
         return self.database.exists(key)

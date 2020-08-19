@@ -15,7 +15,10 @@ class TestIOequirementExtractor(unittest.TestCase):
 
         io_req_extractor = IORequirementExtractor()
         io_req_extractor.run()
-        return
+
+        input = JSONClient().load(conf.darshan_trace_path)
+        db = DataBase.get_instance()
+        output_db = db.get(input)
 
 if __name__ == "__main__":
     unittest.main()
