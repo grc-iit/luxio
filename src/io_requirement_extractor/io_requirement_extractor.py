@@ -27,7 +27,7 @@ class IORequirementExtractor:
             pass
 
         # load sample/io_req_output.json into output
-        output = JSONClient().load(conf.io_req_out_path) #TODO: what about schema verification
+        output = JSONClient().load(conf.io_req_out_path)
         mapper = MapperManager()
         mapper.run(input, output)
         # call to database to store it key:input, val:output
