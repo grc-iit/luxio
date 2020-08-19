@@ -49,7 +49,9 @@ cd /path/to/luxio
 export PYTHONPATH="$(pwd)/src"  
 > python3 test/unit/external_clients/serializer/test.py  
 > python3 test/unit/external_clients/kv_store/test.py  
+> python3 test/unit/external_clients/json_client/test.py  
 > python3 test/unit/io_requirement_extractor/test.py  
 > python3 test/unit/mapper_manager/test.py  
+> python3 test/integration/luxio/test.py  
 
 ## License
