@@ -6,6 +6,7 @@ from external_clients.json_client import *
 from luxio import *
 
 class TestLuxio(unittest.TestCase):
+
     def test_luxio_sample(self):
         conf = ConfigurationManager.get_instance()
         conf.job_spec="sample/job_info.json"
@@ -21,7 +22,6 @@ class TestLuxio(unittest.TestCase):
         config = tool.run()
         JSONClient().dumps(config)
 
-"""
     def test_luxio_vpic(self):
         conf = ConfigurationManager.get_instance()
         conf.job_spec="sample/job_info.json"
@@ -35,7 +35,7 @@ class TestLuxio(unittest.TestCase):
 
         tool = LUXIO()
         config = tool.run()
-        print(config)
+        JSONClient().dumps(config)
 
     def test_luxio_hacc_io_read(self):
         conf = ConfigurationManager.get_instance()
@@ -50,7 +50,7 @@ class TestLuxio(unittest.TestCase):
 
         tool = LUXIO()
         config = tool.run()
-        print(config)
+        JSONClient().dumps(config)
 
     def test_luxio_hacc_io_write(self):
         conf = ConfigurationManager.get_instance()
@@ -65,8 +65,7 @@ class TestLuxio(unittest.TestCase):
 
         tool = LUXIO()
         config = tool.run()
-        print(config)
-"""
+        JSONClient().dumps(config)
 
 if __name__ == "__main__":
     unittest.main()

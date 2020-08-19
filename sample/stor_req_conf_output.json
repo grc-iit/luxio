@@ -2,11 +2,15 @@
     "caching": {
         "dependencies": [],
         "include": "",
-        "expr": "self.output['caching']['val'] = self.input['read_heavy']['val'] > self.input['write_heavy']['val']"
+        "guard": "True",
+        "expr": "self.output['caching']['val'] = self.input['read_heavy']['val'] > self.input['write_heavy']['val']",
+        "val": 0
     },
     "async": {
         "dependencies": [],
         "include": "",
-        "expr": "self.output['async']['val'] = self.input['read_heavy']['val'] <= self.input['write_heavy']['val']"
+        "guard": "True",
+        "expr": "self.output['async']['val'] = self.input['read_heavy']['val'] <= self.input['write_heavy']['val']",
+        "val": 0
     }
 }
