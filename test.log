@@ -1,0 +1,133 @@
+{'read_bw': {'dependencies': [],
+             'executed': True,
+             'expr': "self.output['read_bw']['val'] = "
+                     "self.input['total_bytes_read']['val'] / "
+                     "self.input['read_time']['val']",
+             'include': '',
+             'val': 3467269189.957966},
+ 'read_bw_long': {'dependencies': [],
+                  'executed': True,
+                  'expr': "self.output['read_bw_long']['val'] = "
+                          "self.input['max_read_time_size']['val'] / "
+                          "self.input['max_read_time']['val']",
+                  'include': '',
+                  'val': 211633125.1970987},
+ 'read_data_percent': {'dependencies': [],
+                       'executed': True,
+                       'expr': "self.output['read_data_percent']['val'] = "
+                               "self.input['total_bytes_read']['val'] / "
+                               "(self.input['total_bytes_read']['val'] + "
+                               "self.input['total_bytes_written']['val'])",
+                       'include': '',
+                       'val': 0.500000647288564},
+ 'read_op_percent': {'dependencies': [],
+                     'executed': True,
+                     'expr': "self.output['read_op_percent']['val'] = "
+                             "self.input['total_reads']['val'] / "
+                             "(self.input['total_reads']['val'] + "
+                             "self.input['total_writes']['val'])",
+                     'include': '',
+                     'val': 0.5001911219690549},
+ 'read_seq_percent': {'dependencies': [],
+                      'executed': True,
+                      'expr': "self.output['read_seq_percent']['val'] = "
+                              "self.input['total_consec_reads']['val'] / "
+                              "self.input['total_reads']['val']",
+                      'include': '',
+                      'val': 0.33176064059540816},
+ 'read_time_percent': {'dependencies': [],
+                       'executed': True,
+                       'expr': "self.output['read_time_percent']['val'] = "
+                               "self.input['read_time']['val'] / "
+                               "(self.input['read_time']['val'] + "
+                               "self.input['write_time']['val'])",
+                       'include': '',
+                       'val': 0.31259474639500046},
+ 'write_bw': {'dependencies': [],
+              'executed': True,
+              'expr': "self.output['write_bw']['val'] = "
+                      "self.input['total_bytes_written']['val'] / "
+                      "self.input['write_time']['val']",
+              'include': '',
+              'val': 1576722495.4747915},
+ 'write_bw_long': {'dependencies': [],
+                   'executed': True,
+                   'expr': "self.output['write_bw_long']['val'] = "
+                           "self.input['max_write_time_size']['val'] / "
+                           "self.input['max_write_time']['val']",
+                   'include': '',
+                   'val': 519418452.0123839},
+ 'write_data_percent': {'dependencies': [],
+                        'executed': True,
+                        'expr': "self.output['write_data_percent']['val'] = "
+                                "self.input['total_bytes_written']['val'] / "
+                                "(self.input['total_bytes_read']['val'] + "
+                                "self.input['total_bytes_written']['val'])",
+                        'include': '',
+                        'val': 0.49999935271143603},
+ 'write_op_percent': {'dependencies': [],
+                      'executed': True,
+                      'expr': "self.output['write_op_percent']['val'] = "
+                              "self.input['total_writes']['val'] / "
+                              "(self.input['total_reads']['val'] + "
+                              "self.input['total_writes']['val'])",
+                      'include': '',
+                      'val': 0.49980887803094515},
+ 'write_seq_percent': {'dependencies': [],
+                       'executed': True,
+                       'expr': "self.output['write_seq_percent']['val'] = "
+                               "self.input['total_consec_writes']['val'] / "
+                               "self.input['total_writes']['val']",
+                       'include': '',
+                       'val': 0.3328123960896455},
+ 'write_time_percent': {'dependencies': [],
+                        'executed': True,
+                        'expr': "self.output['write_time_percent']['val'] = "
+                                "self.input['write_time']['val'] / "
+                                "(self.input['read_time']['val'] + "
+                                "self.input['write_time']['val'])",
+                        'include': '',
+                        'val': 0.6874052536049996}}
+{'read_heavy': {'dependencies': [],
+                'executed': True,
+                'expr': "self.output['read_heavy']['val'] = "
+                        "sum([self.input[var]['val']*weight for (var, weight, "
+                        'self) in zip(variables, weights, '
+                        '[self]*len(variables))])',
+                'include': "variables, weights = ['read_data_percent', "
+                           "'read_time_percent', 'read_op_percent', "
+                           "'read_seq_percent', 'read_bw_long', 'read_bw'], "
+                           '[0.3, 0.4, 0.25, 0.05, 0, 0]',
+                'val': 0.4166739052666035},
+ 'write_heavy': {'dependencies': [],
+                 'executed': True,
+                 'expr': "self.output['write_heavy']['val'] = "
+                         "sum([self.input[var]['val']*weight for (var, weight, "
+                         'self) in zip(variables, weights, '
+                         '[self]*len(variables))])',
+                 'include': "variables, weights = ['write_data_percent', "
+                            "'write_time_percent', 'write_op_percent', "
+                            "'write_seq_percent', 'write_bw_long', "
+                            "'write_bw'], [0.3, 0.4, 0.25, 0.05, 0, 0]",
+                 'val': 0.5665547465676493}}
+{'async': {'dependencies': [],
+           'executed': True,
+           'expr': "self.output['async']['val'] = "
+                   "self.input['read_heavy']['val'] <= "
+                   "self.input['write_heavy']['val']",
+           'include': '',
+           'val': True},
+ 'caching': {'dependencies': [],
+             'executed': True,
+             'expr': "self.output['caching']['val'] = "
+                     "self.input['read_heavy']['val'] > "
+                     "self.input['write_heavy']['val']",
+             'include': '',
+             'val': False}}
+
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.036s
+
+OK
+
