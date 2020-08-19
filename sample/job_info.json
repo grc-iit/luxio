@@ -1,4 +1,4 @@
-{"uid": "kbateman",
- "exeids": [["flux", "start"]],
- "runtime": 3600.0,
- "nprocs": [4]}
+{"uid": {"val": "kbateman"},
+ "exeids": {"val": [["flux", "start"]]},
+ "runtime": {"val": 3600.0},
+ "nprocs": {"val": [4]}}
