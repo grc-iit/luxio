@@ -13,11 +13,11 @@ class IORequirementExtractor:
     def run(self) -> dict:
         self._initialize()
 
-        #set the value from parser into input.
+        # set the value from parser into input.
 
         # TODO: neeraj set the input from darshan parser
         # load sample/darshan.json into input
-        input_ = 'sample.darshan'
+        input_ = JSONClient().load(conf.darshan_trace_path)
         # call to database to check if key:input exists if true skip mapping
         # load sample/io_req_output.json into output
         output = JSONClient().load("io_requirement.json")
@@ -29,4 +29,3 @@ class IORequirementExtractor:
 
     def _finalize(self) -> None:
         pass
-
