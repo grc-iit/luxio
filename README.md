@@ -43,8 +43,11 @@ Keith
 
 ### Test
 
-cd /path/to/luxio
-export PYTHONPATH="/path/to/luxio/src"
-python3 test/unit/external_clients/serializer/test.py
+cd /path/to/luxio  
+export PYTHONPATH="$(pwd)"  
+> python3 test/unit/external_clients/serializer/test.py  
+> python3 test/unit/external_clients/kv_store/test.py  
+> python3 test/unit/io_requirement_extractor/test.py  
+> python3 test/unit/mapper_manager/test.py  
 
 ## License

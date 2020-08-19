@@ -7,10 +7,10 @@ class JSONClient:
         pass
 
     def load(self, filename: str) -> dict:
-        with open(filename) as fp
+        with open(filename) as fp:
             dict = json.load(fp)
         return dict
 
     def save(self, object, filename):
-        with open(filename) as fp
+        with open(filename) as fp:
             json.dump(object, fp)
