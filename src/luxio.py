@@ -18,7 +18,7 @@ class LUXIO:
         builder = StorageRequirementBuilder()
         storage_requirement = builder.run(io_requirement)
         #
-        configurator = StorageConfigurator()
+        configurator = StorageConfiguratorFactory()
         configuration = configurator.run(storage_requirement)
         self._finalize()
         return configuration
