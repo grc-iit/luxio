@@ -1,6 +1,6 @@
-from src.external_clients.kv_store.kv_store import KVStore
-from src.common.configuration_manager import ConfigurationManager
-from src.common.error_codes import *
+from external_clients.kv_store.kv_store import KVStore
+from common.configuration_manager import ConfigurationManager
+from common.error_codes import *
 
 import typing
 import redis
@@ -8,8 +8,6 @@ import redis
 '''
 The implementation of redis database
 '''
-
-
 class RedisDB(KVStore):
     def __init__(self) -> None:
         super().__init__()

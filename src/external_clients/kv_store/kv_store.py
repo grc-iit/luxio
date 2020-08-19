@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
-from src.common.configuration_manager import ConfigurationManager
-from src.external_clients.serializer.serializer_factory import SerializerFactory
-
+from external_clients.serializer.serializer_factory import *
+from common.configuration_manager import *
 
 class KVStore(ABC):
     """Interface to key-value store.
@@ -13,12 +12,12 @@ class KVStore(ABC):
         conf = ConfigurationManager.get_instance()
         self.serializer = SerializerFactory.get(conf.serializer_type)
 
-    def put(self, key, value):
+    def put(self, key, value) -> None:
         serialized_key = self.serializer.serialize(key)
         serialized_value = self.serializer.serialize(value)
         self._put_impl(serialized_key,serialized_value)
 
-    def get(self, key):
+    def get(self, key) -> dict:
         serialized_key = self.serializer.serialize(key)
         serialized_value = self._get_impl(serialized_key)
         if serialized_value is None:
@@ -26,7 +25,7 @@ class KVStore(ABC):
         else:
             return self.serializer.deserialize(serialized_value)
 
-    def query(self, key):
+    def query(self, key) -> bool:
         serialized_key = self.serializer.serialize(key)
         return self._query_impl(serialized_key)
 

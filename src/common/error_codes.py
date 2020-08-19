@@ -26,8 +26,11 @@ class ErrorCode:
 
     #Serializers
     INVALID_SERIAL_ID = {"id": 1000, "msg": "SerializerFactory: Invalid serializer ID: {}"}
+
     INVALID_PICKLE_DICT = {"id": 1001, "msg": "PickleSerializer: Could not serialize dict"}
     INVALID_UNPICKLE_STR = {"id": 1002, "msg": "PickleSerializer: Could not deserialize string"}
+
+    PARSER_ID = {"id": 2000, "msg": "ParserFactory: Invalid Parser ID: {}"}
 
     #DataBase
     REDISDB_STORE_ERROR = {"id": 2000, "msg": "RedisDB: Failed to store data into Redis"}
