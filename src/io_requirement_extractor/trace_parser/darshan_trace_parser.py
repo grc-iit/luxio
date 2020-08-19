@@ -4,6 +4,9 @@ from typing import List, Dict, Tuple
 
 
 class DarshanTraceParser(TraceParser):
+    """
+    A Darshan Parser to extract certain Variables for Luxio
+    """
     _extracted_variables = {}
     _sum_counters = [
         'total_reads',
@@ -17,7 +20,11 @@ class DarshanTraceParser(TraceParser):
     def __init__(self) -> None:
         pass
 
-    def _getMaxByteOp(self) -> List[int]:
+    def _get_max_byte_op(self) -> List[int]:
+        """
+        Get the max read and write bytes
+        return: [max_read, max_write]
+        """
         prefix = ['POSIX', 'STDIO']
         nome = '_MAX_BYTE_'
         read_ = []
@@ -28,7 +35,13 @@ class DarshanTraceParser(TraceParser):
                 write_.append(j['counters'][f'{i}{nome}WRITTEN'])
         return [max(read_), max(write_)]
 
-    def _getTotalModuleStats(self, module_: str) -> List[float]:
+    def _get_total_module_stats(self, module_: str) -> List[float]:
+        """
+        Gets the total aggregated stats in Darshan
+        return: [total_reads, total_writes, total_bytes_read, total_bytes_written, 
+        total_read_time_est, total_write_time_est]
+
+        """
         module = 'MPIIO' if module_ == 'MPI-IO' else module_
         rw_prefixs = ['MPIIO_COLL', 'MPIIO_INDEP', 'MPIIO_SPLIT', 'MPIIO_NB'] \
             if module == 'MPIIO' else [module]
@@ -64,7 +77,11 @@ class DarshanTraceParser(TraceParser):
             sum(all_write_time_est)
         ]
 
-    def _getMaxOpTimeSize(self) -> List[Tuple[float, float]]:
+    def _get_max_op_time_size(self) -> List[Tuple[float, float]]:
+        """
+        Gets the max read bytes + time and max write bytes + time
+        return: [(max_read_time, max_read_time_size), (max_write_time, max_write_time_size)]
+        """
         modules = ['POSIX', 'MPI-IO', 'H5D']
         read_time = 0
         write_time = 0
@@ -85,7 +102,11 @@ class DarshanTraceParser(TraceParser):
             (write_time, max_write)
         ]
 
-    def _getConsecs(self) -> List[int]:
+    def _get_consecs(self) -> List[int]:
+        """
+        Gets consecutive read and writes
+        return: [total_consec_reads, total_consec_writes]
+        """
         consec_read = []
         consec_write = []
         for i in self.dar_dict['POSIX']:
@@ -94,6 +115,10 @@ class DarshanTraceParser(TraceParser):
         return [sum(consec_read), sum(consec_write)]
 
     def parse(self, file_: str) -> Dict[str, float]:
+        """
+        Parses an inputted Darshan File and returns the relavent variables for Luxio
+        return: darshan_variables
+        """
         self.report = darshan.DarshanReport(file_, read_all=True)
         self.dar_dict = self.report.records_as_dict()
         modules_list = list(self.dar_dict.keys())

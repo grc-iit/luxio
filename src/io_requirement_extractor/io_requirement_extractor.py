@@ -17,7 +17,7 @@ class IORequirementExtractor:
 
         # TODO: neeraj set the input from darshan parser
         # load sample/darshan.json into input
-        input = None
+        input_ = 'sample.darshan'
         # call to database to check if key:input exists if true skip mapping
         # load sample/io_req_output.json into output
         output = JSONClient().load("io_requirement.json")

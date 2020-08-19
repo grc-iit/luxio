@@ -1,3 +1,4 @@
+from common.error_codes import ErrorCode, Error
 import abc
 
 
@@ -8,4 +9,4 @@ class TraceParser(abc.ABC):
         """
         Parse a Trace and return extracted variables
         """
-        pass
+        raise Error(ErrorCode.NOT_IMPLEMENTED).format(file_))
