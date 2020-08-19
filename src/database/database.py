@@ -1,6 +1,6 @@
 from common.configuration_manager import *
 from external_clients.kv_store.kv_store_factory import KVStoreFactory
-from common.enumerations import KVStoreType
+from common.error_codes import *
 
 import typing
 
