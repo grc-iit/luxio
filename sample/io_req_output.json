@@ -13,12 +13,12 @@
     "read_time_percent": {
         "dependencies": [],
         "include": "",
-        "expr": "self.output['read_time_percent']['val'] = self.input['total_read_time_est']['val'] / (self.input['total_read_time_est']['val'] + self.input['total_write_time_est']['val'])",
+        "expr": "self.output['read_time_percent']['val'] = self.input['read_time']['val'] / (self.input['read_time']['val'] + self.input['write_time']['val'])",
         "val": null},
     "write_time_percent": {
         "dependencies": [],
         "include": "",
-        "expr": "self.output['write_time_percent']['val'] = self.input['total_write_time_est']['val'] / (self.input['total_read_time_est']['val'] + self.input['total_write_time_est']['val'])",
+        "expr": "self.output['write_time_percent']['val'] = self.input['write_time']['val'] / (self.input['read_time']['val'] + self.input['write_time']['val'])",
         "val": null},
     "read_op_percent": {
         "dependencies": [],
@@ -53,11 +53,11 @@
     "read_bw": {
         "dependencies": [],
         "include": "",
-        "expr": "self.output['read_bw']['val'] = self.input['total_bytes_read']['val'] / self.input['total_read_time_est']['val']",
+        "expr": "self.output['read_bw']['val'] = self.input['total_bytes_read']['val'] / self.input['read_time']['val']",
         "val": null},
     "write_bw": {
         "dependencies": [],
         "include": "",
-        "expr": "self.output['write_bw']['val'] = self.input['total_bytes_written']['val'] / self.input['total_write_time_est']['val']",
+        "expr": "self.output['write_bw']['val'] = self.input['total_bytes_written']['val'] / self.input['write_time']['val']",
         "val": null}
 }
