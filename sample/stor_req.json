@@ -1,2 +1,2 @@
-{"read_heavy": 0.79261905,
- "write_heavy": 0.22738095}
+{"read_heavy": {"val": 0.79261905},
+ "write_heavy": {"val": 0.22738095}}
