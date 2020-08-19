@@ -6,8 +6,14 @@ class MapperManager:
 
     def _run_expr(self, key):
         element = self.output[key]
-        exec(element["include"])
-        exec(element["expr"])
+        try:
+            exec(element["include"])
+        except:
+            raise Error(ErrorCode.MAPPER_EXEC_ERROR).format("include", key)
+        try:
+            exec(element["expr"])
+        except:
+            raise Error(ErrorCode.MAPPER_EXEC_ERROR).format("expr", key)
         self.output[key]["executed"]=True
 
     def _resolve_dependency(self, key):
@@ -24,12 +30,5 @@ class MapperManager:
             element = self.output[key]
             element["executed"]=False
             for variable in element["dependencies"]:
-                try:
-                    self._resolve_dependency(variable)
-                except:
-                    raise Error(ErrorCode.MAPPER_EXEC_ERROR).format(variable)
-
-            try:
-                self._run_expr(key)
-            except:
-                raise Error(ErrorCode.MAPPER_EXEC_ERROR).format(key)
+                self._resolve_dependency(variable)
+            self._run_expr(key)
