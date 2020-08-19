@@ -4,10 +4,7 @@ from enum import Enum
 class KVStoreType(Enum):
     REDIS = "redis"
 
-    def __str__(self):
-        return self.value
-
 """Serialization Libraries supported"""
 class SerializerType(Enum):
-    PICKLE = "Pickle"
-    MSGPACK = "MessagePack"
+    PICKLE = "pickle"
+    MSGPACK = "message_pack"

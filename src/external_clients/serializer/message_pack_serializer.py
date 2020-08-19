@@ -2,8 +2,8 @@
 import abc
 import msgpack
 
-from src.common.error_codes import *
-from src.external_clients.serializer.serializer import *
+from common.error_codes import *
+from external_clients.serializer.serializer import *
 
 class MessagePackSerializer(Serializer):
     def __init__(self):

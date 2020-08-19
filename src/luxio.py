@@ -1,5 +1,5 @@
-from src.io_requirement_extractor.io_requirement_extractor import IORequirementExtractor
-from src.storage_configurator.storage_configurator import StorageRequirementBuilder, StorageConfigurator
+from io_requirement_extractor.io_requirement_extractor import IORequirementExtractor
+from storage_configurator.storage_configurator import StorageRequirementBuilder, StorageConfigurator
 
 
 class LUXIO:

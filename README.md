@@ -6,6 +6,8 @@ A tool for submitting I/O requirements to Flux scheduler.
 
 ## Installation
 
+## Dependencies
+
 python3 -m pip install msgpack
 
 ## Usage
@@ -44,7 +46,7 @@ Keith
 ### Test
 
 cd /path/to/luxio  
-export PYTHONPATH="$(pwd)"  
+export PYTHONPATH="$(pwd)/src"  
 > python3 test/unit/external_clients/serializer/test.py  
 > python3 test/unit/external_clients/kv_store/test.py  
 > python3 test/unit/io_requirement_extractor/test.py  

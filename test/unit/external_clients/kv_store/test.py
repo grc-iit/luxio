@@ -1,10 +1,10 @@
 import unittest
 
-from src.external_clients.kv_store.kv_store_factory import KVStoreFactory
-from src.external_clients.kv_store.kv_store import KVStore
-from src.external_clients.kv_store.redis import RedisDB
-from src.database.database import DataBase
-from src.common.enumerations import KVStoreType
+from external_clients.kv_store.kv_store_factory import KVStoreFactory
+from external_clients.kv_store.kv_store import KVStore
+from external_clients.kv_store.redis import RedisDB
+from database.database import DataBase
+from common.enumerations import KVStoreType
 
 class KVStoreFactoryTestCase(unittest.TestCase):
     def testCase(self):
@@ -20,7 +20,7 @@ class RedisDBTestCase(unittest.TestCase):
         redisdb = RedisDB()
         redisdb._put_impl("name", "jie ye")
         value = redisdb._get_impl("name")
-        assert (value == "jie ye")
+        assert (value.decode("utf-8") == "jie ye")
 
     def testCaseQuery(self):
         redisdb = RedisDB()

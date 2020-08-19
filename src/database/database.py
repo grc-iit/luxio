@@ -1,6 +1,6 @@
-from src.common.configuration_manager import *
-from src.external_clients.kv_store.kv_store_factory import KVStoreFactory
-from src.common.enumerations import KVStoreType
+from common.configuration_manager import *
+from external_clients.kv_store.kv_store_factory import KVStoreFactory
+from common.enumerations import KVStoreType
 
 import typing
 

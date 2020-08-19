@@ -1,5 +1,5 @@
-from src.external_clients.kv_store.kv_store import KVStore
-from src.common.configuration_manager import ConfigurationManager
+from external_clients.kv_store.kv_store import KVStore
+from common.configuration_manager import ConfigurationManager
 
 import typing
 import redis
