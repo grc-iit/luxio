@@ -1,30 +1,14 @@
 import unittest
 
-from src.external_clients.kv_store.kv_store_factory import KVStoreFactory
-from src.external_clients.kv_store.kv_store import KVStore
-from src.external_clients.kv_store.redis import RedisDB
-from src.database.database import DataBase
-from src.common.enumerations import KVStoreType
+from external_clients.kv_store.kv_store_factory import KVStoreFactory
+from external_clients.kv_store.kv_store import KVStore
+from external_clients.kv_store.redis import RedisDB
+from database.database import DataBase
+from common.enumerations import KVStoreType
 
 class KVStoreFactoryTestCase(unittest.TestCase):
     def testCase(self):
         kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
-
-
-class KVStoreTestCase(unittest.TestCase):
-    def testCasePut(self):
-        kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
-        kvstore.put()
-
-    def testCaseGet(self):
-        kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
-        kvstore.put()
-        kvstore.get("name")
-
-    def testCaseQuery(self):
-        kvstore = KVStoreFactory.get_kv_store(KVStoreType.REDIS)
-        kvstore.put()
-        kvstore.query("name")
 
 class RedisDBTestCase(unittest.TestCase):
     def testCasePut(self):
@@ -36,7 +20,7 @@ class RedisDBTestCase(unittest.TestCase):
         redisdb = RedisDB()
         redisdb._put_impl("name", "jie ye")
         value = redisdb._get_impl("name")
-        assert (value == "jie ye")
+        assert (value.decode("utf-8") == "jie ye")
 
     def testCaseQuery(self):
         redisdb = RedisDB()
@@ -52,4 +36,5 @@ class DataBaseTestCase(unittest.TestCase):
         database1 = DataBase.get_instance();
         assert (database == database1)
 
-        
+if __name__ == "__main__":
+    unittest.main()
