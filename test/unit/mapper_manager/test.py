@@ -13,13 +13,16 @@ class MyTestCase(unittest.TestCase):
         output["a_per"] = {
             "dependencies": [],
             "include": "import numpy as np;",
-            "expr": "self.output['a_per']['val'] = self.input['a']/(self.input['a']+self.input['b'])"
+            "guard": "True",
+            "expr": "self.output['a_per']['val'] = self.input['a']/(self.input['a']+self.input['b'])",
+            "val": 0
         }
         output["a_per_a"] = {
             "dependencies": ["a_per"],
             "include": "import numpy as np;",
+            "guard": "True",
             "expr": "self.output['a_per_a']['val']=self.output['a_per']['val']*100.0",
-            "val": None
+            "val": 0
         }
         mapper = MapperManager()
         mapper.run(input, output)

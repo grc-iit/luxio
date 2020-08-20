@@ -1,8 +1,7 @@
 import unittest
 
-#import os
-#__import__('src')
-#print(os.sys.path)
+import sys
+print(sys.path)
 
 from common.error_codes import *
 from common.enumerations import *
@@ -73,4 +72,5 @@ class TestLuxio(unittest.TestCase):
         JSONClient().dumps(config)
 
 if __name__ == "__main__":
-    unittest.main()
+    pass
+    #unittest.main()
