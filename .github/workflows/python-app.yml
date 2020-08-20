@@ -64,11 +64,16 @@ jobs:
         export PATH=$HOME/work/software/install/include:$HOME/work/software/install/bin:$PATH
         pip install pytest
         export PYTHONPATH=${GITHUB_WORKSPACE}/src
-        python -m unittest discover -s test/integration
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/integration/luxio/test.py
     - name: Unittest
       run: |
         export LD_LIBRARY_PATH=$HOME/work/software/install/lib:$LD_LIBRARY_PATH
         export PATH=$HOME/work/software/install/include:$HOME/work/software/install/bin:$PATH
         pip install pytest
         export PYTHONPATH=${GITHUB_WORKSPACE}/src
-        python -m unittest discover -s test/unit
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/database/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/external_clients/kv_store/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/external_clients/json_client/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/external_clients/serializer/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/io_requirement_extractor/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/mapper_manager/test.py
