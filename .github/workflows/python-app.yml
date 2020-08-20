@@ -63,4 +63,5 @@ jobs:
         export LD_LIBRARY_PATH=$HOME/work/software/install/lib:$LD_LIBRARY_PATH
         export PATH=$HOME/work/software/install/include:$HOME/work/software/install/bin:$PATH
         pip install pytest
-        PYTHONPATH=${GITHUB_WORKSPACE}/src python -m unittest discover -s test/unit
+        export PYTHONPATH=${GITHUB_WORKSPACE}/src
+        python -m unittest discover -s test/unit
