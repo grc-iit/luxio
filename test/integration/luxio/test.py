@@ -3,7 +3,11 @@ from common.error_codes import *
 from common.enumerations import *
 from common.configuration_manager import *
 from external_clients.json_client import *
-from luxio import *
+import os
+__import__('src')
+print(os.sys.path)
+from tool.luxio import LUXIO
+
 
 class TestLuxio(unittest.TestCase):
 
