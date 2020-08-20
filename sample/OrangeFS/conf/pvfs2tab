@@ -1,0 +1,1 @@
+tcp://ares-stor-01-40g:3334/orangefs /mnt/hdd/jcernudagarcia/write/generic pvfs2 defaults,noauto 0 0
