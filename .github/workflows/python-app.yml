@@ -58,9 +58,17 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
+    - name: Integration
       run: |
         export LD_LIBRARY_PATH=$HOME/work/software/install/lib:$LD_LIBRARY_PATH
         export PATH=$HOME/work/software/install/include:$HOME/work/software/install/bin:$PATH
         pip install pytest
-        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/integration/luxio/test.py TestLuxio.test_luxio_sample
+        export PYTHONPATH=${GITHUB_WORKSPACE}/src
+        python -m unittest discover -s test/integration
+    - name: Unittest
+      run: |
+        export LD_LIBRARY_PATH=$HOME/work/software/install/lib:$LD_LIBRARY_PATH
+        export PATH=$HOME/work/software/install/include:$HOME/work/software/install/bin:$PATH
+        pip install pytest
+        export PYTHONPATH=${GITHUB_WORKSPACE}/src
+        python -m unittest discover -s test/unit
