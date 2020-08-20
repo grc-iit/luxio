@@ -20,7 +20,7 @@ class TestLuxio(unittest.TestCase):
 
         tool = LUXIO()
         config = tool.run()
-        JSONClient().dumps(config)
+        JSONClient().dumps(JSONClient().strip(config))
 
     def test_luxio_vpic(self):
         conf = ConfigurationManager.get_instance()
@@ -35,7 +35,7 @@ class TestLuxio(unittest.TestCase):
 
         tool = LUXIO()
         config = tool.run()
-        JSONClient().dumps(config)
+        JSONClient().dumps(JSONClient().strip(config))
 
     def test_luxio_hacc_io_read(self):
         conf = ConfigurationManager.get_instance()
@@ -50,7 +50,7 @@ class TestLuxio(unittest.TestCase):
 
         tool = LUXIO()
         config = tool.run()
-        JSONClient().dumps(config)
+        JSONClient().dumps(JSONClient().strip(config))
 
     def test_luxio_hacc_io_write(self):
         conf = ConfigurationManager.get_instance()
@@ -65,7 +65,7 @@ class TestLuxio(unittest.TestCase):
 
         tool = LUXIO()
         config = tool.run()
-        JSONClient().dumps(config)
+        JSONClient().dumps(JSONClient().strip(config))
 
 if __name__ == "__main__":
     unittest.main()
