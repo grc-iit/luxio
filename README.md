@@ -11,8 +11,8 @@ A tool for submitting I/O requirements to Flux scheduler.
 > git clone https://xgitlab.cels.anl.gov/darshan/darshan   
 > cd /path/to/darshan   
 > cd darshan-util  
->  ./configure --prefix=</path/to/wherever-you-want> --enable-pydarshan --enable-shared
-> 
+>  ./configure --prefix=</path/to/wherever-you-want> --enable-pydarshan --enable-shared  
+> make install
 
 ## Dependencies
 

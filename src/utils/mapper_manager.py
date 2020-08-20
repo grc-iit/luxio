@@ -10,6 +10,15 @@ class MapperManager:
             exec(element["include"])
         except:
             raise Error(ErrorCode.MAPPER_EXEC_ERROR).format("include", key)
+
+        try:
+            if not eval(element["guard"]):
+                self.output[key]["val"] = element['val']
+                self.output[key]["executed"] = True
+                return
+        except:
+            raise Error(ErrorCode.MAPPER_EXEC_ERROR).format("guard", key)
+
         try:
             exec(element["expr"])
         except:
