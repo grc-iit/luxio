@@ -1,13 +1,9 @@
 import unittest
-
-import sys
-print(sys.path)
-
 from common.error_codes import *
 from common.enumerations import *
 from common.configuration_manager import *
 from external_clients.json_client import *
-from tool.luxio import LUXIO
+from luxio import LUXIO
 
 class TestLuxio(unittest.TestCase):
 
@@ -72,5 +68,4 @@ class TestLuxio(unittest.TestCase):
         JSONClient().dumps(config)
 
 if __name__ == "__main__":
-    pass
-    #unittest.main()
+    unittest.main()
