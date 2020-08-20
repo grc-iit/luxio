@@ -36,9 +36,8 @@ class TestIOequirementExtractor(unittest.TestCase):
         conf.db_port = "6379"
 
         io_req_extractor = IORequirementExtractor()
-        io_req_extractor.run()
+        input = io_req_extractor.run()
 
-        input = JSONClient().load(conf.darshan_trace_path)
         db = DataBase.get_instance()
         output_db = db.get(input)
 
