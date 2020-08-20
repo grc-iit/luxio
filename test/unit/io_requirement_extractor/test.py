@@ -7,19 +7,18 @@ import unittest
 import json
 from typing import Dict
 
-
 class DarshanTraceParserTest(unittest.TestCase):
 
     input_file = 'sample/vpic.darshan'
     output_file = 'sample/vpic.json'
 
-    def get_parse(self, file_: str) -> Dict:
+    def get_parse(self) -> Dict:
         darshan_parser = DarshanTraceParser()
-        extracted_darshan_variables = darshan_parser.parse(self.input_file)
+        extracted_darshan_variables = darshan_parser.parse(input_file)
         return extracted_darshan_variables
 
-    def get_output(self, file_: str) -> Dict:
-        with open(self.output_file, 'r') as json_file:
+    def get_output(self) -> Dict:
+        with open(output_file, 'r') as json_file:
             data = json.load(json_file)
         return data
 
