@@ -25,6 +25,19 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        echo $GITHUB_WORKSPACE
+        export SOFTWARE_DIR=$HOME/work/software
+        export CURRENT=`pwd`
+        mkdir -p $SOFTWARE_DIR
+        mkdir -p $SOFTWARE_DIR/source
+        mkdir -p ${SOFTWARE_DIR}/install
+        git clone https://xgitlab.cels.anl.gov/darshan/darshan.git ${SOFTWARE_DIR}/source/darshan
+        cd ${SOFTWARE_DIR}/source/darshan/darshan-util
+        ./configure --prefix=${SOFTWARE_DIR}/install --enable-shared
+        make install
+        cd ${SOFTWARE_DIR}/source/darshan/darshan-util/pydarshan
+        python setup.py install
+        cd $CURRENT
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -33,7 +46,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        echo $GITHUB_WORKSPACE
-        echo $HOME
+        export LD_LIBRARY_PATH=$HOME/work/software/install/lib:$LD_LIBRARY_PATH
+        export PATH=$HOME/work/software/install/include:$HOME/work/software/install/bin:$PATH
         pip install pytest
         PYTHONPATH=${GITHUB_WORKSPACE}/src python test/integration/luxio/test.py TestLuxio.test_luxio_sample
