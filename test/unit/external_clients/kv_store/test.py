@@ -1,7 +1,7 @@
 import unittest
 
-from src.external_clients.kv_store.kv_store_factory import KVStoreFactory
-from src.common.enumerations import KVStoreType
+from external_clients.kv_store.kv_store_factory import KVStoreFactory
+from common.enumerations import KVStoreType
 
 class KVStoreTestCase(unittest.TestCase):
     check_dict = {
