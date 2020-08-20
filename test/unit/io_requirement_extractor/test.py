@@ -29,6 +29,7 @@ class DarshanTraceParserTest(unittest.TestCase):
 class TestIOequirementExtractor(unittest.TestCase):
     def test_redis_extract(self):
         conf = ConfigurationManager.get_instance()
+        conf.job_spec="sample/job_info.json"
         conf.io_req_out_path="sample/io_req_output.json"
         conf.darshan_trace_path="sample/sample.darshan"
         conf.db_type = KVStoreType.REDIS
