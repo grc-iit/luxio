@@ -16,7 +16,7 @@ A tool for submitting I/O requirements to Flux scheduler.
 
 ## Dependencies
 
-python3 -m pip install msgpack
+python3 -m pip install msgpack redis
 
 ## Usage
 
