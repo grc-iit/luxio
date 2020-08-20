@@ -53,6 +53,6 @@ Get the I/O configuration
 
 cd /path/to/luxio  
 export PYTHONPATH="$(pwd)/src"  
-> python3 -m unittest discover -s test/integration
+> python3 -m unittest discover -s test/integration/luxio  
 
 ## License

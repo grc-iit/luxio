@@ -16,24 +16,27 @@ class LUXIO:
         self._initialize()
 
         job_spec = JSONClient().load(self.conf.job_spec)
-        db = DataBase.get_instance()
+        if self.conf.check_db:
+            db = DataBase.get_instance()
         try:
-            req_dict = db.get(job_spec)
-            io_requirement = req_dict["io"]
-            storage_requirement = req_dict["storage"]
-            print("HERE1")
+            if self.conf.check_db:
+                req_dict = db.get(job_spec)
+                io_requirement = req_dict["io"]
+                storage_requirement = req_dict["storage"]
+            else:
+                raise 1
         except:
             # run io requirement extractor
             extractor = IORequirementExtractor()
             io_requirement = extractor.run()
-            #JSONClient().dumps(io_requirement)
+            JSONClient().dumps(JSONClient().strip(io_requirement)) #TODO: Remove/comment print statement
             #
             builder = StorageRequirementBuilder()
             storage_requirement = builder.run(io_requirement)
-            #JSONClient().dumps(storage_requirement)
+            JSONClient().dumps(JSONClient().strip(storage_requirement)) #TODO: Remove/comment print statement
             #
-            db.put(job_spec, {"io": io_requirement, "storage": storage_requirement})
-            print("HERE2")
+            if self.conf.check_db:
+                db.put(job_spec, {"io": io_requirement, "storage": storage_requirement})
 
         configurator = StorageConfiguratorFactory.get(self.conf.storage_configurator_type)
         configuration = configurator.run(storage_requirement)
