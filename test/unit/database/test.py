@@ -1,6 +1,6 @@
 import unittest
 
-from src.database.database import DataBase
+from database.database import DataBase
 
 class DataBaseTestCase(unittest.TestCase):
     check_dict = {
@@ -31,7 +31,6 @@ class DataBaseTestCase(unittest.TestCase):
         db._initialize()
         db.put(input, output)
         db._finalize()
-
 
     def testCaseGet(self):
         input = {
