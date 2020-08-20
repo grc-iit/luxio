@@ -1,0 +1,5 @@
+
+There are a few things to consider before running with the scripts:
+	First, the config files point to personal folders for storage of data, metada and the PFS log file. Those need to be changed inside the conf/ folder
+	Second, the scripts mount the PFS on top of two fodler, client_dir and server_dir. Both currently pointing to personal fodlers that shoudl be changed. Server_dir should point to the same fodler as the data fodler in step one.
+	Third, the variables ORANGEFS_KO, ORANGEFS_PATH and PVFS2TAB_FILE need to be set up, pointing to the kernel module fodler, the bin folder of orangefs and the pvfs2tab file of this particular run respectively. 
