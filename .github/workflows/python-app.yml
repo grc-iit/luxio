@@ -73,7 +73,7 @@ jobs:
         export PYTHONPATH=${GITHUB_WORKSPACE}/src
         PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/database/test.py
         PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/external_clients/kv_store/test.py
-        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/external_clients/serializer/test.py
         PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/external_clients/json_client/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/external_clients/serializer/test.py
         PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/io_requirement_extractor/test.py
         PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/mapper_manager/test.py
