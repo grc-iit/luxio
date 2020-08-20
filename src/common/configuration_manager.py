@@ -23,7 +23,7 @@ class ConfigurationManager:
         self.storage_req_config_out_path = None
         self.storage_configurator_type = StorageConfiguratorType.ORANGEFS
         self.db_type = KVStoreType.REDIS
-        self.db_addr = "redis"
+        self.db_addr = "localhost"
         self.db_port = "6379"
         self.db = None
         self.serializer_type = SerializerType.PICKLE
