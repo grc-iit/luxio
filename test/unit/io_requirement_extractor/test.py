@@ -9,25 +9,7 @@ from common.configuration_manager import *
 from io_requirement_extractor.io_requirement_extractor import *
 from database.database import *
 
-class DarshanTraceParserTest(unittest.TestCase):
-    input_file = 'sample/vpic.darshan'
-    output_file = 'sample/vpic.json'
-
-    def get_parse(self) -> Dict:
-        darshan_parser = DarshanTraceParser()
-        extracted_darshan_variables = darshan_parser.parse(self.input_file)
-        return extracted_darshan_variables
-
-    def get_output(self) -> Dict:
-        with open(self.output_file, 'r') as json_file:
-            data = json.load(json_file)
-        return data
-
-    def parse_testcase(self) -> None:
-        assert(self.get_output() == self.get_parse())
-
-
-class TestIOequirementExtractor(unittest.TestCase):
+class TestIORequirementExtractor(unittest.TestCase):
     def test_redis_extract(self):
         conf = ConfigurationManager.get_instance()
         conf.job_spec="sample/job_info.json"
@@ -42,7 +24,6 @@ class TestIOequirementExtractor(unittest.TestCase):
         job_spec = JSONClient().load(conf.job_spec)
         db = DataBase.get_instance()
         output_db = db.get(job_spec)
-
 
 if __name__ == "__main__":
     unittest.main()
