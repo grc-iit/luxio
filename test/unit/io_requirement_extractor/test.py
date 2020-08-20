@@ -36,7 +36,6 @@ class TestIOequirementExtractor(unittest.TestCase):
         conf.db_type = KVStoreType.REDIS
         conf.db_addr = "127.0.0.1"
         conf.db_port = "6379"
-
         io_req_extractor = IORequirementExtractor()
         io_req_extractor.run()
 

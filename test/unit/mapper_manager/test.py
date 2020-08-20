@@ -11,6 +11,7 @@ class MyTestCase(unittest.TestCase):
         }
         output = {}
         output["a_per"] = {
+            "guard":"True",
             "dependencies": [],
             "include": "import numpy as np;",
             "guard": "True",
@@ -18,6 +19,7 @@ class MyTestCase(unittest.TestCase):
             "val": 0
         }
         output["a_per_a"] = {
+            "guard":"True",
             "dependencies": ["a_per"],
             "include": "import numpy as np;",
             "guard": "True",
