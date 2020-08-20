@@ -34,5 +34,6 @@ jobs:
     - name: Test with pytest
       run: |
         echo $GITHUB_WORKSPACE
+        echo $HOME
         pip install pytest
         PYTHONPATH=${GITHUB_WORKSPACE}/src python test/integration/luxio/test.py TestLuxio.test_luxio_sample
