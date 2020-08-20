@@ -28,6 +28,8 @@ class ConfigurationManager:
         self.db_addr = "localhost"
         self.db_port = "6379"
         self.db = None
+        self.run_mode = "full"
+        self.output_file = None
         self.serializer_type = SerializerType.PICKLE
 
     """
@@ -50,4 +52,6 @@ class ConfigurationManager:
         conf.db_addr = dict["db_addr"]
         conf.db_port = dict["db_port"]
         conf.serializer_type = dict["serializer_type"]
+        conf.run_mode = dict["run_mode"]
+        conf.output_file = dict["run_mode"]
         return conf
