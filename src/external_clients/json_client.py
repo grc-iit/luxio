@@ -13,7 +13,7 @@ class JSONClient:
         return dict
 
     def save(self, object, filename) -> None:
-        with open(filename) as fp:
+        with open(filename, "w") as fp:
             json.dump(object, fp)
 
     def strip(self, json_dict: dict) -> dict:
