@@ -1,3 +1,4 @@
+
 import darshan
 from io_requirement_extractor.trace_parser.trace_parser import TraceParser
 from typing import List, Dict, Tuple
@@ -128,7 +129,7 @@ class DarshanTraceParser(TraceParser):
 
     def parse(self) -> Dict[str, float]:
         """
-        Parses an inputted Darshan File and returns the relavent variables for Luxio
+        Parses an inputted Darshan File and returns the relevant variables for Luxio
         return: darshan_variables
         """
         conf = ConfigurationManager.get_instance()
