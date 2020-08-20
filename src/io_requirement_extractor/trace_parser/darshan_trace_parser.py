@@ -1,7 +1,7 @@
 import darshan
 from io_requirement_extractor.trace_parser.trace_parser import TraceParser
 from typing import List, Dict, Tuple
-
+from common.configuration_manager import *
 
 class DarshanTraceParser(TraceParser):
     """
@@ -20,6 +20,7 @@ class DarshanTraceParser(TraceParser):
 
 
     def __init__(self) -> None:
+        darshan.enable_experimental()
         pass
 
     def _get_max_byte_op(self) -> List[int]:
