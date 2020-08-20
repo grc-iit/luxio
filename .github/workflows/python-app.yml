@@ -33,6 +33,6 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        echo $HOME
+        echo $GITHUB_WORKSPACE
         pip install pytest
-        PYTHONPATH=${HOME}/src python test/integration/luxio/test.py TestLuxio.test_luxio_sample
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/integration/luxio/test.py TestLuxio.test_luxio_sample
