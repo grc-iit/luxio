@@ -13,6 +13,20 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    services:
+      # Label used to access the service container
+      redis:
+        # Docker Hub image
+        image: redis
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps port 6379 on service container to the host
+          - 6379:6379
 
     steps:
     - uses: actions/checkout@v2
@@ -25,12 +39,41 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        echo $GITHUB_WORKSPACE
+        export SOFTWARE_DIR=$HOME/work/software
+        export CURRENT=`pwd`
+        mkdir -p $SOFTWARE_DIR
+        mkdir -p $SOFTWARE_DIR/source
+        mkdir -p ${SOFTWARE_DIR}/install
+        git clone https://xgitlab.cels.anl.gov/darshan/darshan.git ${SOFTWARE_DIR}/source/darshan
+        cd ${SOFTWARE_DIR}/source/darshan/darshan-util
+        ./configure --prefix=${SOFTWARE_DIR}/install --enable-shared
+        make install
+        cd ${SOFTWARE_DIR}/source/darshan/darshan-util/pydarshan
+        python setup.py install
+        cd $CURRENT
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
+    - name: Integration
       run: |
-        pytest
+        export LD_LIBRARY_PATH=$HOME/work/software/install/lib:$LD_LIBRARY_PATH
+        export PATH=$HOME/work/software/install/include:$HOME/work/software/install/bin:$PATH
+        pip install pytest
+        export PYTHONPATH=${GITHUB_WORKSPACE}/src
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/integration/luxio/test.py
+    - name: Unittest
+      run: |
+        export LD_LIBRARY_PATH=$HOME/work/software/install/lib:$LD_LIBRARY_PATH
+        export PATH=$HOME/work/software/install/include:$HOME/work/software/install/bin:$PATH
+        pip install pytest
+        export PYTHONPATH=${GITHUB_WORKSPACE}/src
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/database/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/external_clients/kv_store/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/external_clients/json_client/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/external_clients/serializer/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/io_requirement_extractor/test.py
+        PYTHONPATH=${GITHUB_WORKSPACE}/src python test/unit/mapper_manager/test.py

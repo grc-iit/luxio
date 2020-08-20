@@ -11,4 +11,4 @@ class TraceParser(abc.ABC):
         """
         Parse a Trace and return extracted variables
         """
-        raise Error(ErrorCode.NOT_IMPLEMENTED).format(file_)
+        raise Error(ErrorCode.NOT_IMPLEMENTED)

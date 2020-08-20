@@ -7,19 +7,18 @@ import unittest
 import json
 from typing import Dict
 
-
 class DarshanTraceParserTest(unittest.TestCase):
 
     input_file = 'sample/vpic.darshan'
     output_file = 'sample/vpic.json'
 
-    def get_parse(self, file_: str) -> Dict:
+    def get_parse(self) -> Dict:
         darshan_parser = DarshanTraceParser()
-        extracted_darshan_variables = darshan_parser.parse(self.input_file)
+        extracted_darshan_variables = darshan_parser.parse(input_file)
         return extracted_darshan_variables
 
-    def get_output(self, file_: str) -> Dict:
-        with open(self.output_file, 'r') as json_file:
+    def get_output(self) -> Dict:
+        with open(output_file, 'r') as json_file:
             data = json.load(json_file)
         return data
 
@@ -30,16 +29,14 @@ class DarshanTraceParserTest(unittest.TestCase):
 class TestIOequirementExtractor(unittest.TestCase):
     def test_redis_extract(self):
         conf = ConfigurationManager.get_instance()
+        conf.job_spec="sample/job_info.json"
         conf.io_req_out_path="sample/io_req_output.json"
-        conf.darshan_trace_path="sample/darshan_trace.json"
+        conf.darshan_trace_path="sample/sample.darshan"
         conf.db_type = KVStoreType.REDIS
         conf.db_addr = "127.0.0.1"
         conf.db_port = "6379"
-
         io_req_extractor = IORequirementExtractor()
-        io_req_extractor.run()
-
-        input = JSONClient().load(conf.darshan_trace_path)
+        input = io_req_extractor.run()
         db = DataBase.get_instance()
         output_db = db.get(input)
 

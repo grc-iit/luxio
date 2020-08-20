@@ -2,64 +2,57 @@
 
 A tool for submitting I/O requirements to Flux scheduler.
 
-## Code Features
-
 ## Installation
+
+To install Luxio
+
+> cd /path/to/luxio  
+> pip3 install -r requirements.txt  
+> python3 setup.py sdist bdist_wheel  
+> pip3 install dist/*.whl  
+> rm -r dist build *.egg_info MANIFEST
+
+To remove Luxio:
+
+> pip3 uninstall luxio
+
+## Dependencies
+
+Luxio depends on the following:
+* Darshan
+* Redis
 
 ### Darshan
 
 > git clone https://xgitlab.cels.anl.gov/darshan/darshan   
 > cd /path/to/darshan   
 > cd darshan-util  
->  ./configure --prefix=</path/to/wherever-you-want> --enable-pydarshan --enable-shared
-> 
-
-## Dependencies
-
-python3 -m pip install msgpack
+>  ./configure --prefix=</path/to/wherever-you-want> --enable-pydarshan --enable-shared  
+> make install
 
 ## Usage
 
-## Contribute to LUXIO
+Import the module:
+> from luxio import *
 
-### Code examples to use:
+Configure the tool:
+> conf = ConfigurationManager.get_instance()  
+> conf.job_spec = "/path/to/job_spec.json"  
+> conf.darshan_trace_path = "/path/to/darshan_trace.darshan"  
+> conf.io_req_out_path = "/path/to/io_req_out.json"  
+> conf.storage_req_out_path = "/path/to/storage_req_out.json"  
+> conf.storage_req_config_out_path = "/path/to/storage_req_config_out.json"
+> conf.db_type = KVStoreType.REDIS  
+> conf.db_addr = "127.0.0.1"  
+> conf.db_port = "6379"  
 
-- Factory Pattern: [here](https://github.com/hariharan-devarajan/dlio_benchmark/blob/master/src/data_generator/generator_factory.py)
-- Singleton Pattern: [here](https://github.com/hariharan-devarajan/dlio_benchmark/blob/master/src/utils/argument_parser.py#L30)
+Get the I/O configuration
+> storage_config = LUXIO().run()
 
-### Jobs to do
-Hari
-- finalize all datastructures
-    - job info (map)
-    - darshan counters (map)
-    - io_requirements (map)
-    - storage_requirements (map)
-    - storage configuration (map)
-
-Keith
-- utility whioch converts job spec yaml to map
-- create a job speck json.
-- put utility functions in src/utils/
-
-
-### Code Styles
-
-- __ for only internal python variables/methods
-- _ for private variables/methods
-- decorate types for readability [here](https://docs.python.org/3/library/typing.html)
-- class names are same as parent package
-- inheritence [here](https://github.com/hariharan-devarajan/dlio_benchmark/blob/master/src/data_generator/data_generator.py#L10)
-- error codes: [here](https://github.com/hariharan-devarajan/dlio_benchmark/blob/master/src/common/error_code.py)
-
-### Test
+## Test
 
 cd /path/to/luxio  
 export PYTHONPATH="$(pwd)/src"  
-> python3 test/unit/external_clients/serializer/test.py  
-> python3 test/unit/external_clients/kv_store/test.py  
-> python3 test/unit/external_clients/json_client/test.py  
-> python3 test/unit/io_requirement_extractor/test.py  
-> python3 test/unit/mapper_manager/test.py  
-> python3 test/integration/luxio/test.py  
+> python3 -m unittest discover -s test/integration
 
 ## License
