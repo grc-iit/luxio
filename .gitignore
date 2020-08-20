@@ -4,3 +4,4 @@ pycache
 build
 dist
 *.egg_info
+MANIFEST
