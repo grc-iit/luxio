@@ -1,9 +1,13 @@
+
 from external_clients.json_client import JSONClient
 from utils.mapper_manager import MapperManager
 from common.configuration_manager import *
 
 
 class StorageRequirementBuilder:
+    """
+    Build the storage requirements for Luxio
+    """
     def __init__(self) -> None:
         pass
 
@@ -14,6 +18,12 @@ class StorageRequirementBuilder:
         pass
 
     def run(self, io_requirement: dict) -> dict:
+        """
+        Mapping the given i/o requirements to its corresponding storage requirement.
+        And then return the storage requirement.
+        :param io_requirement: dict
+        :return: dict
+        """
         self._initialize()
         conf = ConfigurationManager.get_instance()
         storage_requirement = JSONClient().load(conf.storage_req_out_path)
