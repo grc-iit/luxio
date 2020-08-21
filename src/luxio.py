@@ -13,6 +13,17 @@ class LUXIO:
         pass
 
     def run(self) -> dict:
+        """
+        Run the luxio to get storage configuration.
+        In this process, it will execute the following steps:
+            1) Checking for the job_info in the database
+            2) If the job_info isn't in the database, it will extract the i/o requirement and then build
+            the storage requirement according to the i/o requirement
+            3) If the job_info is in the database, then getting the i/o requirement and storage requirement
+            from the database
+            4) Getting the storage configuration by the storage requirement obtained from step 2) or 3)
+        :return: dict
+        """
         self._initialize()
 
         job_spec = JSONClient().load(self.conf.job_spec)
@@ -30,14 +41,15 @@ class LUXIO:
             extractor = IORequirementExtractor()
             io_requirement = extractor.run()
             JSONClient().dumps(JSONClient().strip(io_requirement)) #TODO: Remove/comment print statement
-            #
+            # run storage requirement builder
             builder = StorageRequirementBuilder()
             storage_requirement = builder.run(io_requirement)
             JSONClient().dumps(JSONClient().strip(storage_requirement)) #TODO: Remove/comment print statement
-            #
+            # store the io requirement and storage requirement into database
             if self.conf.check_db:
                 db.put(job_spec, {"io": io_requirement, "storage": storage_requirement})
 
+        #run storage configurator
         configurator = StorageConfiguratorFactory.get(self.conf.storage_configurator_type)
         configuration = configurator.run(storage_requirement)
         self._finalize()
