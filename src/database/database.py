@@ -1,7 +1,6 @@
 from common.configuration_manager import *
 from external_clients.kv_store.kv_store_factory import KVStoreFactory
 from common.error_codes import *
-
 import typing
 
 class DataBase(object):
