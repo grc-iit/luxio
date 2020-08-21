@@ -5,13 +5,13 @@
         "guard": "self.input['read_heavy']['val'] > self.input['write_heavy']['val']",
         "expr": "self.output['write_model']['val'] = False",
         "val": {
-            "SearchTimeoutSecs": 30,
-            "TroveMaxConcurrentIO": 32,
-            "TCPBufferSend": 212992,
-            "TCPBufferReceive": 53248,
+            "SearchTimeoutSecs": 1,
+            "TroveMaxConcurrentIO": 4,
+            "TCPBufferSend": 53248,
+            "TCPBufferReceive": 212992,
             "TCPBindSpecific": 0,
             "FileStuffing": 1,
-            "TroveSyncMeta": 1,
+            "TroveSyncMeta": 0,
             "TroveSyncData": 0,
             "DBCacheSizeBytes": 65536,
             "DBCacheType": 0,
@@ -25,10 +25,8 @@
             "DistrDirServersInitial": 1,
             "DistrDirServersMax": 1,
             "DistrDirSplitSize": 25,
-            "Stripe": 1,
-            "Stripe Size": 2097152,
-            "num_groups": 1,
-            "factor": 2
+            "Stripe": 0,
+            "Stripe Size": 32768
         }
     },
 
