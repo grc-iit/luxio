@@ -1,10 +1,12 @@
-from abc import ABC, abstractmethod
 
+from abc import ABC, abstractmethod
 from external_clients.json_client import JSONClient
 from utils.mapper_manager import MapperManager
 
-
 class StorageConfigurator(ABC):
+    """
+    A class used to generate the storage configuration according to the given storage requirement
+    """
     def __init__(self):
         pass
 
@@ -15,6 +17,12 @@ class StorageConfigurator(ABC):
         pass
 
     def run(self, storage_requirement: dict) -> dict:
+        """
+        Mapping the storage requirement to its corresponding storage configuration.
+        And then return the storage configuration.
+        :param storage_requirement: dict
+        :return: dict
+        """
         self._initialize()
         output = self.load_json()
         mapper = MapperManager()
@@ -24,4 +32,8 @@ class StorageConfigurator(ABC):
 
     @abstractmethod
     def load_json(self) -> dict:
+        """
+        Load json file and return a python dictionary
+        :return: dict
+        """
         pass
