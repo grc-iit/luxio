@@ -3,7 +3,6 @@ from common.error_codes import ErrorCode
 from common.error_codes import Error
 import abc
 
-
 class TraceParser(abc.ABC):
 
     @abc.abstractmethod

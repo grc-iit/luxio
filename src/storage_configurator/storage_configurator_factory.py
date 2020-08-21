@@ -1,14 +1,24 @@
+
 from common.enumerations import *
 from common.error_codes import *
 from storage_configurator.storage_configurator import *
 from storage_configurator.orangefs_configurator import *
 
 class StorageConfiguratorFactory:
+    """
+    Factory used for creating StorageConfigurator object
+    """
     def __init__(self):
         pass
 
     @staticmethod
     def get(type: StorageConfiguratorType) -> StorageConfigurator:
+        """
+        Return a StorageConfigurator object according to the given type.
+        If the type is invalid, it will raise an exception.
+        :param type: StorageConfiguratorType
+        :return: StorageConfigurator
+        """
         if type == StorageConfiguratorType.ORANGEFS:
             return OrangefsConfigurator()
         else:
