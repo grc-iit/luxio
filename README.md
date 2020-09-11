@@ -55,4 +55,8 @@ cd /path/to/luxio
 export PYTHONPATH="$(pwd)/src"  
 > python3 -m unittest discover -s test/integration/luxio  
 
+> ./luxio.py -m io -o output_file.json -j job_info.json -t sample.darshan  
+> ./print-luxio.sh output_file.json  
+The print-luxio.sh script requires the program jq (json query) to be installed, it performs a `jq 'map_values(.val)'` on the given argument
+
 ## License
