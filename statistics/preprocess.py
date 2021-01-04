@@ -180,7 +180,7 @@ def preprocess_df(df:pd.DataFrame):
         df.TOTAL_WRITE_TIME +
         df.TOTAL_MD_TIME
     )
-    df = df[df.TOTAL_IO_TIME > 0]
+    df = df[(df.TOTAL_IO_TIME > 0)]
 
     #GET THE BANDWIDTH (MB/s)
     df["TOTAL_BANDWIDTH"] = df.TOTAL_IO / (df.TOTAL_READ_TIME + df.TOTAL_WRITE_TIME)
