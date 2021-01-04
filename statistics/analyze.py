@@ -142,8 +142,8 @@ def df_random_forest_classifier(train_df, test_df, features, vars, max_leaf_node
     #Get training and testing sets
     train_x = train_df[features]
     train_y = train_df[vars]
-    test_x = train_df[features]
-    test_y = train_df[vars]
+    test_x = test_df[features]
+    test_y = test_df[vars]
 
     #Train model
     model = RandomForestClassifier(random_state=1, verbose=4, max_leaf_nodes=max_leaf_nodes)
@@ -159,8 +159,8 @@ def df_random_forest_regression(train_df, test_df, features, vars, max_leaf_node
     #Get training and testing sets
     train_x = train_df[features]
     train_y = train_df[vars]
-    test_x = train_df[features]
-    test_y = train_df[vars]
+    test_x = test_df[features]
+    test_y = test_df[vars]
 
     #Train model
     model = RandomForestRegressor(n_estimators=n_trees, random_state=1, verbose=4, max_leaf_nodes=max_leaf_nodes)
@@ -177,11 +177,11 @@ def df_xgboost_regression(train_df, test_df, features, vars, n_trees = 10):
     #Get training and testing sets
     train_x = train_df[features]
     train_y = train_df[vars]
-    test_x = train_df[features]
-    test_y = train_df[vars]
+    test_x = test_df[features]
+    test_y = test_df[vars]
 
     #Gradient Boost Forest Regression
-    model = XGBRegressor(objective ='reg:linear', n_estimators = n_trees, seed = 123)
+    model = XGBRegressor(objective ='reg:linear', n_estimators = n_trees, seed = 123, verbosity=2)
     model.fit(train_x, train_y)
 
     #Get the model fitness to the data
@@ -195,8 +195,8 @@ def df_adaboost_regression(train_df, test_df, features, vars, n_trees = 10):
     #Get training and testing sets
     train_x = train_df[features]
     train_y = train_df[vars]
-    test_x = train_df[features]
-    test_y = train_df[vars]
+    test_x = test_df[features]
+    test_y = test_df[vars]
 
     #Gradient Boost Forest Regression
     model = AdaBoostRegressor(loss ='linear', n_estimators = n_trees, seed = 123)
@@ -214,7 +214,7 @@ def df_linreg(train_df, test_df, features, vars) -> tuple:
     train_x = RobustScaler().fit_transform(train_df[features])
     train_y = train_df[vars]
     test_x = RobustScaler().fit_transform(test_df[features])
-    test_y = train_df[vars]
+    test_y = test_df[vars]
 
     #Train model
     model = LinearRegression(fit_intercept=False).fit(train_x, train_y)
@@ -232,7 +232,7 @@ def df_ordinal_logistic_regression(train_df, test_df, features, vars):
     train_x = RobustScaler().fit_transform(train_df[features])
     train_y = train_df[vars]
     test_x = RobustScaler().fit_transform(test_df[features])
-    test_y = train_df[vars]
+    test_y = test_df[vars]
 
     #Ordinal Logistic Regression
     model = OrdinalRidge()
@@ -283,7 +283,7 @@ def auto_sample_maker(df:pd.DataFrame, features:list, vars:list, max_split=.75, 
     clusters = create_clusters(df, cluster_col=cluster_col)
     k = len(df[cluster_col].unique())
     x0 = [.1 for i in range(k)]
-    res = least_squares(sample_score_fun, x0, args=(clusters, features, vars), bounds=(0,max_split), max_nfev=10)
+    res = least_squares(sample_score_fun, x0, args=(clusters, features, vars), bounds=(0,max_split), max_nfev=30)
     weights = res.x
     train_df,test_df = stratified_random_sample(clusters, weights)
     score,importances,rmse = df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=256, n_trees=3)
@@ -303,12 +303,36 @@ def ensemble_feature_importances(train_df, test_df, features, vars, model_id):
     elif model_id == 5:
         return df_ordinal_logistic_regression(train_df, test_df, features, vars)
 
+def combine_feature_importances(model_fitnesses:list, thresh=.9):
+    avg_importances = {}
+    net_score = 0
+    #Get total weighted importance of feature for each model
+    for score,importances,rmse in model_fitnesses:
+        for key,value in importances.items():
+            if key not in avg_importances:
+                avg_importances[key] = 0
+            avg_importances[key] += score*value
+        net_score += score
+    #Get average
+    for key,value in avg_importances:
+        avg_importances[key] /= net_score
+    #Sort by importance
+    importances = list(avg_importances.items()).sort(key = lambda x: x[1])
+    return importances
+
+def save_json(model_fitness, path):
+    with open(path, 'w') as outfile:
+        json.dump(model_fitness, outfile)
+
+def read_json(model_fitness, path):
+    with open(path, 'r') as outfile:
+        data = json.load(model_fitness, outfile)
+    return data
 
 ##############MAIN##################
-
 #Load the performance features and variables
 case = 2
-model_id = 0
+model_id = 1
 
 #Cumulative Distribution Function on each PERFORMANCE variable
 if case == -1:
@@ -348,6 +372,10 @@ elif case == 3:
     PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0])
     train_df = pd.read_csv("datasets/train.csv")
     test_df = pd.read_csv("datasets/test.csv")
-    ensemble_feature_importances(train_df, test_df, FEATURES, PERFORMANCE, model_id)
+    model_fitness = ensemble_feature_importances(train_df, test_df, FEATURES, PERFORMANCE, model_id)
+    save_json(model_fitness, "datasets/model/importances_{}.json".format(model_id))
 
 #STEP 4: Combine the feature importances
+elif case == 4:
+    model_fitnesses = [load_json("datasets/model/importances_{}.json".format(model_id)) for model_id in range(6)]
+    pp.pprint(combine_feature_importances(model_fitnesses))
