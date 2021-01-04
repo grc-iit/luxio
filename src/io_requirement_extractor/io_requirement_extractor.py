@@ -1,3 +1,4 @@
+
 from external_clients.json_client import JSONClient
 from utils.mapper_manager import MapperManager
 from common.configuration_manager import *
@@ -5,6 +6,9 @@ from common.enumerations import *
 from io_requirement_extractor.trace_parser.trace_parser_factory import *
 
 class IORequirementExtractor:
+    """
+    Extract the i/o requirement for Luxio
+    """
     def __init__(self):
         self.conf = None
 
@@ -12,6 +16,11 @@ class IORequirementExtractor:
         self.conf = ConfigurationManager.get_instance()
 
     def run(self) -> dict:
+        """
+        Reading the trace input and then mapping it to the corresponding io requirement.
+        It will return the io requirement
+        :return: dict
+        """
         self._initialize()
         darshan_parser = TraceParserFactory.get_parser(TraceParserType.DARSHAN)
         input = darshan_parser.parse()

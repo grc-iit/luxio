@@ -1,7 +1,12 @@
+
 from common.enumerations import *
 from common.error_codes import *
+import json
 
 class ConfigurationManager:
+    """
+    A singleton class used to provide configuration variables for luxio
+    """
     _instance = None
 
     @staticmethod
@@ -12,6 +17,9 @@ class ConfigurationManager:
         return ConfigurationManager._instance
 
     def __init__(self):
+        """
+        Initialize the configuration variables
+        """
         if ConfigurationManager._instance is not None:
             raise Error(ErrorCode.TOO_MANY_INSTANCES).format("ConfigurationManager")
         else:
@@ -28,14 +36,17 @@ class ConfigurationManager:
         self.db_addr = "localhost"
         self.db_port = "6379"
         self.db = None
+        self.run_mode = "full"
+        self.output_file = None
         self.serializer_type = SerializerType.PICKLE
-
-    """
-    Configuration Varibales go here.
-    """
 
     @staticmethod
     def load(filename):
+        """
+        Read configuration info from the given json file.
+        :param filename: str
+        :return: ConfigurationManager
+        """
         with open(filename) as fp:
             dict = json.load(fp)
         conf = ConfigurationManager.get_instance()
@@ -50,4 +61,6 @@ class ConfigurationManager:
         conf.db_addr = dict["db_addr"]
         conf.db_port = dict["db_port"]
         conf.serializer_type = dict["serializer_type"]
+        conf.run_mode = dict["run_mode"]
+        conf.output_file = dict["run_mode"]
         return conf
