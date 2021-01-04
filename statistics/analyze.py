@@ -22,6 +22,7 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, AdaB
 from sklearn.linear_model import LinearRegression
 from mord import OrdinalRidge
 from xgboost import XGBRegressor
+from scipy.optimize import least_squares
 from sklearn.feature_selection import RFE
 from sklearn.metrics import f1_score, mean_squared_error as MSE
 from sklearn.tree import export_graphviz
@@ -112,131 +113,13 @@ def print_clusters(clusters:dict) -> None:
         print(df)
         print()
 
-def visualize_inertias(inertias:dict) -> int:
+def stratified_random_sample(clusters:dict, weights:list) -> pd.DataFrame:
 
     """
-    A simple line plot that shows the inertia (Sum of Squares) for varying values of k
-    (from KMeans).
-
-    INPUT:
-        inertias: A dictionary where keys are "k" (number of clusters) and values are "inertias"
+    Weighted stratified random sample
     """
 
-    plt.plot(list(inertias.keys()), list(inertias.values()), 'bx-')
-    plt.xlabel('k')
-    plt.ylabel('Inertia')
-    plt.title('Elbow Method For Optimal k')
-    plt.show()
-    plt.close()
-    k = int(input("What is the optimal k?: "))
-    return k
-
-def visualize_cdf(df:pd.DataFrame, feature, quantile=1, n_bins=1000, out=None):
-    df = df[df[feature] <= df[feature].quantile(quantile)]
-    n, bins, patches = plt.hist(df[feature], n_bins, density=True, histtype='step', cumulative=True, label='Empirical')
-    plt.xlabel(feature)
-    plt.ylabel("% of data")
-    plt.title('CDF of {}'.format(feature))
-    if out == None:
-        plt.show()
-    else:
-        plt.savefig(out)
-    plt.close()
-
-def df_kmeans(df:pd.DataFrame, features, k=None, cluster_col="cluster", return_centers=False) -> pd.DataFrame:
-    """
-    Group rows of pandas dataframe using KMeans based on features
-
-    INPUT:
-        df: A pandas dataframe containing "features"
-        features: The set of features to use KMeans on
-        k: The number of clusters to create
-        cluster_col: The name of the column to add to the dataframe
-    OUTPUT:
-        df: The same pandas dataframe except with "cluster_col" column
-    """
-
-    #Standardize Dataframe Features
-    feature_df = RobustScaler().fit_transform(df[features])
-
-    #Create different number of clusters
-    clusters = {}
-    inertias = {}
-    centers = {}
-    if k == None:
-        for k in progressbar.progressbar([2, 4, 6, 8, 12]):
-            if len(feature_df) < k:
-                inertias[k] = np.inf
-                clusters[k] = None
-                continue
-            km = KMeans(n_clusters=k, verbose=10)
-            clusters[k] = np.array(km.fit_predict(feature_df))
-            inertias[k] = km.inertia_
-            centers[k] = km.cluster_centers_
-
-        #Visualize inertias
-        k = visualize_inertias(inertias)
-    else:
-        if len(feature_df) < k:
-            inertias[k] = np.inf
-            clusters[k] = None
-            centers[k] = None
-        else:
-            km = KMeans(n_clusters=k, verbose=10)
-            clusters[k] = np.array(km.fit_predict(feature_df))
-            inertias[k] = km.inertia_
-            centers[k] = km.cluster_centers_
-
-    #Cluster using optimal clustering
-    df[cluster_col] = clusters[k]
-    if not return_centers:
-        return df
-    else:
-        return (df, centers[k])
-
-def df_agglomerative(df:pd.DataFrame, features, max_k = 200, dist_thresh=None, cluster_col="cluster") -> pd.DataFrame:
-
-    """
-    Runs agglomerative clustering on the clusters that result from KMeans to group features.
-
-    INPUT:
-        df: A pandas dataframe containing "features"
-        features: The set of features to use KMeans on
-        max_k: The maximum number of clusters to create
-        cluster_col: The name of the column to add to the dataframe
-    OUTPUT:
-        df: The same pandas dataframe except with "cluster_col" column
-    """
-
-    #A simple distance threshold estimate
-    if dist_thresh==None:
-        dist_thresh = np.sqrt(len(features)/4)
-
-    #Run KMeans with high k and extract cluster centers
-    df,centers = df_kmeans(df, features, max_k, cluster_col="$tempcol", return_centers=True)
-    centers = pd.DataFrame(data=centers)
-
-    #Run agglomerative clustering on the cluster centers
-    agg = AgglomerativeClustering(n_clusters=None, distance_threshold=dist_thresh).fit(centers)
-    labels = agg.labels_
-    k = agg.n_clusters_
-
-    #Re-label each cluster
-    df[cluster_col] = 0
-    for cluster, label in zip(range(max_k), labels):
-        df.loc[df["$tempcol"] == cluster, cluster_col] = label
-    df = df.drop(columns="$tempcol")
-    return df
-
-def stratified_random_sample(clusters:dict, n=20) -> pd.DataFrame:
-
-    """
-    Selects data from each cluster so that every cluster is equally represented in the dataset.
-    If a cluster has less than n data points, it will be extended by repeating entries.
-    """
-
-    n = int(n)
-    dfs = list(zip(*[random_sample(df,n) for df in clusters.values()]))
+    dfs = list(zip(*[random_sample(df,len(df)*weight) for df,weight in zip(clusters.values(),weights)]))
     return (pd.concat(dfs[0]), pd.concat(dfs[1]))
 
 def print_importances(importances,features):
@@ -276,7 +159,7 @@ def df_random_forest_regression(train_df, test_df, features, vars, max_leaf_node
     model.fit(train_x,train_y)
 
     #Get the model fitness to the data
-    score = model.score(test_x,test_y))
+    score = model.score(test_x,test_y)
     pred = model.predict(test_x)
     rmse = np.sqrt(MSE(test_y, pred))
     importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
@@ -331,7 +214,7 @@ def df_xgboost_regression(train_df, test_df, features, vars, n_trees = 10):
     model.fit(train_x, train_y)
 
     #Get the model fitness to the data
-    score = model.score(test_x,test_y))
+    score = model.score(test_x,test_y)
     pred = model.predict(test_x)
     rmse = np.sqrt(MSE(test_y, pred))
     importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
@@ -349,18 +232,27 @@ def df_adaboost_regression(train_df, test_df, features, vars, n_trees = 10):
     model.fit(train_x, train_y)
 
     #Get the model fitness to the data
-    score = model.score(test_x,test_y))
+    score = model.score(test_x,test_y)
     pred = model.predict(test_x)
     rmse = np.sqrt(MSE(test_y, pred))
     importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
     return (score, importances, rmse)
 
-def auto_sample_maker():
+def sample_score_fun(x:list, clusters:dict):
+    train_df,test_df = stratified_random_sample(clusters, x)
+    score,importances,rmse = df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=256, n_trees=3)
+    return 1 - score
+
+def auto_sample_maker(df:pd.DataFrame, max_split=.75, cluster_col="cluster"):
     """
     Using nonlinear least squares regression, select a stratified sample such that the
     value (1-r^2) is minimized when using RandomForestRegression.
     """
 
+    clusters = create_clusters(df, cluster_col=cluster_col)
+    k = len(df[cluster_col].unique())
+    x0 = [max_split/k]*k
+    model = least_squares(sample_score_fun, x0, args=(clusters))
     return
 
 
@@ -376,7 +268,7 @@ PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0
 #DATASET="datasets/preprocessed_dataset.csv"
 DATASET="datasets/agglomerative.csv"
 df = pd.read_csv(DATASET)
-case = 6
+case = 7
 
 #STEP 1: Partition The Dataset on IO_TIME
 #STEP 2: Learn the Best Proportions of Stratified Random Sampling
@@ -404,4 +296,16 @@ elif case == 5:
 #Cumulative Distribution Function on each PERFORMANCE variable
 elif case == 6:
     for var in PERFORMANCE:
-        visualize_cdf(df, var, quantile=.5, out="img/cdf_{}.png".format(var))
+        visualize_cdf(df, var, quantile=.6, out="img/cdf_{}.png".format(var))
+elif case == 7:
+    quantiles = [(0, .2), (.2,.35), (.35, .5), (.5,.7), (.7,.8), (.8, 1)]
+    for var in ["TOTAL_IO_TIME"]:
+        print("-------{}----------".format(var))
+        for qs in quantiles:
+
+            QR = df[(df[var].quantile(qs[0]) <= df[var]) & (df[var] <= df[var].quantile(qs[1]))]
+            print("{} - {} fraction of data".format(qs[0], qs[1]))
+            pp.pprint(basic_stats(QR[var], n=len(df)))
+        print("--------------------")
+        print()
+        print()
