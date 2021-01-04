@@ -29,6 +29,7 @@ from sklearn.tree import export_graphviz
 from functools import reduce
 import pprint, warnings
 import pydot
+import json
 
 warnings.simplefilter("ignore") #IGNORE invalid pandas warnings
 pp = pprint.PrettyPrinter(depth=6)
@@ -113,7 +114,12 @@ def print_clusters(clusters:dict) -> None:
         print(df)
         print()
 
-def df_partition(df:pd.DataFrame, k=10, feature, cluster_col="cluster"):
+def df_partition(df:pd.DataFrame, feature, k=10, cluster_col="cluster"):
+
+    """
+    Stupidly partition a dataset evenly by quantile
+    """
+
     qs = np.linspace(0, 1, k+1)
     df[cluster_col] = 0
     for i in range(k):
@@ -263,16 +269,12 @@ def stratified_random_sample(clusters:dict, weights:list) -> tuple:
     dfs = list(zip(*[random_sample(df,len(df)*weight) for df,weight in zip(clusters.values(),weights)]))
     return (pd.concat(dfs[0]), pd.concat(dfs[1]))
 
-def sample_score_fun(x:list, clusters:dict, max_split:float):
-    if sum(x) > max_split:
-        return np.inf
-    if min(x) < 0:
-        return np.inf
+def sample_score_fun(x:list, clusters:dict, features:list, vars:list):
     train_df,test_df = stratified_random_sample(clusters, x)
     score,importances,rmse = df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=256, n_trees=3)
     return 1 - score
 
-def auto_sample_maker(df:pd.DataFrame, max_split=.75, cluster_col="cluster"):
+def auto_sample_maker(df:pd.DataFrame, features:list, vars:list, max_split=.75, cluster_col="cluster") -> tuple:
     """
     Using nonlinear least squares regression, select a stratified sample such that the
     value (1-r^2) is minimized when using RandomForestRegression.
@@ -280,32 +282,33 @@ def auto_sample_maker(df:pd.DataFrame, max_split=.75, cluster_col="cluster"):
 
     clusters = create_clusters(df, cluster_col=cluster_col)
     k = len(df[cluster_col].unique())
-    x0 = [max_split/k]*k
-    res = least_squares(sample_score_fun, x0, args=(clusters, max_split), max_nfev=10)
-    return (res.x, res.cost)
+    x0 = [.1 for i in range(k)]
+    res = least_squares(sample_score_fun, x0, args=(clusters, features, vars), bounds=(0,max_split), max_nfev=10)
+    weights = res.x
+    train_df,test_df = stratified_random_sample(clusters, weights)
+    score,importances,rmse = df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=256, n_trees=3)
+    return (weights, score, train_df, test_df)
 
-def ensemble_feature_importances(train_df, test_df, features, vars):
-    scores = [
-        df_random_forest_regression(train_df, test_df, features, vars),
-        df_xgboost_regression(train_df, test_df, features, vars),
-        df_adaboost_regression(train_df, test_df, features, vars),
-        df_ordinal_logistic_regression(train_df, test_df, features, vars),
-        df_linreg(train_df, test_df, features, vars),
-        df_ordinal_logistic_regression(train_df, test_df, features, vars),
-    ]
+def ensemble_feature_importances(train_df, test_df, features, vars, model_id):
+    if model_id == 0:
+        return df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=256, n_trees=3)
+    elif model_id == 1:
+        return df_xgboost_regression(train_df, test_df, features, vars)
+    elif model_id == 2:
+        return df_adaboost_regression(train_df, test_df, features, vars)
+    elif model_id == 3:
+        return df_ordinal_logistic_regression(train_df, test_df, features, vars)
+    elif model_id == 4:
+        return df_linreg(train_df, test_df, features, vars)
+    elif model_id == 5:
+        return df_ordinal_logistic_regression(train_df, test_df, features, vars)
 
 
 ##############MAIN##################
 
 #Load the performance features and variables
-FEATURES = list(pd.read_csv("features/features.csv", header=None).iloc[:,0])
-PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0])
-
-#Load dataset and select features
-#DATASET="datasets/preprocessed_dataset.csv"
-#DATASET="datasets/partitioned_dataset.csv"
-df = pd.read_csv(DATASET)
-case = 0
+case = 2
+model_id = 0
 
 #Cumulative Distribution Function on each PERFORMANCE variable
 if case == -1:
@@ -313,7 +316,6 @@ if case == -1:
     for var in ["TOTAL_IO_TIME"]:
         print("-------{}----------".format(var))
         for qs in quantiles:
-
             QR = df[(df[var].quantile(qs[0]) <= df[var]) & (df[var] <= df[var].quantile(qs[1]))]
             print("{} - {} fraction of data".format(qs[0], qs[1]))
             pp.pprint(basic_stats(QR[var], n=len(df)))
@@ -323,13 +325,29 @@ if case == -1:
 
 #STEP 1: Partition the dataset using TOTAL_IO_TIME
 elif case == 1:
-    df = df_partition_dataset(df, k=10)
-    df.to_csv("partitioned_dataset.csv")
+    DATASET="datasets/preprocessed_dataset.csv"
+    df = pd.read_csv(DATASET)
+    df = df_partition(df, "TOTAL_IO_TIME", k=10)
+    df.to_csv("datasets/partitioned_dataset.csv")
 
 #STEP 2: Identify optimal weights for stratified random sample
 elif case == 2:
-    auto_sample_maker(df, max_split=.75, cluster_col="cluster")
+    FEATURES = list(pd.read_csv("features/features.csv", header=None).iloc[:,0])
+    PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0])
+    DATASET="datasets/partitioned_dataset.csv"
+    df = pd.read_csv(DATASET)
+    weights, score, train_df, test_df = auto_sample_maker(df, FEATURES, PERFORMANCE, max_split=.75, cluster_col="cluster")
+    train_df.to_csv("datasets/train.csv", index=False)
+    test_df.to_csv("datasets/test.csv", index=False)
+    pp.pprint(weights)
+    print(score)
 
-#STEP 3: Run a model on the sample
+#STEP 3: Run models over the sample
 elif case == 3:
-    return
+    FEATURES = list(pd.read_csv("features/features.csv", header=None).iloc[:,0])
+    PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0])
+    train_df = pd.read_csv("datasets/train.csv")
+    test_df = pd.read_csv("datasets/test.csv")
+    ensemble_feature_importances(train_df, test_df, FEATURES, PERFORMANCE, model_id)
+
+#STEP 4: Combine the feature importances
