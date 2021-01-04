@@ -31,6 +31,7 @@ import pydot
 
 warnings.simplefilter("ignore") #IGNORE invalid pandas warnings
 pp = pprint.PrettyPrinter(depth=6)
+SEED = 123
 
 ##############HELPER FUNCTIONS##############
 
@@ -246,7 +247,7 @@ def print_importances(importances,features):
         sum += importance/max
         print("{}: importance={}, net_variance_explained={}".format(feature,importance/max,sum))
 
-def df_random_forest_classifier(train_df, test_df, features, vars, max_leaf_nodes=None, k=None, visualize=False, score=None) -> tuple:
+def df_random_forest_classifier(train_df, test_df, features, vars, max_leaf_nodes=None, k=None, score=None) -> tuple:
     #Get training and testing sets
     train_x = train_df[features]
     train_y = train_df[vars]
@@ -263,61 +264,96 @@ def df_random_forest_classifier(train_df, test_df, features, vars, max_leaf_node
     importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
     return (score, importances)
 
-def df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=None, n_trees=10, visualize=False) -> tuple:
+def df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=None, n_trees=10) -> tuple:
     #Get training and testing sets
     train_x = train_df[features]
     train_y = train_df[vars]
     test_x = train_df[features]
     test_y = train_df[vars]
 
-    #Identify clusters of performance and take stratified random sample
+    #Train model
     model = RandomForestRegressor(n_estimators=n_trees, random_state=1, verbose=4, max_leaf_nodes=max_leaf_nodes)
     model.fit(train_x,train_y)
-    score = model.score(test_df[features],test_df[vars]))
+
+    #Get the model fitness to the data
+    score = model.score(test_x,test_y))
     pred = model.predict(test_x)
     rmse = np.sqrt(MSE(test_y, pred))
     importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
-
-    #Visualize the importance of the features
-    if visualize:
-        print_importances(rf.feature_importances_,features)
-        visualize_random_forest(rf,features, cluster_col,"img/rf-reg")
-
     return (score, importances, rmse)
 
 def df_linreg(train_df, test_df, features, vars) -> tuple:
-    #Linear regression
+    #Get training and testing sets
     train_x = RobustScaler().fit_transform(train_df[features])
+    train_y = train_df[vars]
     test_x = RobustScaler().fit_transform(test_df[features])
-    model = LinearRegression(fit_intercept=False).fit(train_x, train_df[vars])
-    score = model.score(test_x, test_df[vars])
+    test_y = train_df[vars]
+
+    #Train model
+    model = LinearRegression(fit_intercept=False).fit(train_x, train_y)
+
+    #Get the model fitness to the data
+    score = model.score(test_x, test_y)
     pred = model.predict(test_x)
-    rmse = np.sqrt(MSE(test_df[vars], pred))
+    rmse = np.sqrt(MSE(test_y, pred))
     abscoeff = np.absolute(model.coef_[0])
     importances = {feature:importance for feature,importance in zip(features,abscoeff/sum(abscoeff))}
-    return (score, rmse, importances)
+    return (score, importances, rmse)
 
 def df_ordinal_logistic_regression(train_df, test_df, features, vars):
+    #Get training and testing sets
+    train_x = RobustScaler().fit_transform(train_df[features])
+    train_y = train_df[vars]
+    test_x = RobustScaler().fit_transform(test_df[features])
+    test_y = train_df[vars]
+
     #Ordinal Logistic Regression
-    train_df[features] = RobustScaler().fit_transform(train_df[features])
     model = OrdinalRidge()
-    model.fit(train_df[features], train_df[vars])
-    score = model.score(test_df[features], test_df[vars])
-    pred = model.predict(test_df[features])
-    rmse = np.sqrt(MSE(test_df[vars], pred))
+    model.fit(train_x, train_y)
+
+    #Get the model fitness to the data
+    score = model.score(test_x, test_y)
+    pred = model.predict(test_x)
+    rmse = np.sqrt(MSE(test_y, pred))
     abscoeff = np.absolute(model.coef_[0])
     importances = {feature:importance for feature,importance in zip(features,abscoeff/sum(abscoeff))}
-    return (score, rmse, importances)
+    return (score, importances, rmse)
 
-def df_xgboost_regression(df:pd.DataFrame, features, vars, n_trees = 10):
+def df_xgboost_regression(train_df, test_df, features, vars, n_trees = 10):
+    #Get training and testing sets
+    train_x = train_df[features]
+    train_y = train_df[vars]
+    test_x = train_df[features]
+    test_y = train_df[vars]
+
     #Gradient Boost Forest Regression
     model = XGBRegressor(objective ='reg:linear', n_estimators = n_trees, seed = 123)
-    model.fit(train[features], train[vars])
-    score = model.score(test_df[features],test_df[vars]))
-    pred = model.predict(test_df[features])
-    rmse = np.sqrt(MSE(test_df[vars], pred))
-    importances = {feature:importance for feature,importance in zip(features,rf.feature_importances_)}
-    return (score, rmse, importances)
+    model.fit(train_x, train_y)
+
+    #Get the model fitness to the data
+    score = model.score(test_x,test_y))
+    pred = model.predict(test_x)
+    rmse = np.sqrt(MSE(test_y, pred))
+    importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
+    return (score, importances, rmse)
+
+def df_adaboost_regression(train_df, test_df, features, vars, n_trees = 10):
+    #Get training and testing sets
+    train_x = train_df[features]
+    train_y = train_df[vars]
+    test_x = train_df[features]
+    test_y = train_df[vars]
+
+    #Gradient Boost Forest Regression
+    model = AdaBoostRegressor(loss ='linear', n_estimators = n_trees, seed = 123)
+    model.fit(train_x, train_y)
+
+    #Get the model fitness to the data
+    score = model.score(test_x,test_y))
+    pred = model.predict(test_x)
+    rmse = np.sqrt(MSE(test_y, pred))
+    importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
+    return (score, importances, rmse)
 
 def auto_sample_maker():
     """
