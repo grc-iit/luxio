@@ -17,13 +17,13 @@ import numpy as np
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler,StandardScaler,RobustScaler
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, AdaBoostRegressor
 from sklearn.linear_model import LinearRegression
 from mord import OrdinalRidge
+from xgboost import XGBRegressor
 from sklearn.feature_selection import RFE
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, mean_squared_error as MSE
 from sklearn.tree import export_graphviz
 from functools import reduce
 import pprint, warnings
@@ -33,23 +33,6 @@ warnings.simplefilter("ignore") #IGNORE invalid pandas warnings
 pp = pprint.PrettyPrinter(depth=6)
 
 ##############HELPER FUNCTIONS##############
-
-def df_pca(df:pd.DataFrame, features) -> None:
-
-    """
-    Attempt to find the most influential factors explaining performance
-
-    INPUT:
-        df: A pandas dataframe containing "FEATURES"
-    """
-
-    if len(df) < 3:
-        return
-    df = StandardScaler().fit_transform(df[features])
-    pca_fit= PCA().fit(df)
-    print("n: {}".format(len(df)))
-    print(pca_fit.explained_variance_ratio_)
-    #print(pca_fit.transform(df))
 
 def basic_stats(df:pd.DataFrame, n=None) -> dict:
 
@@ -210,55 +193,6 @@ def df_kmeans(df:pd.DataFrame, features, k=None, cluster_col="cluster", return_c
     else:
         return (df, centers[k])
 
-def df_gauss_mixtures(df:pd.DataFrame, features,k=None, cluster_col="cluster") -> pd.DataFrame:
-
-    """
-    Group rows of pandas dataframe using Gaussian Mixture Models based on features
-
-    INPUT:
-        df: A pandas dataframe containing "features"
-        features: The set of features to use KMeans on
-        k: The number of clusters to create
-        cluster_col: The name of the column to add to the dataframe
-    OUTPUT:
-        df: The same pandas dataframe except with "cluster_col" column
-    """
-
-    #Standardize Dataframe Features
-    feature_df = RobustScaler().fit_transform(df[features])
-
-    #Create different number of clusters
-    clusters = {}
-    inertias = {}
-    if k == None:
-        for k in progressbar.progressbar([2, 4, 6, 8, 12]):
-            if len(feature_df) < k:
-                inertias[k] = np.inf
-                clusters[k] = None
-                continue
-            gmm = GaussianMixture(n_components=k, verbose=10)
-            clusters[k] = np.array(gmm.fit_predict(feature_df))
-            df[cluster_col] = clusters[k]
-            stats = analyze_clusters(create_clusters(df), features=features)
-            inertias[k] = sum([cluster["std"]**2 for var in stats.values() for cluster in var.values()])
-
-        #Visualize Inertias
-        k = visualize_inertias(inertias)
-    else:
-        if len(feature_df) < k:
-            inertias[k] = np.inf
-            clusters[k] = None
-        else:
-            gmm = GaussianMixture(n_components=k, verbose=10)
-            clusters[k] = np.array(gmm.fit_predict(feature_df))
-            df[cluster_col] = clusters[k]
-            stats = analyze_clusters(create_clusters(df), features=features)
-            inertias[k] = sum([cluster["std"]**2 for var in stats.values() for cluster in var.values()])
-
-    #Cluster using optimal clustering
-    df[cluster_col] = clusters[k]
-    return df
-
 def df_agglomerative(df:pd.DataFrame, features, max_k = 200, dist_thresh=None, cluster_col="cluster") -> pd.DataFrame:
 
     """
@@ -293,36 +227,6 @@ def df_agglomerative(df:pd.DataFrame, features, max_k = 200, dist_thresh=None, c
     df = df.drop(columns="$tempcol")
     return df
 
-def pca_clusters(clusters:dict, features) -> dict:
-
-    """
-    Performs PCA for each cluster.
-
-    INPUT:
-        clusters: A dictionary where keys are cluster IDs and values are dfs
-    OUTPUT:
-        stats: A dictionary where keys are cluster IDs and values are stats dicts.
-    """
-
-    for cluster_id,df in clusters.items():
-        print("CLUSTER: {}".format(cluster_id))
-        df_pca(df[features], features=features)
-
-def random_sample(df:pd.DataFrame, n) -> pd.DataFrame:
-
-    """
-    Randomly sample data from a dataframe.
-    It samples without replacement if n is smaller than the dataset.
-    """
-
-    n = int(n)
-    if len(df) > n:
-        sample = df.sample(n, replace=False)
-        return (sample, df.drop(sample.index))
-    else:
-        return (df.sample(n, replace=True), df)
-        #return (df.sample(n, replace=True), pd.DataFrame(columns=df.columns))
-
 def stratified_random_sample(clusters:dict, n=20) -> pd.DataFrame:
 
     """
@@ -337,84 +241,83 @@ def stratified_random_sample(clusters:dict, n=20) -> pd.DataFrame:
 def print_importances(importances,features):
     indices = np.argsort(-1*importances)
     sum = 0
+    max = sum(importances)
     for feature,importance in [(features[i], importances[i]) for i in indices]:
-        sum += importance
-        print("{}: importance={}, net_variance_explained={}".format(feature,importance,sum))
+        sum += importance/max
+        print("{}: importance={}, net_variance_explained={}".format(feature,importance/max,sum))
 
-def visualize_random_forest_features(rf,features):
-    importances = rf.feature_importances_
-    indices = np.argsort(importances)
-    plt.title('Feature Importances')
-    plt.barh(range(len(indices)), importances[indices], color='b', align='center')
-    plt.yticks(range(len(indices)), [features[i] for i in indices])
-    plt.xlabel('Relative Importance')
-    plt.show()
-    plt.close()
+def df_random_forest_classifier(train_df, test_df, features, vars, max_leaf_nodes=None, k=None, visualize=False, score=None) -> tuple:
+    #Get training and testing sets
+    train_x = train_df[features]
+    train_y = train_df[vars]
+    test_x = train_df[features]
+    test_y = train_df[vars]
 
-def visualize_random_forest(rf,features,vars,out):
-    print(len(rf.estimators_))
-    export_graphviz(rf.estimators_[-1],
-                out_file=out + ".dot",
-                feature_names = features,
-                class_names = vars,
-                rounded = True, proportion = False,
-                precision = 2, filled = True)
-    (graph,) = pydot.graph_from_dot_file(out + ".dot")
-    graph.write_png(out + ".png")
-
-def df_random_forest_classifier(df:pd.DataFrame, features, vars, max_leaf_nodes=None, k=None, cluster_col="cluster"):
-    #Identify clusters of performance and take stratified random sample
-    clusters = create_clusters(df)
-    df = stratified_random_sample(clusters, n=20)
-
-    #Use features to identify classes
-    rf = RandomForestClassifier(random_state=1, verbose=4, max_leaf_nodes=max_leaf_nodes)
-    rf.fit(df[features],df["cluster"])
+    #Train model
+    model = RandomForestClassifier(random_state=1, verbose=4, max_leaf_nodes=max_leaf_nodes)
+    model.fit(train_x,train_y)
 
     #Get the model fitness to the data
-    pred = rf.predict(df[features])
-    pp.pprint("Accuracy: {}".format(rf.score(df[features], df["cluster"])))
-    print("F1 (None): {}".format(f1_score(pred, df["cluster"], average=None)))
-    print("F1 (Micro): {}".format(f1_score(pred, df["cluster"], average='micro')))
-    print("F1 (Macro): {}".format(f1_score(pred, df["cluster"], average='macro')))
-    print("F1 (Weighted): {}".format(f1_score(pred, df["cluster"], average='weighted')))
+    pred = model.predict(test_x)
+    score = f1_score(pred, test_y, average=score) #None, 'micro', 'macro', 'weighted'
+    importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
+    return (score, importances)
 
-    #Visualize
-    print_importances(rf.feature_importances_,features)
-    visualize_random_forest(rf,features,"cluster","img/rf-class")
+def df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=None, n_trees=10, visualize=False) -> tuple:
+    #Get training and testing sets
+    train_x = train_df[features]
+    train_y = train_df[vars]
+    test_x = train_df[features]
+    test_y = train_df[vars]
 
-def df_random_forest_regression(df:pd.DataFrame, features, vars, train_df, test_df, max_leaf_nodes=None, n_trees=10, cluster_col="cluster") -> tuple:
     #Identify clusters of performance and take stratified random sample
-    clusters = create_clusters(test_df, cluster_col=cluster_col)
-    rf = RandomForestRegressor(n_estimators=n_trees, random_state=1, verbose=4, max_leaf_nodes=max_leaf_nodes)
-    rf.fit(train_df[features],train_df[vars])
-    score = rf.score(test_df[features],test_df[vars]))
-    feature_importances = rf.feature_importances_
-    return (score, feature_importances)
+    model = RandomForestRegressor(n_estimators=n_trees, random_state=1, verbose=4, max_leaf_nodes=max_leaf_nodes)
+    model.fit(train_x,train_y)
+    score = model.score(test_df[features],test_df[vars]))
+    pred = model.predict(test_x)
+    rmse = np.sqrt(MSE(test_y, pred))
+    importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
 
     #Visualize the importance of the features
-    #print_importances(rf.feature_importances_,features)
-    #visualize_random_forest(rf,features, cluster_col,"img/rf-reg")
+    if visualize:
+        print_importances(rf.feature_importances_,features)
+        visualize_random_forest(rf,features, cluster_col,"img/rf-reg")
 
-def df_linreg(df:pd.DataFrame, features, vars, cluster_col="cluster"):
+    return (score, importances, rmse)
+
+def df_linreg(train_df, test_df, features, vars) -> tuple:
     #Linear regression
-    feature_df = RobustScaler().fit_transform(df[features])
-    reg = LinearRegression(fit_intercept=False).fit(feature_df, df[vars])
-    score = reg.score(feature_df, df[vars])
-    importances = reg.coef_[0]
-    print("Score: {}".format(score))
-    print_importances(np.absolute(importances),features)
+    train_x = RobustScaler().fit_transform(train_df[features])
+    test_x = RobustScaler().fit_transform(test_df[features])
+    model = LinearRegression(fit_intercept=False).fit(train_x, train_df[vars])
+    score = model.score(test_x, test_df[vars])
+    pred = model.predict(test_x)
+    rmse = np.sqrt(MSE(test_df[vars], pred))
+    abscoeff = np.absolute(model.coef_[0])
+    importances = {feature:importance for feature,importance in zip(features,abscoeff/sum(abscoeff))}
+    return (score, rmse, importances)
 
-def df_logistic_regression(df:pd.DataFrame, features, cluster_col="cluster"):
-    #Logistic Regression
-    feature_df = RobustScaler().fit_transform(df[features])
-    model = LogisticRegression(multi_class='multinomial')
-    model.fit(feature_df, df[cluster_col])
-    score = model.score(feature_df, df[cluster_col])
-    importances = model.coef_[0]
+def df_ordinal_logistic_regression(train_df, test_df, features, vars):
+    #Ordinal Logistic Regression
+    train_df[features] = RobustScaler().fit_transform(train_df[features])
+    model = OrdinalRidge()
+    model.fit(train_df[features], train_df[vars])
+    score = model.score(test_df[features], test_df[vars])
+    pred = model.predict(test_df[features])
+    rmse = np.sqrt(MSE(test_df[vars], pred))
+    abscoeff = np.absolute(model.coef_[0])
+    importances = {feature:importance for feature,importance in zip(features,abscoeff/sum(abscoeff))}
+    return (score, rmse, importances)
 
-def df_xgboost_regression(df:pd.DataFrame, features, vars):
-    return
+def df_xgboost_regression(df:pd.DataFrame, features, vars, n_trees = 10):
+    #Gradient Boost Forest Regression
+    model = XGBRegressor(objective ='reg:linear', n_estimators = n_trees, seed = 123)
+    model.fit(train[features], train[vars])
+    score = model.score(test_df[features],test_df[vars]))
+    pred = model.predict(test_df[features])
+    rmse = np.sqrt(MSE(test_df[vars], pred))
+    importances = {feature:importance for feature,importance in zip(features,rf.feature_importances_)}
+    return (score, rmse, importances)
 
 def auto_sample_maker():
     """
@@ -423,6 +326,7 @@ def auto_sample_maker():
     """
 
     return
+
 
 
 
@@ -438,24 +342,12 @@ DATASET="datasets/agglomerative.csv"
 df = pd.read_csv(DATASET)
 case = 6
 
-#PCA on FEATURES
-if case == 0:
-    df_pca(df, features=FEATURES)
-
-#KMeans on PERFORMANCE and basic stat each cluster
-elif case == 1:
-    df = df_kmeans(df, features=FEATURES, k=6)
-    clusters = create_clusters(df)
-    pp.pprint(analyze_clusters(clusters, features=PERFORMANCE))
-
-#Guassian mixture on PERFORMANCE
-elif case == 2:
-    df = df_gauss_mixtures(df, features=PERFORMANCE, k=6)
-    clusters = create_clusters(df)
-    pp.pprint(analyze_clusters(clusters, features=PERFORMANCE))
+#STEP 1: Partition The Dataset on IO_TIME
+#STEP 2: Learn the Best Proportions of Stratified Random Sampling
+#STEP 3: Use the sample to reduce features using an ensemble of different models
 
 #Agglomerative Clustering on PERFORMANCE
-elif case == 3:
+if case == 3:
     df = df_agglomerative(df, features=PERFORMANCE, max_k=400, cluster_col="cluster")
     clusters = create_clusters(df)
     pp.pprint(analyze_clusters(clusters, features=PERFORMANCE))
@@ -477,19 +369,3 @@ elif case == 5:
 elif case == 6:
     for var in PERFORMANCE:
         visualize_cdf(df, var, quantile=.5, out="img/cdf_{}.png".format(var))
-
-#Random Forest Regressor FEATURES -> PERFORMANCE
-elif case == 10:
-    df_random_forest_regression(df, features=FEATURES, vars=PERFORMANCE, max_leaf_nodes=256, n_trees=3, cluster_col="cluster_RUN_TIME")
-
-#Random Forest Classifier FEATURES -> PERFORMANCE
-elif case == 11:
-    df_random_forest_classifier(df, features=FEATURES, vars=PERFORMANCE, max_leaf_nodes=8, k=8, cluster_col="cluster_RUN_TIME")
-
-#Linear Regression with Features FEATURES -> PERFORMANCE
-elif case == 12:
-    df_linreg(df, features=FEATURES, vars=PERFORMANCE, cluster_col="cluster_RUN_TIME")
-
-#Logistic Regression FEATURES -> PERFORMANCE
-elif case == 13:
-    df_logistic_regression(df, features=FEATURES, cluster_col="cluster_RUN_TIME")
