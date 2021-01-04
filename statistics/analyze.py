@@ -113,14 +113,16 @@ def print_clusters(clusters:dict) -> None:
         print(df)
         print()
 
-def stratified_random_sample(clusters:dict, weights:list) -> pd.DataFrame:
-
-    """
-    Weighted stratified random sample
-    """
-
-    dfs = list(zip(*[random_sample(df,len(df)*weight) for df,weight in zip(clusters.values(),weights)]))
-    return (pd.concat(dfs[0]), pd.concat(dfs[1]))
+def df_partition(df:pd.DataFrame, k=10, feature, cluster_col="cluster"):
+    qs = np.linspace(0, 1, k+1)
+    df[cluster_col] = 0
+    for i in range(k):
+        df.loc[
+            (df[feature].quantile(qs[i]) <= df[feature]) &
+            (df[feature] < df[feature].quantile(qs[i+1])),
+            cluster_col
+        ] = i
+    return df
 
 def print_importances(importances,features):
     indices = np.argsort(-1*importances)
@@ -165,43 +167,6 @@ def df_random_forest_regression(train_df, test_df, features, vars, max_leaf_node
     importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
     return (score, importances, rmse)
 
-def df_linreg(train_df, test_df, features, vars) -> tuple:
-    #Get training and testing sets
-    train_x = RobustScaler().fit_transform(train_df[features])
-    train_y = train_df[vars]
-    test_x = RobustScaler().fit_transform(test_df[features])
-    test_y = train_df[vars]
-
-    #Train model
-    model = LinearRegression(fit_intercept=False).fit(train_x, train_y)
-
-    #Get the model fitness to the data
-    score = model.score(test_x, test_y)
-    pred = model.predict(test_x)
-    rmse = np.sqrt(MSE(test_y, pred))
-    abscoeff = np.absolute(model.coef_[0])
-    importances = {feature:importance for feature,importance in zip(features,abscoeff/sum(abscoeff))}
-    return (score, importances, rmse)
-
-def df_ordinal_logistic_regression(train_df, test_df, features, vars):
-    #Get training and testing sets
-    train_x = RobustScaler().fit_transform(train_df[features])
-    train_y = train_df[vars]
-    test_x = RobustScaler().fit_transform(test_df[features])
-    test_y = train_df[vars]
-
-    #Ordinal Logistic Regression
-    model = OrdinalRidge()
-    model.fit(train_x, train_y)
-
-    #Get the model fitness to the data
-    score = model.score(test_x, test_y)
-    pred = model.predict(test_x)
-    rmse = np.sqrt(MSE(test_y, pred))
-    abscoeff = np.absolute(model.coef_[0])
-    importances = {feature:importance for feature,importance in zip(features,abscoeff/sum(abscoeff))}
-    return (score, importances, rmse)
-
 def df_xgboost_regression(train_df, test_df, features, vars, n_trees = 10):
     #Get training and testing sets
     train_x = train_df[features]
@@ -238,7 +203,71 @@ def df_adaboost_regression(train_df, test_df, features, vars, n_trees = 10):
     importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
     return (score, importances, rmse)
 
-def sample_score_fun(x:list, clusters:dict):
+def df_linreg(train_df, test_df, features, vars) -> tuple:
+    #Get training and testing sets
+    train_x = RobustScaler().fit_transform(train_df[features])
+    train_y = train_df[vars]
+    test_x = RobustScaler().fit_transform(test_df[features])
+    test_y = train_df[vars]
+
+    #Train model
+    model = LinearRegression(fit_intercept=False).fit(train_x, train_y)
+
+    #Get the model fitness to the data
+    score = model.score(test_x, test_y)
+    pred = model.predict(test_x)
+    rmse = np.sqrt(MSE(test_y, pred))
+    abscoeff = np.absolute(model.coef_[0])/sum(abscoeff)
+    importances = {feature:importance for feature,importance in zip(features,abscoeff)}
+    return (score, importances, rmse)
+
+def df_ordinal_logistic_regression(train_df, test_df, features, vars):
+    #Get training and testing sets
+    train_x = RobustScaler().fit_transform(train_df[features])
+    train_y = train_df[vars]
+    test_x = RobustScaler().fit_transform(test_df[features])
+    test_y = train_df[vars]
+
+    #Ordinal Logistic Regression
+    model = OrdinalRidge()
+    model.fit(train_x, train_y)
+
+    #Get the model fitness to the data
+    score = model.score(test_x, test_y)
+    pred = model.predict(test_x)
+    rmse = np.sqrt(MSE(test_y, pred))
+    abscoeff = np.absolute(model.coef_[0])/sum(abscoeff)
+    importances = {feature:importance for feature,importance in zip(features,abscoeff)}
+    return (score, importances, rmse)
+
+def random_sample(df:pd.DataFrame, n) -> pd.DataFrame:
+
+    """
+    Randomly sample data from a dataframe.
+    It samples without replacement if n is smaller than the dataset.
+    """
+
+    n = int(n)
+    if len(df) > n:
+        sample = df.sample(n, replace=False)
+        return (sample, df.drop(sample.index))
+    else:
+        return (df.sample(n, replace=True), df)
+
+def stratified_random_sample(clusters:dict, weights:list) -> tuple:
+
+    """
+    Weighted stratified random sample
+    """
+
+    dfs = list(zip(*[random_sample(df,len(df)*weight) for df,weight in zip(clusters.values(),weights)]))
+    return (pd.concat(dfs[0]), pd.concat(dfs[1]))
+
+def sample_score_fun(x:list, clusters:dict, max_split:float):
+    if sum(x) > max_split:
+        return np.inf
+    if min(x) < 0:
+        return np.inf
     train_df,test_df = stratified_random_sample(clusters, x)
     score,importances,rmse = df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=256, n_trees=3)
     return 1 - score
@@ -252,10 +281,18 @@ def auto_sample_maker(df:pd.DataFrame, max_split=.75, cluster_col="cluster"):
     clusters = create_clusters(df, cluster_col=cluster_col)
     k = len(df[cluster_col].unique())
     x0 = [max_split/k]*k
-    model = least_squares(sample_score_fun, x0, args=(clusters))
-    return
+    res = least_squares(sample_score_fun, x0, args=(clusters, max_split), max_nfev=10)
+    return (res.x, res.cost)
 
-
+def ensemble_feature_importances(train_df, test_df, features, vars):
+    scores = [
+        df_random_forest_regression(train_df, test_df, features, vars),
+        df_xgboost_regression(train_df, test_df, features, vars),
+        df_adaboost_regression(train_df, test_df, features, vars),
+        df_ordinal_logistic_regression(train_df, test_df, features, vars),
+        df_linreg(train_df, test_df, features, vars),
+        df_ordinal_logistic_regression(train_df, test_df, features, vars),
+    ]
 
 
 ##############MAIN##################
@@ -266,38 +303,12 @@ PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0
 
 #Load dataset and select features
 #DATASET="datasets/preprocessed_dataset.csv"
-DATASET="datasets/agglomerative.csv"
+#DATASET="datasets/partitioned_dataset.csv"
 df = pd.read_csv(DATASET)
-case = 7
-
-#STEP 1: Partition The Dataset on IO_TIME
-#STEP 2: Learn the Best Proportions of Stratified Random Sampling
-#STEP 3: Use the sample to reduce features using an ensemble of different models
-
-#Agglomerative Clustering on PERFORMANCE
-if case == 3:
-    df = df_agglomerative(df, features=PERFORMANCE, max_k=400, cluster_col="cluster")
-    clusters = create_clusters(df)
-    pp.pprint(analyze_clusters(clusters, features=PERFORMANCE))
-    df.to_csv("datasets/agglomerative.csv", index=False)
-
-#Agglomerative Clustering on each PERFORMANCE variable
-elif case == 4:
-    for var in PERFORMANCE:
-        df = df_agglomerative(df, features=[var], max_k=200, cluster_col="cluster_{}".format(var))
-    df.to_csv("datasets/agglomerative.csv", index=False)
-
-#Analyze clusters for each performance variable
-elif case == 5:
-    for var in PERFORMANCE:
-        clusters = create_clusters(df,cluster_col="cluster_{}".format(var))
-        pp.pprint(analyze_clusters(clusters, features=[var]))
+case = 0
 
 #Cumulative Distribution Function on each PERFORMANCE variable
-elif case == 6:
-    for var in PERFORMANCE:
-        visualize_cdf(df, var, quantile=.6, out="img/cdf_{}.png".format(var))
-elif case == 7:
+if case == -1:
     quantiles = [(0, .2), (.2,.35), (.35, .5), (.5,.7), (.7,.8), (.8, 1)]
     for var in ["TOTAL_IO_TIME"]:
         print("-------{}----------".format(var))
@@ -309,3 +320,16 @@ elif case == 7:
         print("--------------------")
         print()
         print()
+
+#STEP 1: Partition the dataset using TOTAL_IO_TIME
+elif case == 1:
+    df = df_partition_dataset(df, k=10)
+    df.to_csv("partitioned_dataset.csv")
+
+#STEP 2: Identify optimal weights for stratified random sample
+elif case == 2:
+    auto_sample_maker(df, max_split=.75, cluster_col="cluster")
+
+#STEP 3: Run a model on the sample
+elif case == 3:
+    return
