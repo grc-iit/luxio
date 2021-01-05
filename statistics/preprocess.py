@@ -187,10 +187,6 @@ def preprocess_df(df:pd.DataFrame):
 
     #GET THE MD THROUGHPUT (ops/sec)
     df["TOTAL_THROUGHPUT"] = df.TOTAL_MD_OPS / df.TOTAL_MD_TIME
-
-    #Remove the top 25% of TOTAL_IO_TIMEs
-    #thresh = df["TOTAL_IO_TIME"].quantile(q=.75)
-    #df = df[df.TOTAL_IO_TIME <= thresh]
     return df
 
 DATASET="datasets/dataset.csv"
