@@ -14,6 +14,7 @@
 #Partition dataset
 #Research stats papers to see how much detail they have
 
+import sys,os
 import pandas as pd
 import progressbar
 import numpy as np
@@ -142,7 +143,6 @@ def df_partition(df:pd.DataFrame, feature, step=.1, scale=10, min_range=100, clu
             break
         min_value = max_value
         q = stats.percentileofscore(feature_df,max_value)/100+step
-        print(q)
         if q > 1:
             q = 1
         id += 1
@@ -322,77 +322,87 @@ def ensemble_model(train_df, test_df, features, vars, model_id):
     elif model_id == 4:
         return df_ordinal_logistic_regression(train_df, test_df, features, vars)
 
-def ensemble_feature_importances(train_df, test_df, features, vars, case = 1):
+def combine_feature_importances(part_model_fitnesses:dict):
+    def weighted_avg(model_fitnesses):
+        model_scores = pd.DataFrame([score if score >= 0 else 0 for score,importances,rmse in model_fitnesses.values()]).transpose() #1 x M
+        model_importances = pd.DataFrame([importances for score,importances,rmse in model_fitnesses.values()]) #M x F
+        weighted_dot = model_scores.dot(model_importances) #1 x F
+        net_score = sum(model_scores)
+        max_score =  max(model_scores)
+        weighted_dot = ((weighted_dot/net_score)*max_score)
+        return weighted_dot #1 x F
+    def max_weighted_avg(model_fitnesses):
+        model_scores = pd.DataFrame([[score if score >= 0 else 0 for score,importances,rmse in model_fitnesses.values()] for i in range(len(model_fitnesses.values()))]) #M x M
+        model_importances = pd.DataFrame([importances for score,importances,rmse in model_fitnesses.values()]) #M x F
+        weighted_dot = model_scores.dot(model_importances) #M x F
+        max_df = pd.DataFrame({feature:weighted_dot[feature].max() for feature in weighted_dot.columns}, index=[0])
+        return max_df #1 x F
 
-    #LOAD CHECKPOINT DATA
-    if case == 1:
-        DATASET="datasets/preprocessed_dataset.csv"
-        df = pd.read_csv(DATASET)
-    if case == 2:
-        DATASET="datasets/partitioned_dataset.csv"
-        df = pd.read_csv(DATASET)
-    if (case == 2) or (case == 3):
-        FEATURES = list(pd.read_csv("features/features.csv", header=None).iloc[:,0])
-        PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0])
-        partitions = create_clusters(df, cluster_col="partition")
-    if case == 3:
-        train_df = pd.read_csv("datasets/train.csv")
-        test_df = pd.read_csv("datasets/test.csv")
-    if case == 4:
-        model_fitnesses = [read_model_fitness("datasets/model/importances_{}.pkl".format(model_id)) for model_id in range(5)]
+    importances = {}
 
+    #Weighted-Weighted Average
+    result = sum([weighted_avg(model_fitnesses) for model_fitnesses in part_model_fitnesses.values()])/len(part_model_fitnesses.values())
+    importances["weighted"] = [(col, result[col][0]) for col in result.columns]
+    importances["weighted"].sort(key = lambda pair : pair[1], reverse=True)
+
+    #Max-Weighted Average
+    result = sum([max_weighted_avg(model_fitnesses) for model_fitnesses in part_model_fitnesses.values()])/len(part_model_fitnesses.values())
+    importances["max_avg"] = [(col, result[col][0]) for col in result.columns]
+    importances["max_avg"].sort(key = lambda pair : pair[1], reverse=True)
+
+    return importances
+
+def ensemble_feature_importances(case = 1):
     #STEP 1: Partition the dataset using TOTAL_IO_TIME
-    if case <= 1:
-        df = df_partition(df, "TOTAL_IO_TIME", step=.1, scale=10, min_range=100, cluster_col="partition")
-        df.to_csv("datasets/partitioned_dataset.csv")
+    print("PARTITIONING DATASET")
+    DATASET="datasets/preprocessed_dataset.csv"
+    df = pd.read_csv(DATASET)
+    df = df_partition(df, "TOTAL_IO_TIME", step=.1, scale=10, min_range=100, cluster_col="partition")
+    df.to_csv("datasets/partitioned_dataset.csv")
+    partitions = create_clusters(df, cluster_col="partition")
+
+    #DATASET="datasets/partitioned_dataset.csv"
+    #df = pd.read_csv(DATASET)
+    part_model_fitnesses = {}
+    FEATURES = list(pd.read_csv("features/features.csv", header=None).iloc[:,0])
+    PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0])
 
     for partition_id, partition_df in partitions.items():
         #STEP 2: Identify optimal weights for stratified random sample
-        if case <= 2:
-            #weights, score, train_df, test_df = auto_sample_maker(df, FEATURES, PERFORMANCE, max_split=.75, cluster_col="cluster")
-            train_df, test_df = random_sample(df, .5*len(df))
-            train_df.to_csv("datasets/train.csv", index=False)
-            test_df.to_csv("datasets/test.csv", index=False)
-            #pp.pprint(weights)
-            #print(score)
+        #weights, score, train_df, test_df = auto_sample_maker(df, FEATURES, PERFORMANCE, max_split=.75, cluster_col="cluster")
+        print("GATHERING SAMPLE FOR PARTITION {}".format(partition_id))
+        train_df, test_df = random_sample(df, .5*len(df))
+        train_df.to_csv("datasets/train_{}.csv".format(partition_id), index=False)
+        test_df.to_csv("datasets/test_{}.csv".format(partition_id), index=False)
+        #pp.pprint(weights)
+        #print(score)
+        #train_df = pd.read_csv("datasets/train.csv".format(partition_id))
+        #test_df = pd.read_csv("datasets/test.csv".format(partition_id))
 
         #STEP 3: Run models over the sample
-        if case <= 3:
-            model_fitnesses = []
-            for model_id in range(5):
-                model_fitness = ensemble_feature_importances(train_df, test_df, FEATURES, PERFORMANCE, model_id)
-                save_model_fitness(model_fitness, "datasets/model/importances_{}.pkl".format(model_id))
-                model_fitnesses.append(model_fitness)
+        model_fitnesses = {}
+        for model_id in range(5):
+            print("ENSEMBLE {}".format(model_id))
+            model_fitness = ensemble_model(train_df, test_df, FEATURES, PERFORMANCE, model_id)
+            save_model_fitness(model_fitness, "datasets/model/importances_{}_{}.pkl".format(partition_id, model_id))
 
-    #STEP 4: Combine the feature importances
-    if case <= 4:
-        pp.pprint({model_id:model_fitness[0] for model_id,model_fitness in enumerate(model_fitnesses)})
-        pp.pprint(combine_feature_importances(model_fitnesses))
+def view_feature_importances():
+    DATASET="datasets/partitioned_dataset.csv"
+    #df = pd.read_csv(DATASET)
+    #partitions = create_clusters(df, cluster_col="partition")
+    partitions = {i : True for i in range(4)}
+    part_model_fitnesses = {partition_id : {model_id : read_model_fitness("datasets/model/importances_{}_{}.pkl".format(partition_id, model_id)) for model_id in range(5)} for partition_id in partitions.keys()}
+    for partition_id, model_fitnesses in part_model_fitnesses.items():
+        print("---------PARTITION {}-------------".format(partition_id))
+        pp.pprint({model_id:model_fitness[0] for model_id,model_fitness in model_fitnesses.items()})
+        print("----------------------------------")
+    pp.pprint(combine_feature_importances(part_model_fitnesses))
 
-def combine_feature_importances(model_fitnesses:list, thresh=.9):
-    avg_importances = {}
-    net_score = 0
-    #Get total weighted importance of feature for each model
-    for score,importances,rmse in model_fitnesses:
-        for key,value in importances.items():
-            if key not in avg_importances:
-                avg_importances[key] = 0
-            if score < 0:
-                score = 0
-            avg_importances[key] += score*value
-        net_score += score
-    #Get average
-    for key,value in avg_importances.items():
-        avg_importances[key] /= net_score
-    #Sort by importance
-    importances = list(avg_importances.items())
-    importances.sort(key = lambda x: x[1], reverse=True)
-    return importances
 
 
 ##############MAIN##################
 #Load the performance features and variables
-case = -2
+case = 2
 model_id = 0
 
 #Cumulative Distribution Function on each PERFORMANCE variable
@@ -418,35 +428,8 @@ if case == -2:
     pp.pprint(analyze_clusters(create_clusters(df), ["TOTAL_IO_TIME"]))
 
 #STEP 1: Partition the dataset using TOTAL_IO_TIME
-elif case == 1:
-    DATASET="datasets/preprocessed_dataset.csv"
-    df = pd.read_csv(DATASET)
-    df = df_partition(df, "TOTAL_IO_TIME", step=.1, scale=10, min_range=100, cluster_col="cluster")
-    df.to_csv("datasets/partitioned_dataset.csv")
+if case == 1:
+    ensemble_feature_importances(case = 1)
 
-#STEP 2: Identify optimal weights for stratified random sample
-elif case == 2:
-    FEATURES = list(pd.read_csv("features/features.csv", header=None).iloc[:,0])
-    PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0])
-    DATASET="datasets/partitioned_dataset.csv"
-    df = pd.read_csv(DATASET)
-    weights, score, train_df, test_df = auto_sample_maker(df, FEATURES, PERFORMANCE, max_split=.75, cluster_col="cluster")
-    train_df.to_csv("datasets/train.csv", index=False)
-    test_df.to_csv("datasets/test.csv", index=False)
-    pp.pprint(weights)
-    print(score)
-
-#STEP 3: Run models over the sample
-elif case == 3:
-    FEATURES = list(pd.read_csv("features/features.csv", header=None).iloc[:,0])
-    PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0])
-    train_df = pd.read_csv("datasets/train.csv")
-    test_df = pd.read_csv("datasets/test.csv")
-    model_fitness = ensemble_feature_importances(train_df, test_df, FEATURES, PERFORMANCE, model_id)
-    save_model_fitness(model_fitness, "datasets/model/importances_{}.pkl".format(model_id))
-
-#STEP 4: Combine the feature importances
-elif case == 4:
-    model_fitnesses = [read_model_fitness("datasets/model/importances_{}.pkl".format(model_id)) for model_id in range(5)]
-    pp.pprint({model_id:model_fitness[0] for model_id,model_fitness in enumerate(model_fitnesses)})
-    pp.pprint(combine_feature_importances(model_fitnesses))
+if case == 2:
+    view_feature_importances()
