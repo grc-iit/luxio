@@ -148,6 +148,88 @@ def df_partition(df:pd.DataFrame, feature, step=.1, scale=10, min_range=100, clu
         id += 1
     return df
 
+def df_kmeans(df:pd.DataFrame, features, k=None, cluster_col="cluster", return_centers=False) -> pd.DataFrame:
+    """
+    Group rows of pandas dataframe using KMeans based on features
+
+    INPUT:
+        df: A pandas dataframe containing "features"
+        features: The set of features to use KMeans on
+        k: The number of clusters to create
+        cluster_col: The name of the column to add to the dataframe
+    OUTPUT:
+        df: The same pandas dataframe except with "cluster_col" column
+    """
+
+    #Standardize Dataframe Features
+    feature_df = RobustScaler().fit_transform(df[features])
+
+    #Create different number of clusters
+    clusters = {}
+    inertias = {}
+    centers = {}
+    if k == None:
+        for k in progressbar.progressbar([2, 4, 6, 8, 12]):
+            if len(feature_df) < k:
+                inertias[k] = np.inf
+                clusters[k] = None
+                continue
+            km = KMeans(n_clusters=k, verbose=10)
+            clusters[k] = np.array(km.fit_predict(feature_df))
+            inertias[k] = km.inertia_
+            centers[k] = km.cluster_centers_
+    else:
+        if len(feature_df) < k:
+            inertias[k] = np.inf
+            clusters[k] = None
+            centers[k] = None
+        else:
+            km = KMeans(n_clusters=k, verbose=10)
+            clusters[k] = np.array(km.fit_predict(feature_df))
+            inertias[k] = km.inertia_
+            centers[k] = km.cluster_centers_
+
+    #Cluster using optimal clustering
+    df[cluster_col] = clusters[k]
+    if not return_centers:
+        return df
+    else:
+        return (df, centers[k])
+
+def df_agglomerative(df:pd.DataFrame, features, max_k = 200, dist_thresh=None, cluster_col="cluster") -> pd.DataFrame:
+
+    """
+    Runs agglomerative clustering on the clusters that result from KMeans to group features.
+
+    INPUT:
+        df: A pandas dataframe containing "features"
+        features: The set of features to use KMeans on
+        max_k: The maximum number of clusters to create
+        cluster_col: The name of the column to add to the dataframe
+    OUTPUT:
+        df: The same pandas dataframe except with "cluster_col" column
+    """
+
+    #A simple distance threshold estimate
+    if dist_thresh==None:
+        dist_thresh = np.sqrt(len(features)/4)
+
+    #Run KMeans with high k and extract cluster centers
+    df,centers = df_kmeans(df, features, max_k, cluster_col="$tempcol", return_centers=True)
+    centers = pd.DataFrame(data=centers)
+
+    #Run agglomerative clustering on the cluster centers
+    agg = AgglomerativeClustering(n_clusters=None, distance_threshold=dist_thresh).fit(centers)
+    labels = agg.labels_
+    k = agg.n_clusters_
+
+    #Re-label each cluster
+    df[cluster_col] = 0
+    for cluster, label in zip(range(max_k), labels):
+        df.loc[df["$tempcol"] == cluster, cluster_col] = label
+    df = df.drop(columns="$tempcol")
+    return df
+
 def print_importances(importances,features):
     indices = np.argsort(-1*importances)
     sum = 0
@@ -405,29 +487,12 @@ def view_feature_importances():
 case = 2
 model_id = 0
 
-#Cumulative Distribution Function on each PERFORMANCE variable
 if case == -1:
-    DATASET="datasets/preprocessed_dataset.csv"
-    df = pd.read_csv(DATASET)
-    df = df[df["TOTAL_IO_TIME"] <= df["TOTAL_IO_TIME"].quantile(.99)]
-    quantiles = [(0, .2), (.2,.35), (.35, .5), (.5,.7), (.7,.8), (.8, 1)]
-    for var in ["TOTAL_IO_TIME"]:
-        print("-------{}----------".format(var))
-        for qs in quantiles:
-            QR = df[(df[var].quantile(qs[0]) <= df[var]) & (df[var] <= df[var].quantile(qs[1]))]
-            print("{} - {} fraction of data".format(qs[0], qs[1]))
-            pp.pprint(basic_stats(QR[var], n=len(df)))
-        print("--------------------")
-        print()
-        print()
-
-if case == -2:
     DATASET="datasets/preprocessed_dataset.csv"
     df = pd.read_csv(DATASET)
     df = df_partition(df, "TOTAL_IO_TIME", step=.1, scale=10, cluster_col="cluster")
     pp.pprint(analyze_clusters(create_clusters(df), ["TOTAL_IO_TIME"]))
 
-#STEP 1: Partition the dataset using TOTAL_IO_TIME
 if case == 1:
     ensemble_feature_importances(case = 1)
 
