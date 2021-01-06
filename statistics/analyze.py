@@ -374,27 +374,6 @@ def stratified_random_sample(clusters:dict, weights:list) -> tuple:
     dfs = list(zip(*[random_sample(df,len(df)*weight) for df,weight in zip(clusters.values(),weights)]))
     return (pd.concat(dfs[0]), pd.concat(dfs[1]))
 
-def sample_score_fun(x:list, clusters:dict, features:list, vars:list):
-    train_df,test_df = stratified_random_sample(clusters, x)
-    score,importances,rmse = df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=64, n_trees=1)
-    return 1 - score
-
-def auto_sample_maker(df:pd.DataFrame, features:list, vars:list, max_split=.75, cluster_col="cluster") -> tuple:
-    """
-    Using nonlinear least squares regression, select a stratified sample such that the
-    value (1-r^2) is minimized when using RandomForestRegression.
-    """
-
-    clusters = create_clusters(df, cluster_col=cluster_col)
-    k = len(df[cluster_col].unique())
-    x0 = [.5 for i in range(k)]
-    res = least_squares(sample_score_fun, x0, args=(clusters, features, vars), bounds=(0,max_split), max_nfev=10, diff_step=[10]*k)
-    #res = differential_evolution(sample_score_fun, [(0,max_split)]*k, args=(clusters, features, vars), maxiter=3, popsize=1, workers=4)
-    weights = res.x
-    train_df,test_df = stratified_random_sample(clusters, weights)
-    score,importances,rmse = df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=256, n_trees=3)
-    return (weights, score, train_df, test_df)
-
 def ensemble_model(train_df, test_df, features, vars, model_id):
     if model_id == 0:
         return df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=256, n_trees=3)
@@ -562,7 +541,7 @@ def stacked_model_per_partition(case):
     for partition_id, partition_df in partitions.items():
         #STEP 2: Identify optimal weights for stratified random sample
         print("GATHERING SAMPLE FOR PARTITION {}".format(partition_id))
-        test_df,train_df = ensemble_sample_dataset(partition_df,partition_id,case) 
+        test_df,train_df = ensemble_sample_dataset(partition_df,partition_id,case)
 
         #STEP 3: Run models over the sample
         print("Ensembling")
