@@ -35,6 +35,7 @@ from mord import OrdinalRidge
 from sklearn.metrics import f1_score, mean_squared_error as MSE
 from scipy import stats
 from functools import reduce
+from itertools import compress
 import pprint, warnings
 import pickle
 
@@ -237,14 +238,6 @@ def df_agglomerative(df:pd.DataFrame, features, max_k = 200, dist_thresh=None, c
     df = df.drop(columns="$tempcol")
     return df
 
-def print_importances(importances,features):
-    indices = np.argsort(-1*importances)
-    sum = 0
-    max = sum(importances)
-    for feature,importance in [(features[i], importances[i]) for i in indices]:
-        sum += importance/max
-        print("{}: importance={}, net_variance_explained={}".format(feature,importance/max,sum))
-
 def random_sample(df:pd.DataFrame, n) -> pd.DataFrame:
 
     """
@@ -267,18 +260,6 @@ def stratified_random_sample(clusters:dict, weights:list) -> tuple:
 
     dfs = list(zip(*[random_sample(df,len(df)*weight) for df,weight in zip(clusters.values(),weights)]))
     return (pd.concat(dfs[0]), pd.concat(dfs[1]))
-
-def ensemble_model(train_df, test_df, features, vars, model_id):
-    if model_id == 0:
-        return df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=256, n_trees=3)
-    elif model_id == 1:
-        return df_xgboost_regression(train_df, test_df, features, vars)
-    elif model_id == 2:
-        return df_adaboost_regression(train_df, test_df, features, vars)
-    elif model_id == 3:
-        return df_linreg(train_df, test_df, features, vars)
-    elif model_id == 4:
-        return df_ordinal_logistic_regression(train_df, test_df, features, vars)
 
 def ensemble_partition_dataset(DATASET, case):
     if case <= 1:
@@ -303,97 +284,6 @@ def ensemble_sample_dataset(df,partition_id,case):
         test_df = pd.read_csv("datasets/test_{}.csv".format(partition_id))
     return test_df,train_df
 
-def ensemble_feature_importances(case = 1):
-    #STEP 1: Partition the dataset using TOTAL_IO_TIME
-    print("PARTITIONING DATASET")
-    df,partitions = ensemble_partition_dataset("datasets/preprocessed_dataset.csv", case)
-
-    #Load features and performance
-    part_model_fitnesses = {}
-    FEATURES = list(pd.read_csv("features/features.csv", header=None).iloc[:,0])
-    PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0])
-
-    #STEP 2: Identify optimal weights for stratified random sample
-    print("GATHERING SAMPLE FOR PARTITION {}".format(0))
-    test_df,train_df = ensemble_sample_dataset(df,0,case)
-
-    #STEP 3: Run models over the sample
-    for model_id in range(5):
-        print("MODEL {}".format(model_id))
-        model_fitness = ensemble_model(train_df, test_df, FEATURES, PERFORMANCE, model_id)
-        for partition_id, partition_df in partitions.items():
-            model_fitnesses = {} #Think harder
-            save_model_fitness(model_fitness, "datasets/model/importances_{}_{}.pkl".format(partition_id, model_id))
-
-def ensemble_feature_importances_parted(case = 1):
-    #STEP 1: Partition the dataset using TOTAL_IO_TIME
-    print("PARTITIONING DATASET")
-    df,partitions = ensemble_partition_dataset("datasets/preprocessed_dataset.csv", case)
-
-    #Load features and performance
-    part_model_fitnesses = {}
-    FEATURES = list(pd.read_csv("features/features.csv", header=None).iloc[:,0])
-    PERFORMANCE = list(pd.read_csv("features/performance.csv", header=None).iloc[:,0])
-
-    for partition_id, partition_df in partitions.items():
-        #STEP 2: Identify optimal weights for stratified random sample
-        print("GATHERING SAMPLE FOR PARTITION {}".format(partition_id))
-        test_df,train_df = ensemble_sample_dataset(partition_df,partition_id,case)
-
-        #STEP 3: Run models over the sample
-        model_fitnesses = {}
-        for model_id in range(5):
-            print("ENSEMBLE {}".format(model_id))
-            model_fitness = ensemble_model(train_df, test_df, FEATURES, PERFORMANCE, model_id)
-            save_model_fitness(model_fitness, "datasets/model/importances_{}_{}.pkl".format(partition_id, model_id))
-
-def weighted_avg(model_fitnesses):
-    model_scores = pd.DataFrame([score if score >= 0 else 0 for score,importances,rmse in model_fitnesses.values()]).transpose() #1 x M
-    model_importances = pd.DataFrame([importances for score,importances,rmse in model_fitnesses.values()]) #M x F
-    weighted_dot = model_scores.dot(model_importances) #1 x F
-    net_score = sum(model_scores)
-    max_score =  max(model_scores)
-    weighted_dot = ((weighted_dot/net_score)*max_score)
-    return weighted_dot #1 x F
-
-def max_weighted_avg(model_fitnesses):
-    model_scores = pd.DataFrame([[score if score >= 0 else 0 for score,importances,rmse in model_fitnesses.values()] for i in range(len(model_fitnesses.values()))]) #M x M
-    model_importances = pd.DataFrame([importances for score,importances,rmse in model_fitnesses.values()]) #M x F
-    weighted_dot = model_scores.dot(model_importances) #M x F
-    max_df = pd.DataFrame({feature:weighted_dot[feature].max() for feature in weighted_dot.columns}, index=[0])
-    return max_df #1 x F
-
-def combine_feature_importances_parted(part_model_fitnesses:dict):
-    importances = {}
-
-    #Weighted-Weighted Average
-    result = sum([weighted_avg(model_fitnesses) for model_fitnesses in part_model_fitnesses.values()])/len(part_model_fitnesses.values())
-    importances["weighted"] = [(col, result[col][0]) for col in result.columns]
-    importances["weighted"].sort(key = lambda pair : pair[1], reverse=True)
-
-    #Max-Weighted Average
-    result = sum([max_weighted_avg(model_fitnesses) for model_fitnesses in part_model_fitnesses.values()])/len(part_model_fitnesses.values())
-    importances["max_avg"] = [(col, result[col][0]) for col in result.columns]
-    importances["max_avg"].sort(key = lambda pair : pair[1], reverse=True)
-
-    return importances
-
-def view_feature_importances_parted():
-    DATASET="datasets/partitioned_dataset.csv"
-    #df = pd.read_csv(DATASET)
-    #partitions = create_clusters(df, cluster_col="partition")
-    partitions = {i : True for i in range(4)}
-    part_model_fitnesses = {partition_id : {model_id : read_model_fitness("datasets/model/importances_{}_{}.pkl".format(partition_id, model_id)) for model_id in range(5)} for partition_id in partitions.keys()}
-    for partition_id, model_fitnesses in part_model_fitnesses.items():
-        print("---------PARTITION {}-------------".format(partition_id))
-        pp.pprint({model_id:(model_fitness[0], model_fitness[2]) for model_id,model_fitness in model_fitnesses.items()})
-        print("----------------------------------")
-    pp.pprint(combine_feature_importances_parted(part_model_fitnesses))
-
-
-
-from itertools import compress
-
 def test_regression(model, train_df, test_df, features, vars):
     #Get training and testing sets
     train_x = train_df[features]
@@ -402,24 +292,26 @@ def test_regression(model, train_df, test_df, features, vars):
     test_y = test_df[vars]
 
     #Feature Selection
-    sfs = SequentialFeatureSelector(model, n_features_to_select=10).fit(train_x, train_y)
-    mask = list(compress(features, sfs.support_))
-    reduced_model = sfs.transform(model)
+    #sfs = SequentialFeatureSelector(model, n_features_to_select=10).fit(train_x, train_y)
+    #mask = list(compress(features, sfs.support_))
+    #reduced_model = sfs.transform(model)
+    reduced_model = model.fit(train_x, train_y)
 
     #Get the model fitness to the data
     score = reduced_model.score(test_x,test_y)
     pred = reduced_model.predict(test_x)
     rmse = np.sqrt(MSE(test_y, pred))
-    return (score, rmse, mask)
+    return (score, rmse, reduced_model.feature_importances_)
 
 def stacked_model_per_partition(case):
     models = [
-        #("RandomForestRegressor", ForestWrapper(RandomForestRegressor(n_estimators=3, max_leaf_nodes=256, random_state=1, verbose=4))),
+        ("RandomForestRegressor", ForestWrapper(RandomForestRegressor(n_estimators=3, max_leaf_nodes=256, random_state=1, verbose=0))),
         ("XGBRegressor", ForestWrapper(XGBRegressor(objective ='reg:squarederror', n_estimators = 1, seed = 123, verbosity=0))),
-        #("AdaBoostRegressor", ForestWrapper(AdaBoostRegressor(loss ='linear', n_estimators = 6))),
-        #("LinearRegression", CurveWrapper(LinearRegression(fit_intercept=False))),
+        ("AdaBoostRegressor", ForestWrapper(AdaBoostRegressor(loss ='linear', n_estimators = 6))),
+        ("LinearRegression", CurveWrapper(LinearRegression(fit_intercept=False))),
     ]
-    ensemble = EnsembleModelRegressor(models)
+    model = EnsembleModelRegressor(models, combiner_model=ForestWrapper(RandomForestRegressor(n_estimators=3, max_leaf_nodes=16, random_state=1, verbose=0)))
+    #model = ForestWrapper(RandomForestRegressor(n_estimators=3, max_leaf_nodes=256, random_state=1, verbose=0))
 
     #STEP 1: Partition the dataset using TOTAL_IO_TIME
     print("PARTITIONING DATASET")
@@ -434,12 +326,10 @@ def stacked_model_per_partition(case):
         #STEP 2: Identify optimal weights for stratified random sample
         print("GATHERING SAMPLE FOR PARTITION {}".format(partition_id))
         test_df,train_df = ensemble_sample_dataset(partition_df,partition_id,case)
-        ensemble.fit(train_df[FEATURES], train_df[PERFORMANCE])
-        return
 
         #STEP 3: Run models over the sample
         print("Ensembling")
-        model_fitness = test_regression(ensemble, train_df, test_df, FEATURES, PERFORMANCE)
+        model_fitness = test_regression(model, train_df, test_df, FEATURES, PERFORMANCE)
         save_model_fitness(model_fitness, "datasets/model/ens_importances_{}.pkl".format(partition_id))
         pp.pprint(model_fitness)
 
