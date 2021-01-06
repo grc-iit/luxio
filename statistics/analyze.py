@@ -22,17 +22,18 @@ from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler,StandardScaler,RobustScaler
+
+from src import curve_wrapper, forest_wrapper, ensemble_model
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, AdaBoostRegressor
+from xgboost import XGBRegressor
 from sklearn.linear_model import LinearRegression
 from mord import OrdinalRidge
-from xgboost import XGBRegressor
-from scipy.optimize import least_squares, differential_evolution, Bounds
+
 from sklearn.metrics import f1_score, mean_squared_error as MSE
 from scipy import stats
 from functools import reduce
 import pprint, warnings
 import pickle
-import jenkspy
 
 from sklearn.ensemble import StackingRegressor
 from sklearn.feature_selection import SequentialFeatureSelector
@@ -241,116 +242,6 @@ def print_importances(importances,features):
         sum += importance/max
         print("{}: importance={}, net_variance_explained={}".format(feature,importance/max,sum))
 
-def df_random_forest_classifier(train_df, test_df, features, vars, max_leaf_nodes=None, k=None, score=None) -> tuple:
-    #Get training and testing sets
-    train_x = train_df[features]
-    train_y = train_df[vars]
-    test_x = test_df[features]
-    test_y = test_df[vars]
-
-    #Train model
-    model = RandomForestClassifier(random_state=1, verbose=4, max_leaf_nodes=max_leaf_nodes)
-    model.fit(train_x,train_y)
-
-    #Get the model fitness to the data
-    pred = model.predict(test_x)
-    score = f1_score(pred, test_y, average=score) #None, 'micro', 'macro', 'weighted'
-    importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
-    return (score, importances, -1)
-
-def df_random_forest_regression(train_df, test_df, features, vars, max_leaf_nodes=None, n_trees=10) -> tuple:
-    #Get training and testing sets
-    train_x = train_df[features]
-    train_y = train_df[vars]
-    test_x = test_df[features]
-    test_y = test_df[vars]
-
-    #Train model
-    model = RandomForestRegressor(n_estimators=n_trees, random_state=1, verbose=4, max_leaf_nodes=max_leaf_nodes)
-    model.fit(train_x,train_y)
-
-    #Get the model fitness to the data
-    score = model.score(test_x,test_y)
-    pred = model.predict(test_x)
-    rmse = np.sqrt(MSE(test_y, pred))
-    importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
-    return (score, importances, rmse)
-
-def df_xgboost_regression(train_df, test_df, features, vars, n_trees = 10):
-    #Get training and testing sets
-    train_x = train_df[features]
-    train_y = train_df[vars]
-    test_x = test_df[features]
-    test_y = test_df[vars]
-
-    #Gradient Boost Forest Regression
-    model = XGBRegressor(objective ='reg:linear', n_estimators = n_trees, seed = 123, verbosity=2)
-    model.fit(train_x, train_y)
-
-    #Get the model fitness to the data
-    score = model.score(test_x,test_y)
-    pred = model.predict(test_x)
-    rmse = np.sqrt(MSE(test_y, pred))
-    importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
-    return (score, importances, rmse)
-
-def df_adaboost_regression(train_df, test_df, features, vars, n_trees = 10):
-    #Get training and testing sets
-    train_x = train_df[features]
-    train_y = train_df[vars]
-    test_x = test_df[features]
-    test_y = test_df[vars]
-
-    #Gradient Boost Forest Regression
-    model = AdaBoostRegressor(loss ='linear', n_estimators = n_trees)
-    model.fit(train_x, train_y)
-
-    #Get the model fitness to the data
-    score = model.score(test_x,test_y)
-    pred = model.predict(test_x)
-    rmse = np.sqrt(MSE(test_y, pred))
-    importances = {feature:importance for feature,importance in zip(features,model.feature_importances_)}
-    return (score, importances, rmse)
-
-def df_linreg(train_df, test_df, features, vars) -> tuple:
-    #Get training and testing sets
-    train_x = RobustScaler().fit_transform(train_df[features])
-    train_y = train_df[vars]
-    test_x = RobustScaler().fit_transform(test_df[features])
-    test_y = test_df[vars]
-
-    #Train model
-    model = LinearRegression(fit_intercept=False).fit(train_x, train_y)
-
-    #Get the model fitness to the data
-    score = model.score(test_x, test_y)
-    pred = model.predict(test_x)
-    rmse = np.sqrt(MSE(test_y, pred))
-    abscoeff = np.absolute(model.coef_[0])
-    abscoeff /= sum(abscoeff)
-    importances = {feature:importance for feature,importance in zip(features,abscoeff)}
-    return (score, importances, rmse)
-
-def df_ordinal_logistic_regression(train_df, test_df, features, vars):
-    #Get training and testing sets
-    train_x = RobustScaler().fit_transform(train_df[features])
-    train_y = train_df[vars]
-    test_x = RobustScaler().fit_transform(test_df[features])
-    test_y = test_df[vars]
-
-    #Ordinal Logistic Regression
-    model = OrdinalRidge()
-    model.fit(train_x, train_y)
-
-    #Get the model fitness to the data
-    score = model.score(test_x, test_y)
-    pred = model.predict(test_x)
-    rmse = np.sqrt(MSE(test_y, pred))
-    abscoeff = np.absolute(model.coef_[0])
-    abscoeff /= sum(abscoeff)
-    importances = {feature:importance for feature,importance in zip(features,abscoeff)}
-    return (score, importances, rmse)
-
 def random_sample(df:pd.DataFrame, n) -> pd.DataFrame:
 
     """
@@ -498,8 +389,6 @@ def view_feature_importances_parted():
 
 
 
-
-
 from itertools import compress
 
 def test_regression(model, train_df, test_df, features, vars):
@@ -527,7 +416,7 @@ def stacked_model_per_partition(case):
         ("AdaBoostRegressor", AdaBoostRegressor(loss ='linear', n_estimators = 6)),
         ("LinearRegression", LinearRegression(fit_intercept=False)),
     ]
-    ensemble = StackingRegressor(models)
+    ensemble = EnsembleModelRegressor(models)
 
     #STEP 1: Partition the dataset using TOTAL_IO_TIME
     print("PARTITIONING DATASET")
@@ -542,12 +431,17 @@ def stacked_model_per_partition(case):
         #STEP 2: Identify optimal weights for stratified random sample
         print("GATHERING SAMPLE FOR PARTITION {}".format(partition_id))
         test_df,train_df = ensemble_sample_dataset(partition_df,partition_id,case)
+        ensemble.fit(train_df[FEATURES], train_df[PERFORMANCE])
+        return
 
         #STEP 3: Run models over the sample
         print("Ensembling")
         model_fitness = test_regression(ensemble, train_df, test_df, FEATURES, PERFORMANCE)
         save_model_fitness(model_fitness, "datasets/model/ens_importances_{}.pkl".format(partition_id))
         pp.pprint(model_fitness)
+
+
+
 
 ##############MAIN##################
 #Load the performance features and variables
