@@ -23,7 +23,10 @@ from sklearn.mixture import GaussianMixture
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler,StandardScaler,RobustScaler
 
-from src import curve_wrapper, forest_wrapper, ensemble_model
+from src.curve_wrapper import CurveWrapper
+from src.forest_wrapper import ForestWrapper
+from src.ensemble_model import EnsembleModelRegressor
+
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, AdaBoostRegressor
 from xgboost import XGBRegressor
 from sklearn.linear_model import LinearRegression
@@ -411,10 +414,10 @@ def test_regression(model, train_df, test_df, features, vars):
 
 def stacked_model_per_partition(case):
     models = [
-        ("RandomForestRegressor", RandomForestRegressor(n_estimators=3, max_leaf_nodes=256, random_state=1, verbose=4)),
-        ("XGBRegressor", XGBRegressor(objective ='reg:squarederror', n_estimators = 5, seed = 123, verbosity=2)),
-        ("AdaBoostRegressor", AdaBoostRegressor(loss ='linear', n_estimators = 6)),
-        ("LinearRegression", LinearRegression(fit_intercept=False)),
+        #("RandomForestRegressor", ForestWrapper(RandomForestRegressor(n_estimators=3, max_leaf_nodes=256, random_state=1, verbose=4))),
+        ("XGBRegressor", ForestWrapper(XGBRegressor(objective ='reg:squarederror', n_estimators = 1, seed = 123, verbosity=0))),
+        #("AdaBoostRegressor", ForestWrapper(AdaBoostRegressor(loss ='linear', n_estimators = 6))),
+        #("LinearRegression", CurveWrapper(LinearRegression(fit_intercept=False))),
     ]
     ensemble = EnsembleModelRegressor(models)
 

@@ -1,9 +1,10 @@
-from generic_model import GenericModel
+from src.generic_model import GenericModel
 
 class ForestWrapper(GenericModel):
     def __init__(self, model):
-        self.model_ = model
+        self.model = model
         self.feature_importances_ = None
+        self.fitness_ = 0
 
-    def feature_importances(self):
-        self.feature_importances_ = self.model_.feature_importances
+    def calculate_importances_(self):
+        self.feature_importances_ = self.model.feature_importances_
