@@ -29,7 +29,7 @@ from xgboost import XGBRegressor
 from sklearn.linear_model import LinearRegression
 from mord import OrdinalRidge
 
-from sklearn.preprocessing import FunctionTransformer
+from sklearn.preprocessing import PowerTransformer
 
 import pprint, warnings
 
@@ -42,9 +42,9 @@ SEED = 123
 def partition_dataset(DATASET, case):
     partitions = None
     if case == 1:
-        #partitions = Dataset.read_csv(DATASET).partition("TOTAL_IO_TIME", step=.1, scale=10, min_range=100, cluster_col="partition")
         df = Dataset.read_csv(DATASET)
         df.partition("TOTAL_IO_TIME", step=.1, scale=10, min_range=100, cluster_col="partition")
+        #df.exp_partition("TOTAL_IO_TIME", base=10, exp=2.5, cluster_col="partition")
         partitions = df.divide(cluster_col="partition")
         partitions.save("datasets/partitioned_dataset.pkl")
     elif case == 2:
@@ -76,27 +76,35 @@ def stacked_model_per_partition(case):
     print("GATHERING PER-PARTITION SAMPLES")
     train_dfs,test_dfs = sample_dataset(partitions,case)
     train_x_dfs,train_y_dfs = train_dfs.split(FEATURES,PERFORMANCE)
-    test_x_dfs,test_y_dfs = test_dfs.split(FEATURES,PERFORMANCE)
+    #train_y_dfs = train_y_dfs.transform(LogTransformer(base=10,add=10), True)
 
     #Create an ensemble model per-partition
     print("ENSEMBLING")
     models = [
         ("RandomForestRegressor", ForestWrapper(RandomForestRegressor(n_estimators=3, max_leaf_nodes=256, random_state=1, verbose=0))),
-        ("XGBRegressor", ForestWrapper(XGBRegressor(objective ='reg:squarederror', n_estimators = 1, seed = 123, verbosity=0))),
-        ("AdaBoostRegressor", ForestWrapper(AdaBoostRegressor(loss ='linear', n_estimators = 6)))#,
-        #("LinearRegression", CurveWrapper(LinearRegression(fit_intercept=False))),
+        ("LogRandomForestRegressor", ForestWrapper(RandomForestRegressor(n_estimators=3, max_leaf_nodes=256, random_state=1, verbose=0), transform_y=LogTransformer(base=2,add=1))),
+        ("XGBRegressor", ForestWrapper(XGBRegressor(objective ='reg:squarederror', n_estimators = 10, seed = 123, verbosity=0))),
+        ("LogXGBRegressor", ForestWrapper(XGBRegressor(objective ='reg:squarederror', n_estimators = 10, seed = 123, verbosity=0), transform_y=LogTransformer(base=2,add=1))),
+        ("AdaBoostRegressor", ForestWrapper(AdaBoostRegressor(loss ='linear', n_estimators = 8))),
+        ("LogAdaBoostRegressor", ForestWrapper(AdaBoostRegressor(loss ='linear', n_estimators = 8), transform_y=LogTransformer(base=2,add=1))),
+        ("LinearRegression", CurveWrapper(LinearRegression(fit_intercept=False))),
+        ("LogLinearRegression", CurveWrapper(LinearRegression(fit_intercept=False), transform_y=LogTransformer(base=2,add=1))),
     ]
     ensemble = EnsembleModelRegressor(
         models,
-        combiner_model=ForestWrapper(RandomForestRegressor(n_estimators=5, max_leaf_nodes=256, random_state=1, verbose=0))
+        combiner_model=ForestWrapper(RandomForestRegressor(n_estimators=10, max_depth=10, random_state=1, verbose=0))
     )
     model = PartitionedModelRegressor(
         ensemble,
-        ForestWrapper(RandomForestRegressor(n_estimators=5, max_depth=6, random_state=1, verbose=0)),
-        transform_y = LogTransformer(base=10,add=1)
+        ForestWrapper(RandomForestRegressor(n_estimators=10, max_depth=10, random_state=1, verbose=0)),
+        #transform_y=PowerTransformer(method='box-cox')
+        #transform_y = RootTransformer(root=4)
+        #transform_y = ScaleTransformer(scale=1)
+        transform_y = LogTransformer(base=2,add=1)
     )
     model.fit(train_x_dfs, train_y_dfs)
     model.save("datasets/model.pkl")
+    print(model.rmses_)
     print(model.fitnesses_)
     print(model.fitness_)
 
@@ -173,10 +181,12 @@ case = 2
 model_id = 0
 
 if case == 1:
+    lt = LogTransformer(base=10, add = 1)
     df_wrap = Dataset.read_csv("datasets/preprocessed_dataset.csv")
-    df_wrap.logp1(features="TOTAL_IO_TIME", base=10)
-    partitions = df_wrap.kmeans(features="TOTAL_IO_TIME", k=10, cluster_col="partition").agglomerate(dist_thresh=.5)
-    df_wrap.expm1(features="TOTAL_IO_TIME", base=10)
+    #df_wrap = df_wrap.transform(lt, True)
+    #partitions = df_wrap.kmeans(features="TOTAL_IO_TIME", k=10, cluster_col="partition").agglomerate(dist_thresh=.5)
+    #df_wrap = df_wrap.inverse(lt)
+    partitions = df_wrap.exp_partition("TOTAL_IO_TIME", base=10, exp=3, cluster_col="partition")
     pp.pprint(partitions.analyze()["TOTAL_IO_TIME"])
     #pd.DataFrame(analysis["TOTAL_IO_TIME"]).transpose().round(decimals=3).to_csv("datasets/partition-stats.csv")
 
