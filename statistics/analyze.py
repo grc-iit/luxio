@@ -9,79 +9,72 @@ This file is used for three purposes:
 import sys,os
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 
 from clever.dataset import *
 from clever.models.regression import *
 from clever.transformers import *
 from clever.feature_selection import *
 from clever.models.clustering import *
+from sklearn.preprocessing import MinMaxScaler
 
 import pprint, warnings
-import argparse
+import argparse, configparser
 
 pp = pprint.PrettyPrinter(depth=6)
 
 class ArgumentParser:
     def __init__(self):
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument("-tool", default=None, help="What your use case is: partition, fmodel, fmodel_stats, bmodel, bmodel_stats")
-        self.parser.add_argument("-trace", default="datasets/preprocessed_dataset.csv", help="The path to the trace data")
-        self.parser.add_argument("-m", default="datasets/model/model.pkl", help="The file to save the feature reduction or app behavior model to")
-        self.parser.add_argument("-f", default="features/features.csv", help="The CSV containing features")
-        self.parser.add_argument("-v", default="features/performance.csv", help="The CSV containing variables")
-        self.parser.add_argument("-i", default="features/importances.csv", help="The CSV containing feature importances")
+        self.parser.add_argument("-t", default=None, help="What your use case is: fmodel, fmodel_stats, bmodel, bmodel_stats")
+        self.parser.add_argument("-c", default="conf/conf.ini", help="The properties file containing model paths and config parameters. Default: conf/conf.ini")
 
     def parse(self):
         args = self.parser.parse_args()
-        self.tool = args.tool
-        self.trace_path = args.trace
-        self.model_path = args.m
-        self.features_path = args.f
-        self.vars_path = args.v
-        self.importances_path = args.i
+        self.tool = args.t
+        self.conf = configparser.ConfigParser()
+        self.conf.read(args.c)
         return self
 
 ##############MAIN##################
 if __name__ == "__main__":
     args = ArgumentParser().parse()
 
-    if args.tool == "partition":
-        lt = LogTransformer(base=10, add = 1)
-        df = pd.read_csv(args.trace_path)
-        var = pd.read_csv(args.vars_path)
-        df.loc[:,var] = df.clever.transform(lt, True)
-        partitions = df.clever.kmeans(features=var, k=10, cluster_col="partition").agglomerate(dist_thresh=.5)
-        #df_wrap = df.clever.inverse(lt)
-        #partitions = df.clever.exp_partition(var, base=10, exp=2.7, min_n=500, cluster_col="partition")
-        pp.pprint(partitions.analyze()[var])
-        #pd.DataFrame(analysis["TOTAL_IO_TIME"]).transpose().round(decimals=3).to_csv("datasets/partition-stats.csv")
-
     if args.tool == "fmodel":
-        FEATURES = pd.DataFrame().clever.load_features(args.features_path)
-        PERFORMANCE = pd.DataFrame().clever.load_features(args.vars_path)
-        fs = FeatureSelector(FEATURES, PERFORMANCE, args.trace_path, model_path=args.model_path)
-        fs.create_model()
-        fs.analyze_model()
-        fs.save_importances(args.importances_path)
+        params = args.conf["APP_BEHAVIOR_MODEL"]
+        FEATURES = pd.DataFrame().clever.load_features(params["features"])
+        PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
+        #Create the training and testing datasets
+        df = pd.read_csv(params["trace"])
+        df = df.clever.transform(LogTransformer(base=10,add=1), features=PERFORMANCE)
+        train_df,hyper_df,test_df = df.clever.random_sample(.5, .2)
+        train_x,train_y = train_df.clever.split(FEATURES,PERFORMANCE)
+        hyper_x,hyper_y = train_df.clever.split(FEATURES,PERFORMANCE)
+        #Select features
+        fs = FeatureSelector(FEATURES, PERFORMANCE)
+        fs.tune(train_x, train_y, hyper_x, hyper_y, fs.model.tune_config(train_x, train_y, hyper_x, hyper_y))
+        fs.model.save(params["regressor"])
+        #fs.analyze_model()
+        fs.save_importances(params["importances"])
 
     if args.tool == "fmodel_stats":
-        fs = FeatureSelector.load(args.model_path)
+        params = args.conf["APP_BEHAVIOR_MODEL"]
+        fs = FeatureSelector.load(params["regressor"])
         fs.analyze_model()
-        fs.save_importances(args.importances_path)
+        fs.save_importances(params["importances"])
 
     if args.tool == "bmodel":
-        df = pd.read_csv(args.trace_path)
-        importances = FeatureSelector.load_importances(args.importances_path)
-        wic = WeightedImportanceClassifier(importances)
+        params = args.conf["APP_BEHAVIOR_MODEL"]
+        df = pd.read_csv(params["trace"])
+        importances = FeatureSelector.load_importances(params["importances"])
+        vars = pd.DataFrame().clever.load_features(params["vars"])
+        reg = FeatureSelector.load(params["regressor"])
+        wic = BehaviorClassifier(importances, vars, reg)
         wic.fit(df)
-        wic.save(args.model_path)
+        wic.save(params["classifier"])
 
     if args.tool == "bmodel_stats":
-        FEATURES = []
-        PERFORMANCE = []
-        if args.features_path != None:
-            FEATURES = pd.DataFrame().clever.load_features(args.features_path)
-        elif args.vars_path != None:
-            PERFROMANCE = pd.DataFrame().clever.load_features(args.vars_path)
-        wic.model.analyze(FEATURES + PERFROMANCE)
+        params = args.conf["APP_BEHAVIOR_MODEL"]
+        wic = BehaviorClassifier.load(params["classifier"])
+        analysis = wic.log_clusters.analyze(method='stat-clust', metric='mean')
+        analysis_df = pd.DataFrame(analysis).clever.transform(MinMaxScaler(), fit=True, features=wic.features + wic.vars)
+        analysis_df.transpose().to_csv(params["class_metrics"])
