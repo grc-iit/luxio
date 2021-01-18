@@ -15,6 +15,7 @@ from clever.models.regression import *
 from clever.transformers import *
 from clever.feature_selection import *
 from clever.models.clustering import *
+from clever.metrics import *
 from sklearn.preprocessing import MinMaxScaler
 
 import pprint, warnings
@@ -39,27 +40,38 @@ class ArgumentParser:
 if __name__ == "__main__":
     args = ArgumentParser().parse()
 
+    if args.tool == "preprocess":
+        a = 0
+
     if args.tool == "fmodel":
         params = args.conf["APP_BEHAVIOR_MODEL"]
         FEATURES = pd.DataFrame().clever.load_features(params["features"])
         PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
         #Create the training and testing datasets
         df = pd.read_csv(params["trace"])
-        df = df.clever.transform(LogTransformer(base=10,add=1), features=PERFORMANCE)
         train_df,hyper_df,test_df = df.clever.random_sample(.5, .2)
         train_x,train_y = train_df.clever.split(FEATURES,PERFORMANCE)
         hyper_x,hyper_y = train_df.clever.split(FEATURES,PERFORMANCE)
         #Select features
-        fs = FeatureSelector(FEATURES, PERFORMANCE)
-        fs.tune(train_x, train_y, hyper_x, hyper_y, fs.model.tune_config(train_x, train_y, hyper_x, hyper_y))
+        fs = FeatureSelector(
+            FEATURES,
+            PERFORMANCE,
+            PartitionedEnsembleRegressor(
+                transform_y=LogTransformer(base=10,add=1),
+                fitness_metric=RelativeAccuracyMetric(add=1),
+                error_metric=RMLSEMetric(add=1))
+        )
+        fs.select(train_x, train_y, hyper_x, hyper_y, fs.model.tune_config(train_x, train_y, hyper_x, hyper_y), max_tune_iter=0)
+        #Save and analyze
+        fs.save(params["selector"])
         fs.model.save(params["regressor"])
-        #fs.analyze_model()
         fs.save_importances(params["importances"])
+        fs.analyze()
 
     if args.tool == "fmodel_stats":
         params = args.conf["APP_BEHAVIOR_MODEL"]
-        fs = FeatureSelector.load(params["regressor"])
-        fs.analyze_model()
+        fs = FeatureSelector.load(params["selector"])
+        fs.analyze()
         fs.save_importances(params["importances"])
 
     if args.tool == "bmodel":
