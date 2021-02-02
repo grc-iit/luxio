@@ -43,4 +43,4 @@ class GenericTraceParser(ABC):
     def to_csv(self, path):
         if path == None:
             return
-        self.df.to_csv(path)
+        self.df.to_csv(path, index=False)

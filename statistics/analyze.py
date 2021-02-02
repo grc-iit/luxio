@@ -37,41 +37,77 @@ class ArgumentParser:
         self.conf.read(args.c)
         return self
 
+#Performance variable partitioner
+def perf_var_partitioner(params):
+    PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
+    PERF_LABELS = ["label_{}".format(var) for var in PERFORMANCE]
+    df = pd.read_csv(params["trace"])
+    df.loc[:,PERF_LABELS] = ResolutionReducer(k=6).fit_transform(np.array(LogTransformer(base=10,add=1)(df[PERFORMANCE])))
+
+#Preliminary analysis
+def preliminary_analysis(params):
+    df = pd.read_csv(params["trace"])
+    analysis = pd.DataFrame(df.clever.analyze())
+    pp.pprint(analysis)
+    df.to_csv(params["trace_analysis"])
+
+#Performance partitioner
+def performance_partitioner(params):
+    PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
+    df = pd.read_csv(params["trace"])
+    #Partition the different performance variables
+    partitioners = KResolutionReducer(k=4).fit(np.array(LogTransformer(base=10,add=1).transform(df[PERFORMANCE])))
+    partitioners.save(params["perf_partitions"])
+    #Create the training and testing datasets
+    train_df,hyper_df,test_df = df.clever.random_sample(.5, .2)
+    train_df.to_pickle(params["train"])
+    hyper_df.to_pickle(params["hyper"])
+    test_df.to_pickle(params["test"])
+    return partitioners, train_df, hyper_df, test_df
+
 #Feature selection module
 def feature_selector(params):
     FEATURES = pd.DataFrame().clever.load_features(params["features"])
     #IMM_FEATURES = pd.DataFrame().clever.load_features(params["imm_features"])
     PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
-    #Create the training and testing datasets
-    df = pd.read_csv(params["trace"])
-    train_df,hyper_df,test_df = df.clever.random_sample(.5, .2)
-    train_df.to_pickle(params["train"])
-    hyper_df.to_pickle(params["hyper"])
-    test_df.to_pickle(params["test"])
+
+    #Load the training and testing datasets
+    try:
+        partitioners = KResolutionReducer.load(params["perf_partitions"])
+        train_df = pd.read_pickle(params["train"])
+        hyper_df = pd.read_pickle(params["hyper"])
+        test_df = pd.read_pickle(params["test"])
+    except:
+        partitioners, train_df, hyper_df, test_df = performance_partitioner(params)
+
     #Divide the datasets into x and y
     train_x,train_y = train_df.clever.split(FEATURES,PERFORMANCE)
     hyper_x,hyper_y = hyper_df.clever.split(FEATURES,PERFORMANCE)
     test_x,test_y = test_df.clever.split(FEATURES,PERFORMANCE)
-    #Partition by performance
-    partitioner = KSegments(k=5).fit(np.array(LogTransformer(base=10,add=1).transform(train_y)).flatten())
-    #Select features
+
+    #Train model for each variable and select minimum feature set
     fs = FeatureSelector(
         FEATURES,
         PERFORMANCE,
-        XGBRegressor(
+        [XGBRegressor(
             transform_y=LogTransformer(base=10,add=1),
-            fitness_metric=PartitionedMetric(partitioner, score=RelativeAccuracyMetric(scale=1, add=1)),
-            error_metric=PartitionedMetric(partitioner, score=RMLSEMetric(add=1)))
+            #fitness_metric=RelativeAccuracyMetric(scale=1, add=1),
+            #error_metric=RMLSEMetric(add=1)),
+            fitness_metric=PartitionedMetric(partitioner, score=RelativeAccuracyMetric(scale=1, add=60)),
+            error_metric=PartitionedMetric(partitioner, score=RMLSEMetric(add=60)),
+            vars=PERFORMANCE
+        ) for partitioner in partitioners.segments_]
     )
+
     fs.select(
         train_x, train_y, hyper_x, hyper_y,
-        #search_space=fs.model.get_search_space(),
-        max_iter=12,
+        max_iter=1,
         max_tunes=0,
         max_tune_iter=0)
+
     #Save and analyze
     fs.save(params["selector"])
-    fs.model.save(params["regressor"])
+    fs.model_.save(params["regressor"])
     fs.save_importances(params["importances"])
     pp.pprint(fs.analyze(test_x,test_y))
 
@@ -85,8 +121,8 @@ def feature_selector_stats(params):
     test_df = pd.read_pickle(params["test"])
     #Divide the datasets into x and y
     train_x,train_y = train_df.clever.split(FEATURES,PERFORMANCE)
-    hyper_x,hyper_y = train_df.clever.split(FEATURES,PERFORMANCE)
-    test_x,test_y = train_df.clever.split(FEATURES,PERFORMANCE)
+    hyper_x,hyper_y = hyper_df.clever.split(FEATURES,PERFORMANCE)
+    test_x,test_y = test_df.clever.split(FEATURES,PERFORMANCE)
     #Load the feature selector
     fs = FeatureSelector.load(params["selector"])
     pp.pprint(fs.analyze(test_x, test_y))
@@ -94,22 +130,21 @@ def feature_selector_stats(params):
 
 #Behavior Classifaction module
 def behavior_classifier(params):
-    params = args.conf["APP_BEHAVIOR_MODEL"]
     df = pd.read_csv(params["trace"])
-    feature_importances = FeatureSelector.load_importances(params["importances"])
+    imm_features = pd.DataFrame().clever.load_features(params["imm_features"])
     vars = pd.DataFrame().clever.load_features(params["vars"])
-    #imm_features = pd.DataFrame().clever.load_features(params["imm_features"])
-    reg = FeatureSelector.load(params["regressor"])
-    bc = BehaviorClassifier(feature_importances, vars, reg)
+    reg = XGBRegressor.load(params["regressor"])
+    bc = BehaviorClassifier(vars, imm_features, reg)
     bc.fit(df)
     bc.save(params["classifier"])
 
 #Behavior Classification statistics module
 def behavior_classifier_stats(params):
-    params = args.conf["APP_BEHAVIOR_MODEL"]
+    #df = pd.read_csv(params["trace"])
     bc = BehaviorClassifier.load(params["classifier"])
-    analysis = bc.analyze()
-    pp.pprint(analysis)
+    #analysis = bc.analyze()
+    bc.visualize()
+    #pp.pprint(analysis)
 
 ##############MAIN##################
 if __name__ == "__main__":
@@ -122,18 +157,20 @@ if __name__ == "__main__":
         parser.clean()
         parser.to_csv(params["argonne_csv"])
 
+    if args.tool == "preliminary":
+        preliminary_analysis(args.conf["PREPROCESS"])
+
+    if args.tool == "dataset_split":
+        performance_partitioner(args.conf["APP_BEHAVIOR_MODEL"])
+
     if args.tool == "fmodel":
-        params = args.conf["APP_BEHAVIOR_MODEL"]
-        feature_selector(params)
+        feature_selector(args.conf["APP_BEHAVIOR_MODEL"])
 
     if args.tool == "fmodel_stats":
-        params = args.conf["APP_BEHAVIOR_MODEL"]
-        feature_selector_stats(params)
+        feature_selector_stats(args.conf["APP_BEHAVIOR_MODEL"])
 
     if args.tool == "bmodel":
-        params = args.conf["APP_BEHAVIOR_MODEL"]
-        behavior_classifier(params)
+        behavior_classifier(args.conf["APP_BEHAVIOR_MODEL"])
 
     if args.tool == "bmodel_stats":
-        params = args.conf["APP_BEHAVIOR_MODEL"]
-        behavior_classifier_stats(params)
+        behavior_classifier_stats(args.conf["APP_BEHAVIOR_MODEL"])

@@ -11,5 +11,4 @@ class MiraParser(GenericTraceParser):
         return
 
     def standardize(self):
-        self._project(self.map_path)
-        print(self.df.TOTAL_BYTES_READ)
+        self._project(self.map_path) 
