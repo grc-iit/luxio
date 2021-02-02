@@ -152,9 +152,9 @@ def behavior_classifier(params):
 def behavior_classifier_stats(params):
     #df = pd.read_csv(params["trace"])
     bc = BehaviorClassifier.load(params["classifier"])
-    #analysis = bc.analyze()
-    bc.visualize()
-    #pp.pprint(analysis)
+    analysis = bc.analyze()
+    pp.pprint(analysis)
+    #bc.visualize()
 
 ##############MAIN##################
 if __name__ == "__main__":
