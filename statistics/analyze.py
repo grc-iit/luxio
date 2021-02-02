@@ -100,10 +100,11 @@ def feature_selector(params):
 
     fs.select(
         train_x, train_y, hyper_x, hyper_y,
-        max_iter=3,
+        max_iter=10,
         max_tunes=0,
         max_tune_iter=0,
-        growth=.75)
+        growth=.9,
+        acc_loss=.08)
 
     #Save and analyze
     fs.save(params["selector"])
@@ -116,6 +117,7 @@ def feature_selector_stats(params):
     FEATURES = pd.DataFrame().clever.load_features(params["features"])
     PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
     #Create the training and testing datasets
+    partitioners = KResolutionReducer.load(params["perf_partitions"])
     train_df = pd.read_pickle(params["train"])
     hyper_df = pd.read_pickle(params["hyper"])
     test_df = pd.read_pickle(params["test"])
@@ -126,8 +128,15 @@ def feature_selector_stats(params):
     #Load the feature selector
     fs = FeatureSelector.load(params["selector"])
     fs.model_._calculate_metrics()
-    pp.pprint(fs.analyze(test_x, test_y))
-    #fs.save_importances(params["importances"])
+    analysis = fs.analyze(test_x, test_y, metrics=[{
+        "r2" : r2Metric(),
+        "RelativeError" : PartitionedMetric(partitioner, score=RelativeErrorMetric(add=1), mode='all'),
+        "RMLSE" : PartitionedMetric(partitioner, score=RMLSEMetric(add=1), mode='all'),
+    } for partitioner in partitioners.segments_])
+    pp.pprint(analysis)
+    fs.save(params["selector"])
+    fs.model_.save(params["regressor"])
+    fs.save_importances(params["importances"])
 
 #Behavior Classifaction module
 def behavior_classifier(params):
@@ -135,7 +144,7 @@ def behavior_classifier(params):
     imm_features = pd.DataFrame().clever.load_features(params["imm_features"])
     vars = pd.DataFrame().clever.load_features(params["vars"])
     fs = FeatureSelector.load(params["selector"])
-    bc = BehaviorClassifier(fs.features_, vars, imm_features, fs.model_)
+    bc = BehaviorClassifier(fs.model_.features_, vars, imm_features, fs.model_)
     bc.fit(df)
     bc.save(params["classifier"])
 
