@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+set -u
 
 #Remeber to have env Variables for:
 # ORANGEFS_KO
@@ -7,25 +9,33 @@
 
 CWD=$(pwd)
 
+if [ $# -eq 0 ]
+then
+	echo "bash deploy.sh <conf file> <server list> <client list>"
+	exit 0
+fi
+
 #Input Variables
 server_partition=stor
 num_servers=4
-TIER=$1
-server_dir=/mnt/$TIER/nrajesh/orangefs
+conf_file=$1
+server_dir=$(awk '$1 ~ /DataStorageSpace/ {print $2}' $conf_file )
+meta_dir=$(awk '$1 ~ /MetadataStorageSpace/ {print $2}' $conf_file )
+
 
 client_partition=comp
 client_dir=/mnt/nvme/nrajesh/write/generic
+server_loc=$2
+server_list=( $(cat $server_loc) )
+client_loc=$3
+client_list=( $(cat $client_loc) )
 
-# conf_file=${1}
-
-#General Variables
-client_list=($(cat ${CWD}/hostfiles/hostfile_clients))
-server_list=($(cat ${CWD}/hostfiles/hostfile_servers))
 
 #Config PFS
 name="orangefs" #TODO: Allow renaming
 comm_port=3334  #TODO: Allow changing
 
+set +e
 #Stop clients
 for node in ${client_list[@]}
 do

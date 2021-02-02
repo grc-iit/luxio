@@ -5,3 +5,7 @@ build
 dist
 *.egg_info
 MANIFEST
+*.sync-conflict*
+*~
+*.swp
+*.swo
