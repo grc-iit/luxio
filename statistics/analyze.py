@@ -93,17 +93,17 @@ def feature_selector(params):
             transform_y=LogTransformer(base=10,add=1),
             #fitness_metric=RelativeAccuracyMetric(scale=1, add=1),
             #error_metric=RMLSEMetric(add=1)),
-            fitness_metric=PartitionedMetric(partitioner, score=RelativeAccuracyMetric(scale=1, add=60)),
-            error_metric=PartitionedMetric(partitioner, score=RMLSEMetric(add=60)),
-            vars=PERFORMANCE
+            fitness_metric=PartitionedMetric(partitioner, score=RelativeAccuracyMetric(scale=1, add=1)),
+            error_metric=PartitionedMetric(partitioner, score=RMLSEMetric(add=1))
         ) for partitioner in partitioners.segments_]
     )
 
     fs.select(
         train_x, train_y, hyper_x, hyper_y,
-        max_iter=1,
+        max_iter=3,
         max_tunes=0,
-        max_tune_iter=0)
+        max_tune_iter=0,
+        growth=.75)
 
     #Save and analyze
     fs.save(params["selector"])
@@ -125,16 +125,17 @@ def feature_selector_stats(params):
     test_x,test_y = test_df.clever.split(FEATURES,PERFORMANCE)
     #Load the feature selector
     fs = FeatureSelector.load(params["selector"])
+    fs.model_._calculate_metrics()
     pp.pprint(fs.analyze(test_x, test_y))
-    fs.save_importances(params["importances"])
+    #fs.save_importances(params["importances"])
 
 #Behavior Classifaction module
 def behavior_classifier(params):
     df = pd.read_csv(params["trace"])
     imm_features = pd.DataFrame().clever.load_features(params["imm_features"])
     vars = pd.DataFrame().clever.load_features(params["vars"])
-    reg = XGBRegressor.load(params["regressor"])
-    bc = BehaviorClassifier(vars, imm_features, reg)
+    fs = FeatureSelector.load(params["selector"])
+    bc = BehaviorClassifier(fs.features_, vars, imm_features, fs.model_)
     bc.fit(df)
     bc.save(params["classifier"])
 
