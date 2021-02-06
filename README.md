@@ -46,6 +46,11 @@ make install
 
 ## Usage
 
+Run the Luxio scheduler assistance command line tool:
+```{bash}
+luxio-sched -[params]
+```
+
 Import the module in Python:
 ```{bash}
 from luxio import *
