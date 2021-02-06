@@ -42,7 +42,7 @@ def perf_var_partitioner(params):
     PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
     PERF_LABELS = ["label_{}".format(var) for var in PERFORMANCE]
     df = pd.read_csv(params["trace"])
-    df.loc[:,PERF_LABELS] = ResolutionReducer(k=6).fit_transform(np.array(LogTransformer(base=10,add=1)(df[PERFORMANCE])))
+    df.loc[:,PERF_LABELS] = ResolutionReducer(k=4).fit_transform(np.array(LogTransformer(base=10,add=1)(df[PERFORMANCE])))
 
 #Preliminary analysis
 def preliminary_analysis(params):
@@ -89,7 +89,7 @@ def feature_selector(params):
     fs = FeatureSelector(
         FEATURES,
         PERFORMANCE,
-        [XGBRegressor(
+        [EnsembleModelRegressor(
             transform_y=LogTransformer(base=10,add=1),
             #fitness_metric=RelativeAccuracyMetric(scale=1, add=1),
             #error_metric=RMLSEMetric(add=1)),
@@ -103,8 +103,9 @@ def feature_selector(params):
         max_iter=10,
         max_tunes=0,
         max_tune_iter=0,
-        growth=.9,
-        acc_loss=.08)
+        growth=.5,
+        acc_loss=.05,
+        thresh=.02)
 
     #Save and analyze
     fs.save(params["selector"])
@@ -152,8 +153,8 @@ def behavior_classifier(params):
 def behavior_classifier_stats(params):
     #df = pd.read_csv(params["trace"])
     bc = BehaviorClassifier.load(params["classifier"])
-    analysis = bc.analyze()
-    pp.pprint(analysis)
+    analysis = bc.analyze(dir="datasets/model_analysis")
+    #pp.pprint(analysis)
     #bc.visualize()
 
 ##############MAIN##################

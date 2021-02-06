@@ -1,8 +1,8 @@
-import unittest
-from common.error_codes import *
-from common.enumerations import *
-from common.configuration_manager import *
-from external_clients.json_client import *
+import unittest, pytest
+from luxio.common.error_codes import *
+from luxio.common.enumerations import *
+from luxio.common.configuration_manager import *
+from luxio.external_clients.json_client import *
 from luxio import LUXIO
 
 class TestLuxio(unittest.TestCase):
