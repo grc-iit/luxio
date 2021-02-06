@@ -44,6 +44,17 @@ cd darshan-3.2.1/darshan-util
 make install
 ```
 
+### Redis
+```{bash}
+wget http://download.redis.io/redis-stable.tar.gz
+tar xvzf redis-stable.tar.gz
+cd redis-stable
+make
+make test
+cp src/redis-server /path/to/bin
+cp src/redis-cli /path/to/bin
+```
+
 ## Usage
 
 Run the Luxio scheduler assistance command line tool:
