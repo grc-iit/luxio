@@ -5,8 +5,10 @@ build
 dist
 *.egg_info
 MANIFEST
-statistics/datasets
-statistics/img
+datasets
+*_test.pkl
+*_train.pkl
+*_hyper.pkl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

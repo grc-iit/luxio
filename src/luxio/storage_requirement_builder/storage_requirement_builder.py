@@ -2,7 +2,8 @@
 from luxio.external_clients.json_client import JSONClient
 from luxio.utils.mapper_manager import MapperManager
 from luxio.common.configuration_manager import *
-
+from typing import List, Dict, Tuple
+import pandas as pd
 
 class StorageRequirementBuilder:
     """
@@ -12,22 +13,17 @@ class StorageRequirementBuilder:
         pass
 
     def _initialize(self) -> None:
-        pass
+        self.conf = ConfigurationManager.get_instance()
 
     def _finalize(self) -> None:
         pass
 
-    def run(self, io_requirement: dict) -> dict:
+    def run(self, io_identifier: pd.DataFrame) -> List[Tuple[int, pd.DataFrame]]:
         """
-        Mapping the given i/o requirements to its corresponding storage requirement.
-        And then return the storage requirement.
-        :param io_requirement: dict
-        :return: dict
+        Takes in an I/O identifier and produces a ranked list of candidate QoSAs to pass to the
+        resource resolver.
         """
         self._initialize()
-        conf = ConfigurationManager.get_instance()
-        storage_requirement = JSONClient().load(conf.storage_req_out_path)
-        mapper = MapperManager()
-        mapper.run(io_requirement, storage_requirement)
+        #qosas = self.conf.app_classifier.rank_qosas(io_identifier)
         self._finalize()
-        return storage_requirement
+        return [(1, io_identifier)]
