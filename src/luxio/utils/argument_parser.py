@@ -3,7 +3,7 @@ from luxio.common.configuration_manager import *
 
 class ArgumentParser:
     def __init__(self):
-        self.parser = argparse.ArgumentParser()
+        self.parser = argparse.ArgumentParser() 
         self.parser.add_argument("-m", default='full', help="Mode (options include 'io', 'stor', 'conf', and 'full')")
         self.parser.add_argument("-j", default=None, help="Job spec (json)")
         self.parser.add_argument("-t", default="sample/hacc_io_read.darshan", help="Trace file (Darshan)")
@@ -45,7 +45,6 @@ class ArgumentParser:
         conf.db_port=str(args.redis_port)
         conf.run_mode=args.m
         conf.output_file=args.o
-        print(conf.darshan_trace_path)
         self._finalize()
         return conf
 
