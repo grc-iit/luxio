@@ -17,9 +17,8 @@ from clever.transformers import *
 from clever.feature_selection import *
 from clever.models.clustering import *
 from clever.metrics import *
-
-import pprint, warnings
 import argparse, configparser
+import pprint, warnings
 
 pp = pprint.PrettyPrinter(depth=6)
 
