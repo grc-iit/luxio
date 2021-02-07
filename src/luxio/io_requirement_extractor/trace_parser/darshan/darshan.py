@@ -1,62 +1,9 @@
-
-import darshan
-from luxio.io_requirement_extractor.trace_parser.trace_parser import TraceParser
-from typing import List, Dict, Tuple
-from luxio.common.configuration_manager import *
+from luxio.io_requirement_extractor.trace_parser import TraceParser
 import pandas as pd
 
 class DarshanTraceParser(TraceParser):
-    """
-    A Darshan Parser to extract certain Variables for Luxio
-    """
-
-    def __init__(self) -> None:
-        darshan.enable_experimental()
-        pass
-
-    def parse(self) -> pd.DataFrame:
-        """
-        Parses an inputted Darshan File and returns all Darshan variables
-        """
-
-        #Load Darshan features
-        conf = ConfigurationManager.get_instance()
-        file_ = conf.darshan_trace_path
-        self.report = darshan.DarshanReport(file_, read_all=True)
-        self.dar_dict = self.report.records_as_dict()
-        self.counter_types = ['counters', 'fcounters']
-        features = {}
-        for module in self.dar_dict.values():
-            for ctype in self.counter_types:
-                for feature, value in module[0][ctype].items():
-                    features[feature] = value
-
-        #Convert features into dataframe
-        min_features = self._minimum_features(__file__)
-        self.features = pd.DataFrame(features, index=[0], columns=min_features)
-        return self.features
-
     def standardize(self):
-        """
-        Converts the Darshan variables into variables that were used to train the luxio models
-        """
-        df = self.features
-
-        #Prepend the word "TOTAL" to everything (model was trained on this kind of dataset)
-        df = df.rename(columns={feature : f"TOTAL_{feature}" for feature in self.features.columns if feature != "NPROCS"})
-        df = df.fillna(0)
-
-        #Ignore negative timing measurements
-        times = [
-            "TOTAL_POSIX_F_READ_TIME",
-            "TOTAL_MPIIO_F_READ_TIME",
-            "TOTAL_POSIX_F_WRITE_TIME",
-            "TOTAL_MPIIO_F_WRITE_TIME",
-            "TOTAL_POSIX_F_META_TIME",
-            "TOTAL_MPIIO_F_META_TIME"
-        ]
-        for time in times:
-            df.loc[df[time] < 0,time] = 0
+        df = self.df
 
         #Get the interface:
         df.loc[:, "INTERFACE"] = 0
@@ -192,7 +139,7 @@ class DarshanTraceParser(TraceParser):
             .75*(df.TOTAL_POSIX_SEQ_READS + df.TOTAL_POSIX_SEQ_WRITES)
         )
 
-        #GET TOTAL AMOUNT OF TIME SPENT IN I/O and REMOVE ALL ENTRIES WHERE THERE IS NO IO
+        #GET TOTAL AMOUNT OF TIME SPENT IN I/O
         df.loc[:, "TOTAL_READ_TIME"] = (
             df.TOTAL_POSIX_F_READ_TIME +
             df.TOTAL_MPIIO_F_READ_TIME
@@ -211,9 +158,5 @@ class DarshanTraceParser(TraceParser):
             df.TOTAL_MD_TIME
         )
 
-        self.features = df
-        return self.features
-
-    def parse_standardize(self):
-        self.parse()
-        return self.standardize()
+        self.df = df
+        return df
