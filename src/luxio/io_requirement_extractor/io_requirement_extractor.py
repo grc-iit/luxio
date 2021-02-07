@@ -22,17 +22,20 @@ class IORequirementExtractor:
         It will return the io requirement
         :return: dict
         """
-        
-        #Acquire darshan trace data
+
         self._initialize()
+
+        #Acquire historical trace data
         darshan_parser = TraceParserFactory.get_parser(TraceParserType.DARSHAN)
         input = darshan_parser.parse()
+        print(input)
 
-        #Load classifier model
+        #Load I/O behavior classifier model
         #classifier = BehaviorClassifier.load(self.conf.app_behavior_classifier_path)
-        #classes = classifier.predict(input)
 
-        # load sample/io_req_output.json into output
+        #Feature extraction
+
+        #Return the I/O Signature
         output = JSONClient().load(self.conf.io_req_out_path)
         mapper = MapperManager()
         mapper.run(input, output)
