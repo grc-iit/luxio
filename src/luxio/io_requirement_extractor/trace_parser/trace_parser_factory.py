@@ -1,7 +1,7 @@
 
 from luxio.common.enumerations import TraceParserType
 from luxio.common.error_codes import Error, ErrorCode
-from luxio.io_requirement_extractor.trace_parser.darshan_trace_parser import DarshanTraceParser
+from luxio.io_requirement_extractor.trace_parser.darshan.darshan_trace_parser import DarshanTraceParser
 from luxio.io_requirement_extractor.trace_parser.trace_parser import TraceParser
 
 

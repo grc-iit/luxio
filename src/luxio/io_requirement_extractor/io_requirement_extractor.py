@@ -27,7 +27,7 @@ class IORequirementExtractor:
 
         #Acquire historical trace data
         darshan_parser = TraceParserFactory.get_parser(TraceParserType.DARSHAN)
-        input = darshan_parser.parse()
+        input = darshan_parser.parse_standardize()
         print(input)
 
         #Load I/O behavior classifier model
@@ -37,8 +37,6 @@ class IORequirementExtractor:
 
         #Return the I/O Signature
         output = JSONClient().load(self.conf.io_req_out_path)
-        mapper = MapperManager()
-        mapper.run(input, output)
         self._finalize()
         return output
 
