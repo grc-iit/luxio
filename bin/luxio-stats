@@ -11,6 +11,7 @@ import sys,os
 import pandas as pd
 import numpy as np
 
+from luxio.storage_requirement_builder.models import AppClassifier, StorageClassifier
 from clever.dataset import *
 from clever.models.regression.forest import *
 from clever.models.regression.ensemble import *
@@ -185,3 +186,12 @@ if __name__ == "__main__":
 
     if args.tool == "bmodel_stats":
         behavior_classifier_stats(args.conf["APP_BEHAVIOR_MODEL"])
+
+    if args.tool == "example":
+        ac = AppClassifier(pd.DataFrame(), pd.DataFrame())
+        ac.fit(pd.DataFrame())
+        sc = StorageClassifier(pd.DataFrame(), pd.DataFrame())
+        sc.fit(pd.DataFrame())
+        ac.filter_qosas(sc)
+        ac.save(args.conf["APP_BEHAVIOR_MODEL"]["classifier"])
+        sc.save(args.conf["STORAGE_BEHAVIOR_MODEL"]["classifier"])
