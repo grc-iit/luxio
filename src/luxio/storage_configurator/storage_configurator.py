@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from luxio.external_clients.json_client import JSONClient
 from luxio.utils.mapper_manager import MapperManager
+import pandas as pd
 
 class StorageConfigurator(ABC):
     """
@@ -16,7 +17,7 @@ class StorageConfigurator(ABC):
     def _finalize(self) -> None:
         pass
 
-    def run(self, storage_requirement: dict) -> dict:
+    def run(self, storage_requirement: pd.DataFrame) -> dict:
         """
         Mapping the storage requirement to its corresponding storage configuration.
         And then return the storage configuration.
@@ -24,11 +25,11 @@ class StorageConfigurator(ABC):
         :return: dict
         """
         self._initialize()
-        output = self.load_json()
-        mapper = MapperManager()
-        mapper.run(storage_requirement, output)
+        #Acquire the set of available resources from the scheduler
+        #Determine whether or not the qosas in the storage requirement can be satisfied, and if so, how much it costs
+        #Choose the lowest-price QoSA that can be satisfied
         self._finalize()
-        return output
+        return None
 
     @abstractmethod
     def load_json(self) -> dict:

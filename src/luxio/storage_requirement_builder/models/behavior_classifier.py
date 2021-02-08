@@ -1,39 +1,43 @@
 import sys,os
-from .generic_cluster import GenericCluster
-from sklearn.manifold import TSNE
-import numpy as np
-from matplotlib import pyplot as plt
-
-from sklearn.cluster import DBSCAN, KMeans
-from sklearn.mixture import BayesianGaussianMixture
-from sklearn.preprocessing import FunctionTransformer, StandardScaler, MinMaxScaler
-from sklearn.metrics import silhouette_score
-
-from .kresolution_reducer import KResolutionReducer
-from clever.dataset import *
-from clever.transformers import *
-from clever.metrics import *
-import numpy as np
-import pandas as pd
-
 import pickle as pkl
+from abc import ABC, abstractmethod
+import pandas as pd
 
 import pprint, warnings
 pp = pprint.PrettyPrinter(depth=6)
 
-class BehaviorClassifier(GenericCluster):
-    def __init__(self, features, vars, imm_features, regressor):
-        self.features = features
-        self.feature_importances = np.array(regressor.feature_importances_)
-        self.vars = list(vars)
-        self.imm_features = imm_features
-        self.regressor = regressor
-    
+class BehaviorClassifier(ABC):
+    def __init__(self, feature_importances:pd.DataFrame, feature_categories:pd.DataFrame):
+        """
+        feature_importances: A dataframe where rows are features and columns are timing types (MD, READ, WRITE).
+        feature_categories: A dataframe where rows are features and columns indicate how the features are to be aggregated
+        """
+        return
+
+    @abstractmethod
     def fit(self, X):
-        return
+        return self
 
-    def predict(self, X):
-        return
+    @abstractmethod
+    def get_magnitude(self, X):
+        return self
 
-    def predict_proba(self, X):
-        return
+    def standardize(self, features:pd.DataFrame):
+        """
+        Calculate a standardized set of scores based on the features.
+        """
+
+        #TODO: An example, need to actually implement
+        features.loc[:,"score"] = features[self.features[0]] * features[self.features[1]]
+        features.loc[:, "std_score"] = 5
+        self.scores = ["score"]
+        self.std_scores = ["std_score"]
+        return features
+
+
+    def save(self, path):
+        pkl.dump(self, open( path, "wb" ))
+
+    @staticmethod
+    def load(path):
+        return pkl.load(open( path, "rb" ))

@@ -1,4 +1,4 @@
-from clever.models.cluster import BehaviorClassifier
+from luxio.storage_requirement_builder.models import AppClassifier
 from luxio.external_clients.json_client import JSONClient
 from luxio.utils.mapper_manager import MapperManager
 from luxio.common.configuration_manager import *
@@ -32,17 +32,19 @@ class IORequirementExtractor:
         #Acquire historical trace data
         darshan_parser = TraceParserFactory.get_parser(TraceParserType.DARSHAN)
         all_features = darshan_parser.preprocess()
-        pp.pprint(all_features)
 
-        #Parse the Job Spec
+        #TODO: Remove this example
+        all_features = pd.DataFrame({"a": 25, "b": 5}, index=[0])
+
+        #TODO: Parse the Job Spec
 
         #Load I/O behavior classifier model
-        self.app_classifier = BehaviorClassifier.load(self.conf.app_classifier_path)
+        self.conf.app_classifier = AppClassifier.load(self.conf.app_classifier_path)
 
         #Feature projection
-        io_identifier = all_features[self.app_classifier.features]
+        io_identifier = all_features[self.conf.app_classifier.features]
 
-        #Return the I/O Signature
+        #Return the I/O Identifier
         self._finalize()
         return io_identifier
 
