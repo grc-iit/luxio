@@ -26,35 +26,14 @@ class StorageRequirementBuilder:
         """
         self._initialize()
         #Get the fitness vector of the IOIdentifier to all of the classes
-        fitnesses = self.conf.app_classifier.get_fitnesses(io_identifier)
-
-        #Rule out fitness vectors below a threshold
-        fitnesses = fitnesses[fitnesses.magnitude > self.thresh]
-
-        #Get the coverage values for each of the QoSAs
-        ranked_qosas = []
-        for idx,fitness in fitnesses.iterrows():
-            #Multiply every coverage by fitness (TODO: factor in mandatory variables that cause this to be 0)
-            qosas = fitness["qosas"]
-            mult_coverages = fitness[self.conf.app_classifier.scores]*qosas[self.conf.app_classifier.scores]
-            mult_coverages.index.name = 'qosa_id'
-            qosas.loc[:,self.conf.app_classifier.scores] = mult_coverages
-            ranked_qosas.append(qosas)
-        #If a QoSA appears multiple times, select the maximum coverage
-        ranked_qosas = pd.concat(ranked_qosas).groupby(["qosa_id"]).max()
-        print(ranked_qosas)
-
-        #Rule out qosas below a threshold
-        ranked_qosas = ranked_qosas[ranked_qosas.magnitude > self.thresh**2]
-
-        #If there are no candidate QoSAs, create a new class and calculate coverage against all QoSAs
-        if len(ranked_qosas) == 0:
-            coverages = self.conf.storage_classifier.get_coverages(io_identifier)
-            ranked_qosas = ranked_qosas[ranked_qosas.magnitude > self.thresh**2]
-
+        fitnesses = app_classifier.get_fitnesses(io_identifier)
+        #Multiply fitness and coverage
+        ranked_qosas = app_classifier.qosas.copy()
+        ranked_qosas.loc[:,app_classifier.scores] = fitnesses[app_classifier.scores].to_numpy() * ranked_qosas[app_classifier.scores].to_numpy()
+        #Select the best 20 qosas
+        ranked_qosas = ranked_qosas.groupby(["qosa_id"]).max().nlargest(20, "magnitude")
         #Sort the QoSAs in descending order
         ranked_qosas.sort_values("magnitude")
-
         #Return the ranked set of QoSAs
         self._finalize()
         return ranked_qosas

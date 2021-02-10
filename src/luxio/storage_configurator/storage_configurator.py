@@ -17,7 +17,7 @@ class StorageConfigurator(ABC):
     def _finalize(self) -> None:
         pass
 
-    def run(self, storage_requirement: pd.DataFrame) -> dict:
+    def run(self, storage_requirement:pd.DataFrame) -> dict:
         """
         Mapping the storage requirement to its corresponding storage configuration.
         And then return the storage configuration.
@@ -27,6 +27,7 @@ class StorageConfigurator(ABC):
         self._initialize()
         #Acquire the set of available resources from the scheduler
         #Determine whether or not the qosas in the storage requirement can be satisfied, and if so, how much it costs
+            #We will have to have some configuration file to relate features from the hardware with the benchmarks
         #Choose the lowest-price QoSA that can be satisfied
         self._finalize()
         return None

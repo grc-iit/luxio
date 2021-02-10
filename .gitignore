@@ -9,6 +9,8 @@ datasets
 *_test.pkl
 *_train.pkl
 *_hyper.pkl
+sample/app_classifier/*.pkl
+sample/storage_classifier/*.pkl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

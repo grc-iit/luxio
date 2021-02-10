@@ -141,12 +141,19 @@ def feature_selector_stats(params):
     fs.save_importances(params["importances"])
 
 #Behavior Classifaction module
-def behavior_classifier(params):
+def app_behavior_classifier(params):
     df = pd.read_csv(params["trace"])
-    imm_features = pd.DataFrame().clever.load_features(params["imm_features"])
-    vars = pd.DataFrame().clever.load_features(params["vars"])
-    fs = FeatureSelector.load(params["selector"])
-    bc = BehaviorClassifier(fs.model_.features_, vars, imm_features, fs.model_)
+    feature_importances = pd.read_csv(params["importances"], index_col=0)
+    bc = AppClassifier(feature_importances)
+    bc.fit(df)
+    bc.save(params["classifier"])
+
+#Behavior Classifaction module
+def storage_behavior_classifier(params):
+    df = pd.read_csv('/home/lukemartinlogan/Documents/Projects/PhD/luxio/datasets/QoSa_Sample.csv')
+    df = pd.concat([df]*100, ignore_index=True)
+    feature_importances = pd.DataFrame()
+    bc = StorageClassifier(feature_importances)
     bc.fit(df)
     bc.save(params["classifier"])
 
@@ -182,12 +189,13 @@ if __name__ == "__main__":
         feature_selector_stats(args.conf["APP_BEHAVIOR_MODEL"])
 
     if args.tool == "bmodel":
-        behavior_classifier(args.conf["APP_BEHAVIOR_MODEL"])
+        #app_behavior_classifier(args.conf["APP_BEHAVIOR_MODEL"])
+        storage_behavior_classifier(args.conf["STORAGE_BEHAVIOR_MODEL"])
 
     if args.tool == "bmodel_stats":
         behavior_classifier_stats(args.conf["APP_BEHAVIOR_MODEL"])
 
-    if args.tool == "example":
+    if args.tool == "filter":
         ac = AppClassifier(pd.DataFrame(), pd.DataFrame())
         ac.fit(pd.DataFrame())
         sc = StorageClassifier(pd.DataFrame(), pd.DataFrame())
