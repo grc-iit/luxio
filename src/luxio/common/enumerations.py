@@ -14,6 +14,7 @@ Trace Parser Types supported in Luxio
 """
 class TraceParserType(Enum):
     DARSHAN = 'darshan'
+    ARGONNE = 'argonne'
 
     def __str__(self) -> str:
         return self.value
@@ -36,4 +37,3 @@ class StorageConfiguratorType(Enum):
 
     def __str__(self):
         return self.value
-

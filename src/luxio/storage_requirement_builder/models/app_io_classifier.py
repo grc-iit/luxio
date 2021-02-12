@@ -23,7 +23,7 @@ class AppClassifier(BehaviorClassifier):
         Identify groups of application behavior from a dataset of traces using the features.
         Calculate a standardized set of scores that are common between the apps and QoSAs
         """
-        X = X.iloc[0:100,:]
+        #X = X.iloc[0:100,:]
         self.transform_ = ChainTransformer([LogTransformer(base=10,add=1), MinMaxScaler()])
         X_features = self.transform_.fit_transform(X[self.features])*self.feature_importances.max(axis=1).to_numpy()
         self.model_ = KMeans(n_clusters=32)
@@ -49,6 +49,30 @@ class AppClassifier(BehaviorClassifier):
         self.qosas.index.name=  "qosa_id"
         self.app_qosa_mapping = pd.concat([self.app_classes]*top_n)
 
+    def analyze(self, features=None, metric='all', dir=None):
+        if features == None:
+            features = self.features + self.vars
+        if dir is not None:
+            trans = ChainTransformer([LogTransformer(add=1,base=10), MinMaxScaler()])
+            means = self.clusters_["means"][self.features + self.imm_features].copy()
+            means.loc[:,self.features] = (trans.fit_transform(self.clusters_["means"][self.features])*3).astype(int)
+            means = means[self.features + self.imm_features].drop_duplicates()
+            for feature in self.features:
+                for i,label in enumerate(["low", "medium", "large", "very large"]):
+                    means.loc[means["feature"] == i,feature] = label
+            means.to_csv(os.path.join(dir, "behavior_means.csv"))
+            self.clusters_["stds"][self.features + self.imm_features].to_csv(os.path.join(dir, "behavior_stds.csv"))
+            pd.DataFrame(self.clusters_["ns"]).to_csv(os.path.join(dir, "behavior_ns.csv"))
+
+    def visualize(self, path=None):
+        for perplexity in [5, 10, 20, 50, 70, 100, 200]:
+            X = TSNE(n_components=2, perplexity=perplexity).fit_transform(self.clusters_trans_["sample"][self.features])
+            plt.scatter(X[:,0], X[:,1], label=self.clusters_trans_["sample"]["labels"], c=self.clusters_trans_["sample"]["labels"], alpha=.3)
+            plt.show()
+            if path is not None:
+                plt.savefig(path)
+            plt.close()
+
     def standardize(self, io_identifier):
         MD = ["TOTAL_STDIO_OPENS", "TOTAL_POSIX_OPENS", "TOTAL_MPIIO_COLL_OPENS", "TOTAL_POSIX_STATS", "TOTAL_STDIO_SEEKS"]
         READ_OPS = ["TOTAL_STDIO_READS", "TOTAL_POSIX_SIZE_READ_0_100"]
@@ -56,7 +80,7 @@ class AppClassifier(BehaviorClassifier):
         BYTES_READ = ["TOTAL_BYTES_READ"]
         BYTES_WRITTEN = ["TOTAL_BYTES_WRITTEN"]
         SEQUENTIAL_IO = ["TOTAL_POSIX_SEQ_WRITES"]
-        SCALE = ["NPROCS"]
+        #SCALE = ["NPROCS"]
         scaled_features = pd.DataFrame(self.transform_.transform(io_identifier[self.features].astype(float)), columns=self.features)
         if self.scores is None:
             self.scores = []
@@ -67,13 +91,13 @@ class AppClassifier(BehaviorClassifier):
             self.score_weights.append(np.sum(self.feature_importances["TOTAL_MD_TIME"].transpose()[MD].to_numpy()))
             self.score_weights.append(np.sum(self.feature_importances["TOTAL_READ_TIME"].transpose()[BYTES_READ].to_numpy()))
             self.score_weights.append(np.sum(self.feature_importances["TOTAL_WRITE_TIME"].transpose()[BYTES_WRITTEN].to_numpy()))
-            self.score_weights.append(np.sum(self.feature_importances["SCALE"].transpose()[SCALE].to_numpy()))
+            #self.score_weights.append(np.sum(self.feature_importances["TOTAL_READ_TIME"].transpose()[SCALE].to_numpy()))
             self.score_weights = np.array(self.score_weights)
         io_identifier.assign()
         io_identifier.loc[:,"MD_SCORE"] = (scaled_features[MD] * self.feature_importances["TOTAL_MD_TIME"].transpose()[MD].to_numpy()).sum(axis=1).to_numpy()
         io_identifier.loc[:,"BYTES_READ"] = (scaled_features[BYTES_READ] * self.feature_importances["TOTAL_READ_TIME"].transpose()[BYTES_READ].to_numpy()).sum(axis=1).to_numpy()
         io_identifier.loc[:,"BYTES_WRITTEN"] = (scaled_features[BYTES_WRITTEN] * self.feature_importances["TOTAL_WRITE_TIME"].transpose()[BYTES_WRITTEN].to_numpy()).sum(axis=1).to_numpy()
-        #print(io_identifier[self.scores])
+        #io_identifier.loc[:,"SCALE"] = (scaled_features[BYTES_WRITTEN] * self.feature_importances["TOTAL_WRITE_TIME"].transpose()[BYTES_WRITTEN].to_numpy()).sum(axis=1).to_numpy()
         return io_identifier
 
     def get_magnitude(self, fitness:pd.DataFrame):
@@ -90,12 +114,9 @@ class AppClassifier(BehaviorClassifier):
         Determine how well the I/O Identifier fits within each class of behavior
         """
         #Calculate the scores
-        #print(f"\n\n\n\nH1: {io_identifier}")
         io_identifier = self.standardize(io_identifier[self.features])
-        #print(f"H2: {io_identifier[self.scores]}")
         #Get the distance between io_identifier and every app class (in units of standard deviations)
         std_distance = 1 - np.absolute(self.app_qosa_mapping[self.scores] - io_identifier[self.scores].to_numpy())
-        #print(std_distance)
         #Get the magnitude of the fitnesses
         std_distance.loc[:,"magnitude"] = self.get_magnitude(std_distance)
         #Add qosas to dataframe

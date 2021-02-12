@@ -1,6 +1,7 @@
 import sys,os
 import pickle as pkl
 from abc import ABC, abstractmethod
+from typing import List, Dict, Tuple
 import pandas as pd
 import numpy as np
 
@@ -20,7 +21,7 @@ class BehaviorClassifier(ABC):
         self.std_scores = None
         return
 
-    def _smash(self, df, cols, sample_size=None):
+    def _smash(self, df:pd.DataFrame, cols:np.array):
         grp = df.groupby(cols)
         means = grp.mean().reset_index()
         stds = grp.std().reset_index().rename({orig_col:f"std_{orig_col}" for orig_col in means.columns})
@@ -32,12 +33,12 @@ class BehaviorClassifier(ABC):
         self.std_scores = [f"std_{score}" for score in self.scores]
         return means
 
-    def _create_groups(self, df, labels, other=None, sample_size=None):
+    def _create_groups(self, df:pd.DataFrame, labels:np.array, other:List[str]=None):
         df = pd.DataFrame(df)
         df.loc[:,"labels"] = labels
         if other is None:
             other = []
-        return self._smash(df, ["labels"] + other, sample_size=sample_size)
+        return self._smash(df, ["labels"] + other)
 
     @abstractmethod
     def fit(self, X):
@@ -50,12 +51,6 @@ class BehaviorClassifier(ABC):
     @abstractmethod
     def standardize(self, features:pd.DataFrame):
         raise Error(ErrorCode.NOT_IMPLEMENTED)
-
-    @staticmethod
-    def _use(io_identifier:pd.DataFrame, col:str):
-        if col not in io_identifier:
-            return 0
-        return io_identifier[col]
 
     def save(self, path):
         pkl.dump(self, open( path, "wb" ))
