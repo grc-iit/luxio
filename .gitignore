@@ -6,11 +6,8 @@ dist
 *.egg_info
 MANIFEST
 datasets
-*_test.pkl
-*_train.pkl
-*_hyper.pkl
-sample/app_classifier/*.pkl
-sample/storage_classifier/*.pkl
+sample/app_classifier
+sample/qosa_classifier
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
