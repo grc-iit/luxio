@@ -9,10 +9,11 @@ import configparser
 
 class StorageConfigurator(ABC):
     """
-    A class used to generate the storage configuration according to the given storage requirement
+    A class used to generate the storage configuration according to the
+    given storage requirement
     """
 
-    def __init__(self, file_ = 'storage.conf') -> None:
+    def __init__(self, file_='storage.conf') -> None:
         self.load_configs(file_)
 
     def _initialize(self) -> None:
@@ -24,7 +25,7 @@ class StorageConfigurator(ABC):
     def load_configs(self, file_) -> None:
         config = configparser.ConfigParser()
         config.read(file_)
-        l = config.sections()
+        sections = config.sections()
 
         self.x = {}
         self.A = {}
@@ -36,7 +37,7 @@ class StorageConfigurator(ABC):
         self.C = {}
         self.current_price = {}
 
-        for i in l:
+        for i in sections:
             self.A[i] = config.get(i, 'Lower_bound')
             self.B[i] = config.get(i, 'Growth_rate')
             self.K[i] = config.get(i, 'Upper_bound')
