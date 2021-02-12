@@ -32,10 +32,7 @@ class IORequirementExtractor:
         #Acquire historical trace data
         darshan_parser = TraceParserFactory.get_parser(TraceParserType.DARSHAN)
         all_features = darshan_parser.preprocess()
-
-        #TODO: Remove this example
-        all_features = pd.DataFrame({"a": 25, "b": 5}, index=[0])
-
+        
         #TODO: Parse the Job Spec
 
         #Load I/O behavior classifier model
@@ -50,3 +47,4 @@ class IORequirementExtractor:
 
     def _finalize(self) -> None:
         pass
+

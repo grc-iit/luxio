@@ -91,6 +91,13 @@ class StorageConfigurator(ABC):
             )
         )
 
+        #Acquire the set of available resources from the scheduler
+        #Determine whether or not the qosas in the storage requirement can be satisfied, and if so, how much it costs
+            #We will have to have some configuration file to relate features from the hardware with the benchmarks
+        #Choose the lowest-price QoSA that can be satisfied
+        self._finalize()
+        return None
+
     @abstractmethod
     def load_json(self) -> dict:
         """
