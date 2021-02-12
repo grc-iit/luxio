@@ -2,6 +2,7 @@ import sys,os
 import pickle as pkl
 import pandas as pd
 import numpy as np
+from typing import List, Dict, Tuple
 from .behavior_classifier import BehaviorClassifier
 from sklearn.preprocessing import MinMaxScaler
 
@@ -10,8 +11,8 @@ pp = pprint.PrettyPrinter(depth=6)
 pd.options.mode.chained_assignment = None
 
 class StorageClassifier(BehaviorClassifier):
-    def __init__(self, feature_importances:pd.DataFrame):
-        super().__init__(feature_importances)
+    def __init__(self, feature_importances:pd.DataFrame, mandatory_features:List[str]=None):
+        super().__init__(feature_importances, mandatory_features)
         self.qosas = None #A dataframe containing: means, stds, ns
 
     def fit(self, X:pd.DataFrame=None):

@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 
 from luxio.io_requirement_extractor.trace_parser.trace_parser_factory import *
-from luxio.storage_requirement_builder.models import AppClassifier, StorageClassifier
+from luxio.storage_requirement_builder.models import AppClassifier, StorageClassifier, BehaviorClassifier
 from luxio.common.configuration_manager import *
 from clever.dataset import *
 from clever.models.regression.forest import *
@@ -29,14 +29,13 @@ pp = pprint.PrettyPrinter(depth=6)
 class ArgumentParser:
     def __init__(self):
         use_cases = [
-            "preprocess", "preliminary", "dataset_split", "app_reg", "qosa_reg",
+            "preprocess", "preliminary", "app_dataset", "app_dataset_analysis", "app_reg", "qosa_reg",
             "app_reg_stats", "qosa_reg_stats", "app_gen", "qosa_gen", "app_gen_stats",
             "qosa_gen_stats", "filter", 'all'
         ]
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument("-t", default=None, help=f"What your use case is: {use_cases}")
         self.parser.add_argument("-c", default="sample/stats_conf/conf.ini", help="The properties file containing model paths and config parameters")
-        self.parser.add_argument("-d", default="ARGONNE", help="Which data to be preprocessed: ARGONNE")
 
     def parse(self):
         args = self.parser.parse_args()
@@ -56,17 +55,18 @@ def preprocess_dataset(params):
 
 #Preliminary analysis of a dataset
 def preliminary_analysis(params):
+    PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
     df = pd.read_csv(params["trace"])
-    analysis = pd.DataFrame(df.clever.analyze())
+    analysis = pd.DataFrame(df[PERFORMANCE].clever.analyze(n=len(df)))
     pp.pprint(analysis)
     analysis.to_csv(params["trace_analysis"])
 
-#Performance partitioner
-def performance_partitioner(params):
+#Divide dataset into training and testing
+def dataset_splitter(params):
     PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
     df = pd.read_csv(params["trace"])
     #Partition the different performance variables
-    partitioners = KResolutionReducer(k=4).fit(np.array(LogTransformer(base=10,add=1).transform(df[PERFORMANCE])))
+    partitioners = KResolutionReducer(k=10, transform_x=LogTransformer(base=10,add=1), auto=True).fit(df[PERFORMANCE])
     partitioners.save(params["perf_partitions"])
     #Create the training and testing datasets
     train_df,hyper_df,test_df = df.clever.random_sample(.5, .2)
@@ -74,6 +74,14 @@ def performance_partitioner(params):
     hyper_df.to_pickle(params["hyper"])
     test_df.to_pickle(params["test"])
     return partitioners, train_df, hyper_df, test_df
+
+#Analyze partitions
+def analyze_partitions(params):
+    PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
+    partitioners = KResolutionReducer.load(params["perf_partitions"])
+    df = pd.read_csv(params["trace"])
+    analysis = partitioners.analyze(df[PERFORMANCE])
+    pp.pprint(analysis)
 
 #Feature selection module
 def feature_selector(params):
@@ -87,7 +95,7 @@ def feature_selector(params):
         hyper_df = pd.read_pickle(params["hyper"])
         test_df = pd.read_pickle(params["test"])
     except:
-        partitioners, train_df, hyper_df, test_df = performance_partitioner(params)
+        partitioners, train_df, hyper_df, test_df = dataset_splitter(params)
 
     #Divide the datasets into x and y
     train_x,train_y = train_df.clever.split(FEATURES,PERFORMANCE)
@@ -108,8 +116,8 @@ def feature_selector(params):
     fs.select(
         train_x, train_y, hyper_x, hyper_y,
         max_iter=10,
-        max_tunes=0,
-        max_tune_iter=0,
+        max_tunes=10,
+        max_tune_iter=10,
         growth=.5,
         acc_loss=.05,
         thresh=.02)
@@ -142,6 +150,7 @@ def feature_selector_stats(params):
         "RMLSE" : PartitionedMetric(partitioner, score=RMLSEMetric(add=1), mode='all'),
     } for partitioner in partitioners.segments_])
     pp.pprint(analysis)
+
     fs.save(params["selector"])
     fs.model_.save(params["regressor"])
     fs.save_importances(params["importances"])
@@ -150,7 +159,8 @@ def feature_selector_stats(params):
 def app_behavior_classifier(params):
     df = pd.read_csv(params["trace"])
     feature_importances = pd.read_csv(params["importances"], index_col=0)
-    bc = AppClassifier(feature_importances)
+    mandatory_features = pd.DataFrame().clever.load_features(params["mandatory_features"])
+    bc = AppClassifier(feature_importances, mandatory_features)
     bc.fit(df)
     bc.save(params["classifier"])
 
@@ -158,15 +168,16 @@ def app_behavior_classifier(params):
 def storage_behavior_classifier(params):
     df = pd.read_csv(params["trace"])
     feature_importances = pd.DataFrame()
-    bc = StorageClassifier(feature_importances)
+    mandatory_features = pd.DataFrame().clever.load_features(params["mandatory_features"])
+    bc = StorageClassifier(feature_importances, mandatory_features)
     bc.fit(df)
     bc.save(params["classifier"])
 
 #Behavior Classification statistics module
 def behavior_classifier_stats(params):
     bc = BehaviorClassifier.load(params["classifier"])
-    analysis = bc.analyze(dir="datasets/model_analysis")
-    #pp.pprint(analysis)
+    analysis = bc.analyze(dir=params["class_stats"])
+    pp.pprint(analysis)
     #bc.visualize()
 
 #Filter out QoSAs
@@ -183,27 +194,31 @@ if __name__ == "__main__":
     if args.tool == "preprocess":
         preprocess_dataset(args.conf["PREPROCESS"])
 
-    if args.tool == "preliminary":
-        preliminary_analysis(args.conf["PREPROCESS"])
-
-    if args.tool == "dataset_split" or args.tool == "all":
-        performance_partitioner(args.conf["APP_BEHAVIOR_MODEL"])
-
+    if args.tool == "app_prelim_stats":
+        preliminary_analysis(args.conf["APP_BEHAVIOR_MODEL"])
+    if args.tool == "app_dataset" or args.tool == "all":
+        dataset_splitter(args.conf["APP_BEHAVIOR_MODEL"])
+    if args.tool == "app_dataset_stats" or args.tool == "all" or  args.tool == "app_dataset":
+        analyze_partitions(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_reg" or args.tool == "all":
         feature_selector(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_reg_stats" or args.tool == "all" or args.tool == "app_reg":
         feature_selector_stats(args.conf["APP_BEHAVIOR_MODEL"])
-
-    if args.tool == "qosa_reg" or args.tool == "all":
-        feature_selector(args.conf["STORAGE_BEHAVIOR_MODEL"])
-    if args.tool == "qosa_reg_stats" or args.tool == "all" or args.tool == "qosa_reg":
-        feature_selector_stats(args.conf["STORAGE_BEHAVIOR_MODEL"])
-
     if args.tool == "app_gen" or args.tool == "all":
         app_behavior_classifier(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_gen_stats" or args.tool == "all" or args.tool == "app_gen":
         behavior_classifier_stats(args.conf["APP_BEHAVIOR_MODEL"])
 
+    if args.tool == "qosa_prelim_stats":
+        preliminary_analysis(args.conf["STORAGE_BEHAVIOR_MODEL"])
+    if args.tool == "qosa_dataset" or args.tool == "all":
+        dataset_splitter(args.conf["STORAGE_BEHAVIOR_MODEL"])
+    if args.tool == "qosa_dataset_stats" or args.tool == "all" or args.tool == "qosa_dataset":
+        analyze_partitions(args.conf["STORAGE_BEHAVIOR_MODEL"])
+    if args.tool == "qosa_reg" or args.tool == "all":
+        feature_selector(args.conf["STORAGE_BEHAVIOR_MODEL"])
+    if args.tool == "qosa_reg_stats" or args.tool == "all" or args.tool == "qosa_reg":
+        feature_selector_stats(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "qosa_gen" or args.tool == "all":
         storage_behavior_classifier(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "qosa_gen_stats" or args.tool == "all" or args.tool == "qosa_gen":

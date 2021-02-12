@@ -4,17 +4,17 @@ from typing import List, Dict, Tuple
 import pandas as pd
 import numpy as np
 
-from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 from clever.transformers import *
+from clever.models.cluster import *
 
 import pprint, warnings
 pp = pprint.PrettyPrinter(depth=6)
 pd.options.mode.chained_assignment = None
 
 class AppClassifier(BehaviorClassifier):
-    def __init__(self, feature_importances:pd.DataFrame):
-        super().__init__(feature_importances)
+    def __init__(self, feature_importances:pd.DataFrame, mandatory_features:List[str]=None):
+        super().__init__(feature_importances, mandatory_features)
         self.app_classes = None #A pandas dataframe containing: means, stds, number of entries, and qosas
         self.thresh = .25
 
@@ -24,12 +24,14 @@ class AppClassifier(BehaviorClassifier):
         Calculate a standardized set of scores that are common between the apps and QoSAs
         """
         #X = X.iloc[0:100,:]
+        #Identify clusters of transformed data
         self.transform_ = ChainTransformer([LogTransformer(base=10,add=1), MinMaxScaler()])
         X_features = self.transform_.fit_transform(X[self.features])*self.feature_importances.max(axis=1).to_numpy()
-        self.model_ = KMeans(n_clusters=32)
+        self.model_ = KMeans(k=10)
         self.labels_ = self.model_.fit_predict(X_features)
+        #Cluster non-transformed data
         self.app_classes = self.standardize(X)
-        self.app_classes = self._create_groups(self.app_classes, self.labels_)
+        self.app_classes = self._create_groups(self.app_classes, self.labels_, other=self.mandatory_features)
         return self
 
     def filter_qosas(self, storage_classifier, top_n=10):
@@ -51,20 +53,22 @@ class AppClassifier(BehaviorClassifier):
 
     def analyze(self, features=None, metric='all', dir=None):
         if features == None:
-            features = self.features + self.vars
+            features = self.features
         if dir is not None:
-            trans = ChainTransformer([LogTransformer(add=1,base=10), MinMaxScaler()])
-            means = self.clusters_["means"][self.features + self.imm_features].copy()
-            means.loc[:,self.features] = (trans.fit_transform(self.clusters_["means"][self.features])*3).astype(int)
-            means = means[self.features + self.imm_features].drop_duplicates()
+            app_classes = self.app_classes.copy()
+            app_classes.loc[:,self.features] = (self.transform_.transform(self.app_classes[self.features])*3).astype(int)
             for feature in self.features:
-                for i,label in enumerate(["low", "medium", "large", "very large"]):
-                    means.loc[means["feature"] == i,feature] = label
-            means.to_csv(os.path.join(dir, "behavior_means.csv"))
-            self.clusters_["stds"][self.features + self.imm_features].to_csv(os.path.join(dir, "behavior_stds.csv"))
-            pd.DataFrame(self.clusters_["ns"]).to_csv(os.path.join(dir, "behavior_ns.csv"))
+                for i,label in enumerate(["low", "medium", "high"]):
+                    app_classes.loc[app_classes[feature] == i,feature] = label
+                app_classes.loc[app_classes[feature] == 3,feature] = "high"
+            app_classes = app_classes[self.features + self.mandatory_features + ["count"]]
+            app_classes = app_classes.groupby(self.features + self.mandatory_features).sum()
+            app_classes.sort_values("count", ascending=False, inplace=True)
+            app_classes.to_csv(os.path.join(dir, "behavior_means.csv"))
 
     def visualize(self, path=None):
+        return
+        """
         for perplexity in [5, 10, 20, 50, 70, 100, 200]:
             X = TSNE(n_components=2, perplexity=perplexity).fit_transform(self.clusters_trans_["sample"][self.features])
             plt.scatter(X[:,0], X[:,1], label=self.clusters_trans_["sample"]["labels"], c=self.clusters_trans_["sample"]["labels"], alpha=.3)
@@ -72,6 +76,7 @@ class AppClassifier(BehaviorClassifier):
             if path is not None:
                 plt.savefig(path)
             plt.close()
+        """
 
     def standardize(self, io_identifier):
         MD = ["TOTAL_STDIO_OPENS", "TOTAL_POSIX_OPENS", "TOTAL_MPIIO_COLL_OPENS", "TOTAL_POSIX_STATS", "TOTAL_STDIO_SEEKS"]
