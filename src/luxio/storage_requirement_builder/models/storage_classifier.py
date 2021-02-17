@@ -16,7 +16,7 @@ class StorageClassifier(BehaviorClassifier):
         self.qosas = None #A dataframe containing: means, stds, ns
 
     def fit(self, X:pd.DataFrame=None):
-        self.features = ["Read_Large_BW", "Write_Large_BW", "Read_Small_BW", "Write_Small_BW"]
+        self.features = ["Read_Large_BW", "Write_Large_BW", "Read_Small_BW", "Write_Small_BW", "Price"]
         self.qosas = X[self.features]
         self.transform_ = MinMaxScaler().fit(self.qosas)
         self.qosas = self.standardize(self.qosas)

@@ -26,25 +26,22 @@ class Timer:
     def msec(self):
         return self.count/10**6
 
-def naiive_algo(io_identifier:pd.DataFrame, app_classifier, storage_classifier) -> pd.DataFrame:
+def naiive_algo(io_identifier:pd.DataFrame, app_classifier, storage_classifier, counter) -> pd.DataFrame:
     qosas = storage_classifier.qosas
     #io_identifier = app_classifier.standardize(io_identifier)
-    ranked_qosa = qosas.iloc[naiive_algo.counter,:]
-    naiive_algo.counter += 1
-    #return emulated_cost(io_identifier, ranked_qosa)
-    return 0
-naiive_algo.counter = 0
+    ranked_qosa = qosas.iloc[counter:,:]
+    cost = emulated_cost(io_identifier, ranked_qosa)
+    return cost
 
-def optimal_algo(io_identifier:pd.DataFrame, app_classifier, storage_classifier) -> pd.DataFrame:
+def optimal_algo(io_identifier:pd.DataFrame, app_classifier, storage_classifier, counter) -> pd.DataFrame:
     io_identifier = app_classifier.standardize(io_identifier)
     ranked_qosas = storage_classifier.get_coverages(io_identifier)
-    #ranked_qosas = ranked_qosas[ranked_qosas.magnitude > ranked_qosas.magnitude.quantile(.9)]
     ranked_qosas = ranked_qosas.nlargest(20, "magnitude")
     ranked_qosas.sort_values("magnitude")
-    #return emulated_cost(io_identifier, ranked_qosas)
+    return emulated_cost(io_identifier, ranked_qosas)
     return 0
 
-def luxio_algo(io_identifier:pd.DataFrame, app_classifier, storage_classifier) -> pd.DataFrame:
+def luxio_algo(io_identifier:pd.DataFrame, app_classifier, storage_classifier, counter) -> pd.DataFrame:
     """
     Takes in an I/O identifier and produces a ranked list of candidate QoSAs to pass to the
     resource resolver.
@@ -58,8 +55,8 @@ def luxio_algo(io_identifier:pd.DataFrame, app_classifier, storage_classifier) -
     ranked_qosas = ranked_qosas.groupby(["qosa_id"]).max().nlargest(20, "magnitude")
     #Sort the QoSAs in descending order
     ranked_qosas.sort_values("magnitude")
-    #return emulated_cost(io_identifier, ranked_qosas)
-    return 0
+    cost = emulated_cost(io_identifier, ranked_qosas)
+    return cost
 
 def emulated_cost(io_identifier:pd.DataFrame, ranked_qosas:pd.DataFrame):
     MD = ["TOTAL_STDIO_OPENS", "TOTAL_POSIX_OPENS", "TOTAL_MPIIO_COLL_OPENS", "TOTAL_POSIX_STATS", "TOTAL_STDIO_SEEKS"]
@@ -70,22 +67,26 @@ def emulated_cost(io_identifier:pd.DataFrame, ranked_qosas:pd.DataFrame):
     md_time = (io_identifier[MD].sum()*1024 / (1<<20)) / (best_qosa["Read_Small_BW"] + best_qosa["Write_Small_BW"])/2 if best_qosa["Read_Small_BW"] + best_qosa["Write_Small_BW"] > 0 else 0
     read_time /= io_identifier["NPROCS"]
     write_time /= io_identifier["NPROCS"]
-    return (read_time + write_time + md_time)
+    return (read_time + write_time + md_time), best_qosa["Price"]
 
-def trials(algo, algo_name, df, ac, sc, records, n, rep=10):
+def trials(algo, algo_name, df, ac, sc, records, n, top_n, rep=10):
     t = Timer()
+    counter = 0
     for idx,row in df.iterrows():
         t.reset()
         for i in range(rep):
             t.resume()
-            runtime = algo(row.to_frame().transpose(), ac, sc)
+            runtime,price = algo(row.to_frame().transpose(), ac, sc, counter)
             t.pause()
+        counter += 1
         records.append({
-            #"APP": row["APP_NAME"],
+            "APP": row["APP_NAME"],
             "ALGO": algo_name,
-            #"EST_RUNTIME": runtime,
+            "EST_RUNTIME": runtime,
+            "PRICE": price,
             "MAP_THRPT": 1000 / (t.msec() / rep),
-            "n" : n
+            "n" : n,
+            "top_n" : top_n
         })
 
 def qosa_gen(n=10**7):
@@ -143,21 +144,25 @@ def qosa_gen(n=10**7):
         write_sbw.append(wsbw)
 
     df = pd.DataFrame(data=list(zip(devv, price, read_lbw, write_lbw, read_sbw, write_sbw)), columns=['Device','Price', 'Read_Large_BW', 'Write_Large_BW', 'Read_Small_BW', 'Write_Small_BW'])
+    df.sort_values(by="Read_Large_BW", inplace=True)
     bc = StorageClassifier(pd.DataFrame())
     bc.fit(df)
     return bc
 
 if __name__ == "__main__":
     records = []
-    df = pd.read_csv("datasets/df_subsample.csv").iloc[0:1,:]
+    df = pd.read_csv("datasets/df_subsample.csv")#.iloc[3:4,:]
     ac = AppClassifier.load("sample/app_classifier/app_class_model.pkl")
-    for n in [10**3, 10**4, 10**5, 10**6, 10**7]:
-        print(n)
-        sc = qosa_gen(n)
-        print("Qosas generated")
-        ac.filter_qosas(sc)
-        print("Qosas filtered")
-        trials(naiive_algo, "naiive_algo", df, ac, sc, records, n)
-        trials(optimal_algo, "optimal_algo", df, ac, sc, records, n)
-        trials(luxio_algo, "luxio_algo", df, ac, sc, records, n)
+    ns = [10**3, 10**4, 10**5, 10**6, 10**7]
+    ns = [10**3]
+    top_ns = [10]
+    for n in ns:
+        for top_n in top_ns:
+            sc = qosa_gen(n)
+            print("Qosas generated")
+            ac.filter_qosas(sc, top_n=top_n)
+            print("Qosas filtered")
+            trials(naiive_algo, "naiive_algo", df, ac, sc, records, n, top_n)
+            trials(optimal_algo, "optimal_algo", df, ac, sc, records, n, top_n)
+            trials(luxio_algo, "luxio_algo", df, ac, sc, records, n, top_n)
     pd.DataFrame(records).to_csv("metrics.csv")

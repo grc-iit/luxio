@@ -66,7 +66,7 @@ def dataset_splitter(params):
     PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
     df = pd.read_csv(params["trace"])
     #Partition the different performance variables
-    partitioners = KResolutionReducer(k=4, transform_x=LogTransformer(base=10,add=1), auto=False).fit(df[PERFORMANCE])
+    partitioners = KResolutionReducer(k=4, transform_x=LogTransformer(base=10,add=1)).fit(df[PERFORMANCE])
     partitioners.save(params["perf_partitions"])
     #Create the training and testing datasets
     train_df,hyper_df,test_df = df.clever.random_sample(.5, .2)
@@ -106,11 +106,10 @@ def feature_selector(params):
     fs = FeatureSelector(
         FEATURES,
         PERFORMANCE,
-        [XGBRegressor(
+        XGBRegressor(
             transform_y=LogTransformer(base=10,add=1),
-            fitness_metric=PartitionedMetric(partitioner, score=RelativeAccuracyMetric(scale=1, add=1)),
-            error_metric=PartitionedMetric(partitioner, score=RMLSEMetric(add=1))
-        ) for partitioner in partitioners.segments_]
+            fitness_metric=SegmentedMetric(partitioner, metric=RelativeAccuracyMetric(scale=1, add=1)),
+            error_metric=SegmentedMetric(partitioner, metric=RMLSEMetric(add=1)))
     )
 
     fs.select(
@@ -146,8 +145,8 @@ def feature_selector_stats(params):
     fs.model_._calculate_metrics()
     analysis = fs.analyze(test_x, test_y, metrics=[{
         "r2" : r2Metric(),
-        "RelativeError" : PartitionedMetric(partitioner, score=RelativeErrorMetric(add=1), mode='all'),
-        "RMLSE" : PartitionedMetric(partitioner, score=RMLSEMetric(add=1), mode='all'),
+        "RelativeError" : PartitionedMetric(partitioner, metric=RelativeErrorMetric(add=1), mode='all'),
+        "RMLSE" : PartitionedMetric(partitioner, metric=RMLSEMetric(add=1), mode='all'),
     } for partitioner in partitioners.segments_])
     pp.pprint(analysis)
 
