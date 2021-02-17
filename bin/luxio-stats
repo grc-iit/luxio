@@ -15,13 +15,16 @@ from luxio.io_requirement_extractor.trace_parser.trace_parser_factory import *
 from luxio.storage_requirement_builder.models import AppClassifier, StorageClassifier, BehaviorClassifier
 from luxio.common.configuration_manager import *
 from clever.dataset import *
-from clever.models.regression.forest import *
+from clever.models.regression.multioutput import *
+#from clever.models.regression.forest import *
+from xgboost import XGBRegressor
 from clever.models.regression.ensemble import *
 from clever.models.cluster import *
 from clever.transformers import *
 from clever.feature_selection import *
 from clever.metrics import *
 import argparse, configparser
+import copy
 import pprint, warnings
 
 pp = pprint.PrettyPrinter(depth=6)
@@ -103,13 +106,17 @@ def feature_selector(params):
     test_x,test_y = test_df.clever.split(FEATURES,PERFORMANCE)
 
     #Train model for each variable and select minimum feature set
+    """
     fs = FeatureSelector(
         FEATURES,
         PERFORMANCE,
-        XGBRegressor(
-            transform_y=LogTransformer(base=10,add=1),
-            fitness_metric=SegmentedMetric(partitioner, metric=RelativeAccuracyMetric(scale=1, add=1)),
-            error_metric=SegmentedMetric(partitioner, metric=RMLSEMetric(add=1)))
+        MultiOutputRegressor(XGBRegressor(
+            objective ='reg:squarederror', n_estimators = 20, verbosity=0),
+            fitness_metric=r2Metric(),
+            #fitness_metric=SegmentedMetric(partitioners, metric=RelativeAccuracyMetric(scale=1, add=1)),
+            error_metric=SegmentedMetric(partitioners, metric=RMLSEMetric(add=1)),
+            transform_y=LogTransformer(base=10,add=1)
+        )
     )
 
     fs.select(
@@ -120,12 +127,20 @@ def feature_selector(params):
         growth=.5,
         acc_loss=.05,
         thresh=.02)
+    """
+    model = XGBRegressor(objective ='reg:squarederror', n_estimators = 20, verbosity=0).fit(train_x, train_y)
+    from sklearn.metrics import r2_score
+    idxs = test_y.TOTAL_READ_TIME < test_y["TOTAL_READ_TIME"].quantile(.99)
+    print(r2_score(model.predict(train_x), train_y))
+    print(r2_score(model.predict(hyper_x), hyper_y))
+    print(r2_score(model.predict(test_x[idxs]), test_y[idxs]))
+    quit()
+    return
 
     #Save and analyze
     fs.save(params["selector"])
     fs.model_.save(params["regressor"])
     fs.save_importances(params["importances"])
-    pp.pprint(fs.analyze(test_x,test_y))
 
 #Feature selection statistics module
 def feature_selector_stats(params):
@@ -142,12 +157,12 @@ def feature_selector_stats(params):
     test_x,test_y = test_df.clever.split(FEATURES,PERFORMANCE)
     #Load the feature selector
     fs = FeatureSelector.load(params["selector"])
-    fs.model_._calculate_metrics()
-    analysis = fs.analyze(test_x, test_y, metrics=[{
+    #Determine how well model performs per-features
+    analysis = fs.analyze(test_x, test_y, metrics={
         "r2" : r2Metric(),
-        "RelativeError" : PartitionedMetric(partitioner, metric=RelativeErrorMetric(add=1), mode='all'),
-        "RMLSE" : PartitionedMetric(partitioner, metric=RMLSEMetric(add=1), mode='all'),
-    } for partitioner in partitioners.segments_])
+        "RelativeError" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), mode='all'),
+        "RMLSE" : SegmentedMetric(partitioners, metric=RMLSEMetric(add=1), mode='all'),
+    })
     pp.pprint(analysis)
 
     fs.save(params["selector"])
