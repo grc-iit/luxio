@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from luxio.external_clients.json_client import JSONClient
 from luxio.utils.mapper_manager import MapperManager
+from luxio.resolver import Resolver
 import pandas as pd
 import numpy as np
 import configparser
@@ -15,12 +16,19 @@ class StorageConfigurator(ABC):
 
     def __init__(self, file_='storage.conf') -> None:
         self.load_configs(file_)
+        self.resolver = Resolver()
 
     def _initialize(self) -> None:
         pass
 
     def _finalize(self) -> None:
         pass
+
+    def get_cost(self, deployment_conf: dict) -> float:
+        cost = 0
+        for k, v in deployment_conf.items():
+            cost += (self.current_price[k] * v)
+        return cost
 
     def load_configs(self, file_) -> None:
         config = configparser.ConfigParser()
@@ -41,6 +49,7 @@ class StorageConfigurator(ABC):
             self.A[i] = config.get(i, 'Lower_bound')
             self.B[i] = config.get(i, 'Growth_rate')
             self.K[i] = config.get(i, 'Upper_bound')
+            self.base_price = config.get(i, 'Base_price')
             self.nu[i] = 1.0
             self.Q[i] = 1.0
             self.C[i] = 1.0
@@ -68,7 +77,7 @@ class StorageConfigurator(ABC):
         This function gets the number of remaining devices of specified tier
         currently just returns template val
         """
-        return 10 if tier == 'TIER-1' else 20 if tier == 'TIER-2' else 30
+        return self.resolver.get(tier)
 
     def price_function(self, tier: str):
         return self.naive(tier) * self.logistic(tier)
@@ -91,10 +100,10 @@ class StorageConfigurator(ABC):
             )
         )
 
-        #Acquire the set of available resources from the scheduler
-        #Determine whether or not the qosas in the storage requirement can be satisfied, and if so, how much it costs
-            #We will have to have some configuration file to relate features from the hardware with the benchmarks
-        #Choose the lowest-price QoSA that can be satisfied
+        # Acquire the set of available resources from the scheduler
+        # Determine whether or not the qosas in the storage requirement can be satisfied, and if so, how much it costs
+        # We will have to have some configuration file to relate features from the hardware with the benchmarks
+        # Choose the lowest-price QoSA that can be satisfied
         self._finalize()
         return None
 
