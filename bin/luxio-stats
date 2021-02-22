@@ -14,10 +14,9 @@ import numpy as np
 from luxio.io_requirement_extractor.trace_parser.trace_parser_factory import *
 from luxio.storage_requirement_builder.models import AppClassifier, StorageClassifier, BehaviorClassifier
 from luxio.common.configuration_manager import *
-from clever.dataset import *
+from clever.common import *
 from clever.models.regression.multioutput import *
-#from clever.models.regression.forest import *
-from xgboost import XGBRegressor
+from clever.models.regression.forest import *
 from clever.models.regression.ensemble import *
 from clever.models.cluster import *
 from clever.transformers import *
@@ -58,21 +57,21 @@ def preprocess_dataset(params):
 
 #Preliminary analysis of a dataset
 def preliminary_analysis(params):
-    PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
+    PERFORMANCE = load_features(params["vars"])
     df = pd.read_csv(params["trace"])
-    analysis = pd.DataFrame(df[PERFORMANCE].clever.analyze(n=len(df)))
+    analysis = pd.DataFrame(analyze_df(df[PERFORMANCE], n=len(df)))
     pp.pprint(analysis)
     analysis.to_csv(params["trace_analysis"])
 
 #Divide dataset into training and testing
 def dataset_splitter(params):
-    PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
+    PERFORMANCE = load_features(params["vars"])
     df = pd.read_csv(params["trace"])
     #Partition the different performance variables
     partitioners = KResolutionReducer(k=4, transform_x=LogTransformer(base=10,add=1)).fit(df[PERFORMANCE])
     partitioners.save(params["perf_partitions"])
     #Create the training and testing datasets
-    train_df,hyper_df,test_df = df.clever.random_sample(.5, .2)
+    train_df,hyper_df,test_df = random_sample(df, .5, .2)
     train_df.to_pickle(params["train"])
     hyper_df.to_pickle(params["hyper"])
     test_df.to_pickle(params["test"])
@@ -80,7 +79,7 @@ def dataset_splitter(params):
 
 #Analyze partitions
 def analyze_partitions(params):
-    PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
+    PERFORMANCE = load_features(params["vars"])
     partitioners = KResolutionReducer.load(params["perf_partitions"])
     df = pd.read_csv(params["trace"])
     analysis = partitioners.analyze(df[PERFORMANCE])
@@ -88,8 +87,8 @@ def analyze_partitions(params):
 
 #Feature selection module
 def feature_selector(params):
-    FEATURES = pd.DataFrame().clever.load_features(params["features"])
-    PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
+    FEATURES = load_features(params["features"])
+    PERFORMANCE = load_features(params["vars"])
 
     #Load the training and testing datasets
     try:
@@ -101,41 +100,43 @@ def feature_selector(params):
         partitioners, train_df, hyper_df, test_df = dataset_splitter(params)
 
     #Divide the datasets into x and y
-    train_x,train_y = train_df.clever.split(FEATURES,PERFORMANCE)
-    hyper_x,hyper_y = hyper_df.clever.split(FEATURES,PERFORMANCE)
-    test_x,test_y = test_df.clever.split(FEATURES,PERFORMANCE)
+    train_x,train_y = train_df[FEATURES],train_df[PERFORMANCE]
+    hyper_x,hyper_y = hyper_df[FEATURES],hyper_df[PERFORMANCE]
+    test_x,test_y = test_df[FEATURES],test_df[PERFORMANCE]
 
     #Train model for each variable and select minimum feature set
-    """
     fs = FeatureSelector(
         FEATURES,
         PERFORMANCE,
         MultiOutputRegressor(XGBRegressor(
             objective ='reg:squarederror', n_estimators = 20, verbosity=0),
-            fitness_metric=r2Metric(),
-            #fitness_metric=SegmentedMetric(partitioners, metric=RelativeAccuracyMetric(scale=1, add=1)),
+            fitness_metric=SegmentedMetric(partitioners, metric=RelativeAccuracyMetric(scale=1, add=1)),
             error_metric=SegmentedMetric(partitioners, metric=RMLSEMetric(add=1)),
             transform_y=LogTransformer(base=10,add=1)
         )
     )
 
+    """
+    fs = FeatureSelector(
+        FEATURES,
+        PERFORMANCE,
+        EnsembleModelRegressor(
+            #fitness_metric=RelativeAccuracyMetric(scale=1, add=1),
+            #error_metric=RMLSEMetric(add=1),
+            fitness_metric=SegmentedMetric(partitioners, metric=RelativeAccuracyMetric(scale=1, add=1)),
+            error_metric=SegmentedMetric(partitioners, metric=RMLSEMetric(add=1))
+        )
+    )
+    """
+
     fs.select(
         train_x, train_y, hyper_x, hyper_y,
         max_iter=10,
-        max_tunes=0,
-        max_tune_iter=10,
+        max_tunes=10,
+        max_tune_iter=2,
         growth=.5,
         acc_loss=.05,
         thresh=.02)
-    """
-    model = XGBRegressor(objective ='reg:squarederror', n_estimators = 20, verbosity=0).fit(train_x, train_y)
-    from sklearn.metrics import r2_score
-    idxs = test_y.TOTAL_READ_TIME < test_y["TOTAL_READ_TIME"].quantile(.99)
-    print(r2_score(model.predict(train_x), train_y))
-    print(r2_score(model.predict(hyper_x), hyper_y))
-    print(r2_score(model.predict(test_x[idxs]), test_y[idxs]))
-    quit()
-    return
 
     #Save and analyze
     fs.save(params["selector"])
@@ -144,24 +145,24 @@ def feature_selector(params):
 
 #Feature selection statistics module
 def feature_selector_stats(params):
-    FEATURES = pd.DataFrame().clever.load_features(params["features"])
-    PERFORMANCE = pd.DataFrame().clever.load_features(params["vars"])
+    FEATURES = load_features(params["features"])
+    PERFORMANCE = load_features(params["vars"])
     #Create the training and testing datasets
     partitioners = KResolutionReducer.load(params["perf_partitions"])
     train_df = pd.read_pickle(params["train"])
     hyper_df = pd.read_pickle(params["hyper"])
     test_df = pd.read_pickle(params["test"])
     #Divide the datasets into x and y
-    train_x,train_y = train_df.clever.split(FEATURES,PERFORMANCE)
-    hyper_x,hyper_y = hyper_df.clever.split(FEATURES,PERFORMANCE)
-    test_x,test_y = test_df.clever.split(FEATURES,PERFORMANCE)
+    train_x,train_y = train_df[FEATURES],train_df[PERFORMANCE]
+    hyper_x,hyper_y = hyper_df[FEATURES],hyper_df[PERFORMANCE]
+    test_x,test_y = test_df[FEATURES],test_df[PERFORMANCE]
     #Load the feature selector
     fs = FeatureSelector.load(params["selector"])
     #Determine how well model performs per-features
     analysis = fs.analyze(test_x, test_y, metrics={
         "r2" : r2Metric(),
-        "RelativeError" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), mode='all'),
-        "RMLSE" : SegmentedMetric(partitioners, metric=RMLSEMetric(add=1), mode='all'),
+        "RelativeError" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), part_mode='all', feature_mode='all'),
+        "RMLSE" : SegmentedMetric(partitioners, metric=RMLSEMetric(add=1), part_mode='all', feature_mode='all'),
     })
     pp.pprint(analysis)
 
@@ -173,7 +174,7 @@ def feature_selector_stats(params):
 def app_behavior_classifier(params):
     df = pd.read_csv(params["trace"])
     feature_importances = pd.read_csv(params["importances"], index_col=0)
-    mandatory_features = pd.DataFrame().clever.load_features(params["mandatory_features"])
+    mandatory_features = load_features(params["mandatory_features"])
     bc = AppClassifier(feature_importances, mandatory_features)
     bc.fit(df)
     bc.save(params["classifier"])
@@ -182,7 +183,7 @@ def app_behavior_classifier(params):
 def storage_behavior_classifier(params):
     df = pd.read_csv(params["trace"])
     feature_importances = pd.DataFrame()
-    mandatory_features = pd.DataFrame().clever.load_features(params["mandatory_features"])
+    mandatory_features = load_features(params["mandatory_features"])
     bc = StorageClassifier(feature_importances, mandatory_features)
     bc.fit(df)
     bc.save(params["classifier"])
