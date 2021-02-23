@@ -105,6 +105,7 @@ def feature_selector(params):
     test_x,test_y = test_df[FEATURES],test_df[PERFORMANCE]
 
     #Train model for each variable and select minimum feature set
+    """
     fs = FeatureSelector(
         FEATURES,
         PERFORMANCE,
@@ -115,25 +116,27 @@ def feature_selector(params):
             transform_y=LogTransformer(base=10,add=1)
         )
     )
-
     """
+
+    #"""
     fs = FeatureSelector(
         FEATURES,
         PERFORMANCE,
         EnsembleModelRegressor(
-            #fitness_metric=RelativeAccuracyMetric(scale=1, add=1),
-            #error_metric=RMLSEMetric(add=1),
-            fitness_metric=SegmentedMetric(partitioners, metric=RelativeAccuracyMetric(scale=1, add=1)),
-            error_metric=SegmentedMetric(partitioners, metric=RMLSEMetric(add=1))
+            fitness_metric=RelativeAccuracyMetric(scale=1, add=1),
+            error_metric=RMLSEMetric(add=1),
+            #fitness_metric=SegmentedMetric(partitioners, metric=RelativeAccuracyMetric(scale=1, add=1)),
+            #error_metric=SegmentedMetric(partitioners, metric=RMLSEMetric(add=1)),
+            transform_y=LogTransformer(base=10,add=1)
         )
     )
-    """
+    #"""
 
     fs.select(
         train_x, train_y, hyper_x, hyper_y,
         max_iter=10,
         max_tunes=10,
-        max_tune_iter=2,
+        max_tune_iter=10,
         growth=.5,
         acc_loss=.05,
         thresh=.02)
