@@ -37,3 +37,4 @@ class StorageRequirementBuilder:
         #Return the ranked set of QoSAs
         self._finalize()
         return ranked_qosas
+
