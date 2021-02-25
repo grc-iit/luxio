@@ -47,3 +47,4 @@ class IORequirementExtractor:
 
     def _finalize(self) -> None:
         pass
+

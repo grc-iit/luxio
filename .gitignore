@@ -5,6 +5,15 @@ build
 dist
 *.egg_info
 MANIFEST
+*.sync-conflict*
+*~
+*.swp
+*.swo
+
+# datasets
+*_test.pkl
+*_train.pkl
+*_hyper.pkl
 datasets
 sample/app_classifier
 sample/qosa_classifier

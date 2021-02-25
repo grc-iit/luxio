@@ -211,3 +211,4 @@ if __name__ == "__main__":
 
     if args.tool == "filter" or args.tool == "all":
         filter_qosas(args.conf["APP_BEHAVIOR_MODEL"], args.conf["STORAGE_BEHAVIOR_MODEL"])
+
