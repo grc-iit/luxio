@@ -6,8 +6,8 @@ dist
 *.egg_info
 MANIFEST
 datasets
-sample/app_classifier
-sample/qosa_classifier
+sample/app_classifier*
+sample/qosa_classifier*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -136,7 +136,7 @@ def feature_selector(params):
         train_x, train_y, hyper_x, hyper_y,
         max_iter=10,
         max_tunes=10,
-        max_tune_iter=10,
+        max_tune_iter=100,
         growth=.5,
         acc_loss=.05,
         thresh=.02)
