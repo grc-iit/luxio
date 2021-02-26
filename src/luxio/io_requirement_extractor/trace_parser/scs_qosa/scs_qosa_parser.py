@@ -59,9 +59,9 @@ class SCSQosaParser(TraceParser):
         for io_type in io_types:
             for req_size in req_sizes:
                 sub_df = df[(df.io_type == io_type) & (df.req_size == req_size)].drop(['io_type', 'req_size'], axis=1)
-                sub_df.loc[:,BWS] = sub_df[DATA] / sub_df[TIMES]
+                sub_df.loc[:,BWS] = sub_df[DATA].to_numpy() / sub_df[TIMES].to_numpy()
                 sub_df.rename(columns={col:f"{io_type}_{col}_{req_size}" for col in TIMES + BWS}, inplace=True)
                 dfs.append(sub_df)
         df = reduce(lambda x, y: pd.merge(x, y), dfs)
-        
+
         self.df = df
