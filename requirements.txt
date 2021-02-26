@@ -2,3 +2,6 @@ msgpack
 jsonschema
 redis
 pytest
+pyyaml
+pandas
+numpy

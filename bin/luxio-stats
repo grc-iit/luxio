@@ -163,7 +163,7 @@ def feature_selector_stats(params):
     fs = FeatureSelector.load(params["selector"])
     #Determine how well model performs per-features
     analysis = fs.analyze(test_x, test_y, metrics={
-        "r2" : r2Metric(),
+        #"r2" : r2Metric(),
         "RelativeError" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), part_mode='all', feature_mode='all'),
         "RMLSE" : SegmentedMetric(partitioners, metric=RMLSEMetric(add=1), part_mode='all', feature_mode='all'),
     })
