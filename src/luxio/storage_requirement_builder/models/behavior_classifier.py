@@ -14,7 +14,35 @@ class BehaviorClassifier(ABC):
         feature_importances: A dataframe where rows are features and columns are timing types (MD, READ, WRITE).
         feature_categories: A dataframe where rows are features and columns indicate how the features are to be aggregated
         """
+        feature_importances.index.name = "features"
+        self.feature_importances = feature_importances.fillna(0)
+        self.features = list(feature_importances.index)
+        self.mandatory_features = mandatory_features if mandatory_features is not None else []
+        self.scores = None
+        self.std_scores = None
         return
+
+    def _smash(self, df:pd.DataFrame, cols:np.array):
+        grp = df.groupby(cols)
+        means = grp.mean().reset_index()
+        std_col_map = {orig_col:f"std_{orig_col}" for orig_col in means.columns}
+        std_cols = list(std_col_map.values())
+        stds = grp.std().reset_index().rename(std_col_map)
+        ns = grp.size().reset_index(name="count")["count"].to_numpy()/len(df)
+        idxs = np.argsort(-ns)
+        means = means.iloc[idxs,:]
+        stds = stds.iloc[idxs,:]
+        ns = ns[idxs]
+        means.loc[:,std_cols] = stds.to_numpy()
+        means.loc[:,"count"] = ns
+        return means
+
+    def _create_groups(self, df:pd.DataFrame, labels:np.array, other:List[str]=None):
+        df = pd.DataFrame(df)
+        df.loc[:,"labels"] = labels
+        if other is None:
+            other = []
+        return self._smash(df, ["labels"] + other)
 
     @abstractmethod
     def fit(self, X):
@@ -24,17 +52,9 @@ class BehaviorClassifier(ABC):
     def get_magnitude(self, X):
         return self
 
+    @abstractmethod
     def standardize(self, features:pd.DataFrame):
-        """
-        Calculate a standardized set of scores based on the features.
-        """
-
-        #TODO: An example, need to actually implement
-        features.loc[:,"score"] = features[self.features[0]] * features[self.features[1]]
-        features.loc[:, "std_score"] = 5
-        self.scores = ["score"]
-        self.std_scores = ["std_score"]
-        return features
+        raise Error(ErrorCode.NOT_IMPLEMENTED)
 
     def save(self, path):
         pkl.dump(self, open( path, "wb" ))
