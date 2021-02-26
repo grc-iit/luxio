@@ -51,9 +51,9 @@ def preprocess_dataset(params):
     conf = ConfigurationManager.get_instance()
     conf.__dict__.update(params)
     dataset = params["dataset_type"]
-    parser = TraceParserFactory(TraceParserType[dataset])
+    parser = TraceParserFactory.get_parser(TraceParserType[dataset])
     df = parser.preprocess()
-    df.to_pickle(params["out"])
+    df.to_csv(params["out"], index=False)
 
 #Preliminary analysis of a dataset
 def preliminary_analysis(params):

@@ -3,6 +3,7 @@ from luxio.common.enumerations import TraceParserType
 from luxio.common.error_codes import Error, ErrorCode
 from luxio.io_requirement_extractor.trace_parser.darshan.v3_2_1 import DarshanTraceParser_3_2_1
 from luxio.io_requirement_extractor.trace_parser.darshan.anl import ArgonneTraceParser
+from luxio.io_requirement_extractor.trace_parser.scs_qosa import SCSQosaParser
 from luxio.io_requirement_extractor.trace_parser.trace_parser import TraceParser
 
 
@@ -25,5 +26,7 @@ class TraceParserFactory:
             return DarshanTraceParser_3_2_1()
         elif type == TraceParserType.ARGONNE:
             return ArgonneTraceParser()
+        elif type == TraceParserType.SCS_QOSA:
+            return SCSQosaParser()
         else:
             raise Error(ErrorCode.NOT_IMPLEMENTED)

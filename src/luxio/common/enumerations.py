@@ -17,6 +17,7 @@ class TraceParserType(Enum):
     """
     DARSHAN = 'darshan'
     ARGONNE = 'argonne'
+    SCS_QOSA = 'scs_qosa'
 
     def __str__(self) -> str:
         return self.value
