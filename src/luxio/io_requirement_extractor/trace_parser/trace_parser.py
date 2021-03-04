@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import abc
 from typing import List, Dict, Tuple
+from functools import reduce
 
 class TraceParser(abc.ABC):
     def __init__(self):

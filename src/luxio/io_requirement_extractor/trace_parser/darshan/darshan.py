@@ -132,13 +132,6 @@ class DarshanTraceParser(TraceParser):
             df.TOTAL_MPIIO_SYNCS
         )
 
-        #SCORE ACCESS PATTERN
-        df.loc[:, "TOTAL_ACCESS_PATTERN_SCORE"] = (
-            .25*(df.TOTAL_POSIX_CONSEC_READS + df.TOTAL_POSIX_CONSEC_WRITES + df.TOTAL_POSIX_RW_SWITCHES) +
-            .25*(df.TOTAL_POSIX_MEM_NOT_ALIGNED + df.TOTAL_POSIX_FILE_NOT_ALIGNED) +
-            .75*(df.TOTAL_POSIX_SEQ_READS + df.TOTAL_POSIX_SEQ_WRITES)
-        )
-
         #GET TOTAL AMOUNT OF TIME SPENT IN I/O
         df.loc[:, "TOTAL_READ_TIME"] = (
             df.TOTAL_POSIX_F_READ_TIME +

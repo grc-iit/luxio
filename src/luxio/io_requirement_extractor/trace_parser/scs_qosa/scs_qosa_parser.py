@@ -37,31 +37,50 @@ class SCSQosaParser(TraceParser):
         """
         df = self.df
 
-        DATA = ["mdm_reqs_per_proc", "total_rw_size", "total_rw_size"]
-        TIMES = ["mdm_time", "write_time", "read_time"]
-        BWS = ["mdm_thrpt", "write_bw", "read_bw"]
-
-        #Set index to seq
-        df.set_index('seq', inplace=True)
+        MD = ["mdm_reqs_per_proc"]
+        DATA = ["total_r_or_w_size", "total_r_or_w_size"]
+        RW_TIMES = ["write_time", "read_time"]
+        MD_TIMES = ["mdm_time"]
+        BWS = ["write_bw", "read_bw"]
+        THRPT = ["mdm_thrpt"]
+        MERGE = ["clients", "servers", "network", "device", "storage", "config"]
 
         #Get the total amount of data/md ops
-        df.loc[:,'total_rw_size'] = (df['total_size_per_proc']/2)*df['clients']
-        df.loc[:,'total_mdm_reqs'] = df['mdm_reqs_per_proc']*df['clients']
+        df.loc[:,'total_r_or_w_size'] = (df['total_size_per_proc']/2)*df['clients']*40
+        df.loc[:,'total_mdm_reqs'] = df['mdm_reqs_per_proc']*df['clients']*40
 
         #Get the unique request sizes and I/O patterns
+        req_size_ids = ['small', 'medium', 'large']
         req_sizes = np.sort(df['req_size'].unique())
         io_types = df['io_type'].unique()
-        if len(req_sizes) != 2:
+        if len(req_sizes) != 3:
             raise
+        for req_size, req_size_id in zip(req_sizes, req_size_ids):
+            df.loc[df['req_size'] == req_size, 'req_size_id'] = req_size_id
 
-        #Calculate seq and random bw for different request sizes
+        #Calculate seq and random bw (MB/s) for different request sizes
         dfs = []
-        for io_type in io_types:
-            for req_size in req_sizes:
-                sub_df = df[(df.io_type == io_type) & (df.req_size == req_size)].drop(['io_type', 'req_size'], axis=1)
-                sub_df.loc[:,BWS] = sub_df[DATA].to_numpy() / sub_df[TIMES].to_numpy()
-                sub_df.rename(columns={col:f"{io_type}_{col}_{req_size}" for col in TIMES + BWS}, inplace=True)
-                dfs.append(sub_df)
-        df = reduce(lambda x, y: pd.merge(x, y), dfs)
+        for req_size, req_size_id in zip(req_sizes, req_size_ids):
+            for io_type in io_types:
+                sub_df = df[(df.io_type == io_type) & (df.req_size == req_size)].drop(['req_size_id'], axis=1)
+                sub_df.loc[:,BWS] = np.divide(sub_df[DATA].to_numpy()/(1<<20), sub_df[RW_TIMES].to_numpy(), out=np.zeros_like(sub_df[RW_TIMES]), where=sub_df[RW_TIMES]!=0)
+                times = {col:f"{io_type}_{col}_{req_size_id}" for col in BWS}
+                sub_df.rename(columns=times, inplace=True)
+                dfs.append(sub_df[MERGE + list(times.values())])
+        #Calculate md throughput for test cases
+        grps = df.groupby(MERGE)
+        sub_df = grps.max().reset_index()
+        sub_df[THRPT] = np.divide(sub_df[MD].to_numpy(), sub_df[MD_TIMES].to_numpy(), out=np.zeros_like(sub_df[MD_TIMES]), where=sub_df[MD_TIMES]!=0)
+        sub_df = sub_df[MERGE + THRPT]
+        dfs.append(sub_df)
+        #Calculate total time
+        sub_df = grps.sum().reset_index()
+        sub_df = sub_df[MERGE + RW_TIMES + MD_TIMES]
+        dfs.append(sub_df)
+        #Combine the partial dataframes
+        df = reduce(lambda x, y: pd.merge(x, y, on=MERGE, how='outer'), dfs)
+
+        #Make all elements numerical
+        #df['device'].unqiue()
 
         self.df = df

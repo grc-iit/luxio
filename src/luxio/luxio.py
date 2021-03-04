@@ -40,11 +40,9 @@ class LUXIO:
             # run io requirement extractor
             extractor = IORequirementExtractor()
             io_requirement = extractor.run()
-            JSONClient().dumps(JSONClient().strip(io_requirement)) #TODO: Remove/comment print statement
             # run storage requirement builder
             builder = StorageRequirementBuilder()
             storage_requirement = builder.run(io_requirement)
-            JSONClient().dumps(JSONClient().strip(storage_requirement)) #TODO: Remove/comment print statement
             # store the io requirement and storage requirement into database
             if self.conf.check_db:
                 db.put(job_spec, {"io": io_requirement, "storage": storage_requirement})

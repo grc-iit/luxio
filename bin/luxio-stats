@@ -83,7 +83,9 @@ def analyze_partitions(params):
     partitioners = KResolutionReducer.load(params["perf_partitions"])
     df = pd.read_csv(params["trace"])
     analysis = partitioners.analyze(df[PERFORMANCE])
-    pp.pprint(analysis)
+    #pp.pprint(analysis)
+    for var in PERFORMANCE:
+        pd.DataFrame(analysis[var]).transpose().to_csv(f"{var}.csv")
 
 #Feature selection module
 def feature_selector(params):
@@ -105,38 +107,22 @@ def feature_selector(params):
     test_x,test_y = test_df[FEATURES],test_df[PERFORMANCE]
 
     #Train model for each variable and select minimum feature set
-    """
-    fs = FeatureSelector(
-        FEATURES,
-        PERFORMANCE,
-        MultiOutputRegressor(XGBRegressor(
-            objective ='reg:squarederror', n_estimators = 20, verbosity=0),
-            fitness_metric=SegmentedMetric(partitioners, metric=RelativeAccuracyMetric(scale=1, add=1)),
-            error_metric=SegmentedMetric(partitioners, metric=RMLSEMetric(add=1)),
-            transform_y=LogTransformer(base=10,add=1)
-        )
-    )
-    """
-
-    #"""
     fs = FeatureSelector(
         FEATURES,
         PERFORMANCE,
         EnsembleModelRegressor(
             fitness_metric=RelativeAccuracyMetric(scale=1, add=1),
             error_metric=RMLSEMetric(add=1),
-            #fitness_metric=SegmentedMetric(partitioners, metric=RelativeAccuracyMetric(scale=1, add=1)),
-            #error_metric=SegmentedMetric(partitioners, metric=RMLSEMetric(add=1)),
+            transform_x=LogTransformer(base=10,add=10),
             transform_y=LogTransformer(base=10,add=1)
         )
     )
-    #"""
 
     fs.select(
         train_x, train_y, hyper_x, hyper_y,
         max_iter=10,
         max_tunes=10,
-        max_tune_iter=100,
+        max_tune_iter=50,
         growth=.5,
         acc_loss=.05,
         thresh=.02)
@@ -146,28 +132,40 @@ def feature_selector(params):
     fs.model_.save(params["regressor"])
     fs.save_importances(params["importances"])
 
+#Get metrics from stacked ensemble
+def ensemble_model_stats(analysis:dict, columns:list, path:str):
+    metrics = list(analysis['metrics'].keys())
+    for metric in metrics:
+        rows = []
+        for model_id,model_anl in analysis['per-model'].items():
+            rows.append([model_id] + list(model_anl['metrics'][metric]))
+        rows.append([['Stacked'] + list(analysis['metrics'][metric])])
+        df = pd.DataFrame(rows, columns=['model_id'] + columns)
+        df.to_csv(os.path.join(path, f"{metric}.csv"))
+
 #Feature selection statistics module
 def feature_selector_stats(params):
     FEATURES = load_features(params["features"])
     PERFORMANCE = load_features(params["vars"])
-    #Create the training and testing datasets
+    #Load testing dataset
     partitioners = KResolutionReducer.load(params["perf_partitions"])
-    train_df = pd.read_pickle(params["train"])
-    hyper_df = pd.read_pickle(params["hyper"])
     test_df = pd.read_pickle(params["test"])
     #Divide the datasets into x and y
-    train_x,train_y = train_df[FEATURES],train_df[PERFORMANCE]
-    hyper_x,hyper_y = hyper_df[FEATURES],hyper_df[PERFORMANCE]
     test_x,test_y = test_df[FEATURES],test_df[PERFORMANCE]
     #Load the feature selector
     fs = FeatureSelector.load(params["selector"])
     #Determine how well model performs per-features
     analysis = fs.analyze(test_x, test_y, metrics={
-        #"r2" : r2Metric(),
-        "RelativeError" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), part_mode='all', feature_mode='all'),
-        "RMLSE" : SegmentedMetric(partitioners, metric=RMLSEMetric(add=1), part_mode='all', feature_mode='all'),
+        "r2Metric": r2Metric(mode='all'),
+        #"MAPE" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), part_mode='avg', feature_mode='all'),
+        #"RMLSE" : SegmentedMetric(partitioners, metric=RMLSEMetric(add=1), part_mode='avg', feature_mode='all'),
+        "PER_FEATURE_MAPE" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), part_mode='avg', feature_mode='all'),
+        "PER_FEATURE_RMLSE" : RMLSEMetric(add=1, mode='all'),
     })
     pp.pprint(analysis)
+
+    #Store statistics
+    ensemble_model_stats(analysis, PERFORMANCE, params["reg_stats"])
 
     fs.save(params["selector"])
     fs.model_.save(params["regressor"])
