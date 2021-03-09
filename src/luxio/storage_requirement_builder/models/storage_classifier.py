@@ -19,6 +19,10 @@ class StorageClassifier(BehaviorClassifier):
         self.features = ["Read_Large_BW", "Write_Large_BW", "Read_Small_BW", "Write_Small_BW", "Price"]
         self.qosas = X[self.features]
         self.transform_ = MinMaxScaler().fit(self.qosas)
+        for k in [4, 6, 8, 10, 15, 30, 50]:
+            self.model_ = KMeans(k=k)
+            self.labels_ = self.model_.fit_predict(X_features)
+            print(f"SCORE k={k}: {self.score(X_features, self.labels_)}")
         self.qosas = self.standardize(self.qosas)
         return self
 

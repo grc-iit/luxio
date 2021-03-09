@@ -156,7 +156,7 @@ def feature_selector_stats(params):
     fs = FeatureSelector.load(params["selector"])
     #Determine how well model performs per-features
     analysis = fs.analyze(test_x, test_y, metrics={
-        "r2Metric": r2Metric(mode='all'),
+        #"r2Metric": r2Metric(mode='all'),
         #"MAPE" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), part_mode='avg', feature_mode='all'),
         #"RMLSE" : SegmentedMetric(partitioners, metric=RMLSEMetric(add=1), part_mode='avg', feature_mode='all'),
         "PER_FEATURE_MAPE" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), part_mode='avg', feature_mode='all'),
@@ -225,6 +225,7 @@ if __name__ == "__main__":
     if args.tool == "app_gen_stats" or args.tool == "all" or args.tool == "app_gen":
         behavior_classifier_stats(args.conf["APP_BEHAVIOR_MODEL"])
 
+    """
     if args.tool == "qosa_prelim_stats":
         preliminary_analysis(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "qosa_dataset" or args.tool == "all":
@@ -235,6 +236,7 @@ if __name__ == "__main__":
         feature_selector(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "qosa_reg_stats" or args.tool == "all" or args.tool == "qosa_reg":
         feature_selector_stats(args.conf["STORAGE_BEHAVIOR_MODEL"])
+    """
     if args.tool == "qosa_gen" or args.tool == "all":
         storage_behavior_classifier(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "qosa_gen_stats" or args.tool == "all" or args.tool == "qosa_gen":

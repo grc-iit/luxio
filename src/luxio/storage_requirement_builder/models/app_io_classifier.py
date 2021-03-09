@@ -3,6 +3,7 @@ from .behavior_classifier import BehaviorClassifier
 from typing import List, Dict, Tuple
 import pandas as pd
 import numpy as np
+from sklearn.metrics import davies_bouldin_score
 
 from sklearn.preprocessing import MinMaxScaler
 from clever.transformers import *
@@ -17,6 +18,12 @@ class AppClassifier(BehaviorClassifier):
         super().__init__(feature_importances, mandatory_features)
         self.app_classes = None #A pandas dataframe containing: means, stds, number of entries, and qosas
         self.thresh = .25
+        self.app_qosa_mapping = None
+        self.qosas = None
+        self.scores = []
+
+    def score(self, X:pd.DataFrame, labels:np.array) -> float:
+        return davies_bouldin_score(X, labels)
 
     def fit(self, X:pd.DataFrame):
         """
@@ -27,11 +34,13 @@ class AppClassifier(BehaviorClassifier):
         #Identify clusters of transformed data
         self.transform_ = ChainTransformer([LogTransformer(base=10,add=1), MinMaxScaler()])
         X_features = self.transform_.fit_transform(X[self.features])*self.feature_importances.max(axis=1).to_numpy()
-        self.model_ = KMeans(k=10)
-        self.labels_ = self.model_.fit_predict(X_features)
+        for k in [4, 6, 8, 10, 15, 30, 50]:
+            self.model_ = KMeans(k=k)
+            self.labels_ = self.model_.fit_predict(X_features)
+            print(f"SCORE k={k}: {self.score(X_features, self.labels_)}")
         #Cluster non-transformed data
-        self.app_classes = self.standardize(X)
-        self.app_classes = self._create_groups(self.app_classes, self.labels_, other=self.mandatory_features)
+        #self.app_classes = self.standardize(X)
+        #self.app_classes = self._create_groups(self.app_classes, self.labels_, other=self.mandatory_features)
         return self
 
     def filter_qosas(self, storage_classifier, top_n=10):
