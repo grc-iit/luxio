@@ -187,6 +187,7 @@ class GenIORTraceJsonFile():
             self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_1G_PLUS'] = num_writes
 
         # others
+        self.ior_trace_dict['INTERFACE'] = 1
         self.ior_trace_dict['TOTAL_IO'] = (self.ior_trace_dict['TOTAL_BYTES_READ'] + self.ior_trace_dict['TOTAL_BYTES_WRITTEN'])/(2**20) # unit: MB
         self.ior_trace_dict['TOTAL_IO_PER_PROC'] = self.ior_trace_dict['TOTAL_IO']/self.ior_trace_dict['NRPOCS']
         self.ior_trace_dict['TOTAL_READ_OPS'] = self.ior_trace_dict['TOTAL_POSIX_READS'] + self.ior_trace_dict['TOTAL_STDIO_READS']

@@ -14,8 +14,8 @@ class BehaviorClassifier(ABC):
         feature_importances: A dataframe where rows are features and columns are timing types (MD, READ, WRITE).
         feature_categories: A dataframe where rows are features and columns indicate how the features are to be aggregated
         """
-        feature_importances.index.name = "features"
-        self.feature_importances = feature_importances.fillna(0)
+        self.feature_importances = feature_importances.fillna(0).transpose()
+        self.feature_importances /= float(self.feature_importances.sum(axis=1))
         self.features = list(feature_importances.index)
         self.mandatory_features = mandatory_features if mandatory_features is not None else []
         self.scores = None
@@ -27,13 +27,13 @@ class BehaviorClassifier(ABC):
         means = grp.mean().reset_index()
         std_col_map = {orig_col:f"std_{orig_col}" for orig_col in means.columns}
         std_cols = list(std_col_map.values())
-        stds = grp.std().reset_index().rename(std_col_map)
+        #stds = grp.std().reset_index().rename(std_col_map)
         ns = grp.size().reset_index(name="count")["count"].to_numpy()/len(df)
         idxs = np.argsort(-ns)
         means = means.iloc[idxs,:]
-        stds = stds.iloc[idxs,:]
+        #stds = stds.iloc[idxs,:]
         ns = ns[idxs]
-        means.loc[:,std_cols] = stds.to_numpy()
+        #means.loc[:,std_cols] = stds.to_numpy()
         means.loc[:,"count"] = ns
         return means
 

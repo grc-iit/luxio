@@ -25,6 +25,7 @@ class StorageRequirementBuilder:
         resource resolver.
         """
         self._initialize()
+        self.conf.timer.resume()
         #Get the fitness vector of the IOIdentifier to all of the classes
         fitnesses = app_classifier.get_fitnesses(io_identifier)
         #Multiply fitness and coverage
@@ -35,6 +36,6 @@ class StorageRequirementBuilder:
         #Sort the QoSAs in descending order
         ranked_qosas.sort_values("magnitude")
         #Return the ranked set of QoSAs
+        self.conf.timer.pause().log("MappingAlgorithm")
         self._finalize()
         return ranked_qosas
-

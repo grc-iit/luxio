@@ -56,22 +56,6 @@ class StorageConfigurator(ABC):
             self.x[i] = 1
             self.current_price[i] = self.price_function(i)
 
-    def run(self, storage_requirement: pd.DataFrame) -> dict:
-        """
-        Mapping the storage requirement to its corresponding storage
-        configuration.
-        And then return the storage configuration.
-        :param storage_requirement: dict
-        :return: dict
-        """
-        self._initialize()
-        # Acquire the set of available resources from the scheduler
-        # Determine whether or not the qosas in the storage requirement can be
-        # satisfied, and if so, how much it costs
-        # Choose the lowest-price QoSA that can be satisfied
-        self._finalize()
-        return None
-
     def tier_count(self, tier: str):
         """
         This function gets the number of remaining devices of specified tier
@@ -103,6 +87,22 @@ class StorageConfigurator(ABC):
         # Acquire the set of available resources from the scheduler
         # Determine whether or not the qosas in the storage requirement can be satisfied, and if so, how much it costs
         # We will have to have some configuration file to relate features from the hardware with the benchmarks
+        # Choose the lowest-price QoSA that can be satisfied
+        self._finalize()
+        return None
+
+    def run(self, storage_requirement: pd.DataFrame) -> dict:
+        """
+        Mapping the storage requirement to its corresponding storage
+        configuration.
+        And then return the storage configuration.
+        :param storage_requirement: dict
+        :return: dict
+        """
+        self._initialize()
+        # Acquire the set of available resources from the scheduler
+        # Determine whether or not the qosas in the storage requirement can be
+        # satisfied, and if so, how much it costs
         # Choose the lowest-price QoSA that can be satisfied
         self._finalize()
         return None

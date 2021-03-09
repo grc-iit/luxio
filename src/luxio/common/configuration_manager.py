@@ -1,6 +1,7 @@
 
 from luxio.common.enumerations import *
 from luxio.common.error_codes import *
+from luxio.common.timer import *
 import json
 
 class ConfigurationManager:
@@ -39,6 +40,8 @@ class ConfigurationManager:
         self.run_mode = "full"
         self.output_file = None
         self.serializer_type = SerializerType.PICKLE
+        self.timer_log_path = "sample/luxio_log.csv"
+        self.timer = Timer()
 
     @staticmethod
     def load(filename):
@@ -51,7 +54,7 @@ class ConfigurationManager:
             dict = json.load(fp)
         conf = ConfigurationManager.get_instance()
         conf.job_spec = dict["job_spec_path"]
-        conf.darshan_trace_path = dict["darshan_trace_path"] 
+        conf.darshan_trace_path = dict["darshan_trace_path"]
         conf.io_req_out_path = dict["io_req_out_path"]
         conf.storage_req_out_path = dict["storage_req_out_path"]
         conf.storage_req_config_out_path = dict["storage_req_config_out_path"]

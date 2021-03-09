@@ -20,6 +20,10 @@ class IORequirementExtractor:
     def _initialize(self) -> None:
         self.conf = ConfigurationManager.get_instance()
 
+        #TODO: remove this hack
+        #ac = AppClassifier.load(self.conf.app_classifier_path)
+        #db.put({"app_classifier", ac})
+
     def run(self) -> pd.DataFrame:
         """
         Reading the trace input and then mapping it to the corresponding io requirement.
@@ -30,16 +34,20 @@ class IORequirementExtractor:
         self._initialize()
 
         #Acquire historical trace data
+        self.conf.timer.resume()
         darshan_parser = TraceParserFactory.get_parser(TraceParserType.DARSHAN)
         all_features = darshan_parser.preprocess()
-        
-        #TODO: Parse the Job Spec
+        self.conf.timer.pause().log("Preprocessing")
 
         #Load I/O behavior classifier model
+        self.conf.timer.resume()
         self.conf.app_classifier = AppClassifier.load(self.conf.app_classifier_path)
+        self.conf.timer.pause().log("LoadAppClassifier")
 
         #Feature projection
+        self.conf.timer.resume()
         io_identifier = all_features[self.conf.app_classifier.features]
+        self.conf.timer.pause().log("FeatureProjection")
 
         #Return the I/O Identifier
         self._finalize()
@@ -47,4 +55,3 @@ class IORequirementExtractor:
 
     def _finalize(self) -> None:
         pass
-

@@ -20,7 +20,7 @@ class AppClassifier(BehaviorClassifier):
         self.thresh = .25
         self.app_qosa_mapping = None
         self.qosas = None
-        self.scores = []
+        self.scores = None
 
     def score(self, X:pd.DataFrame, labels:np.array) -> float:
         return davies_bouldin_score(X, labels)
@@ -30,17 +30,20 @@ class AppClassifier(BehaviorClassifier):
         Identify groups of application behavior from a dataset of traces using the features.
         Calculate a standardized set of scores that are common between the apps and QoSAs
         """
-        #X = X.iloc[0:100,:]
+        X = X.iloc[0:100,:]
         #Identify clusters of transformed data
         self.transform_ = ChainTransformer([LogTransformer(base=10,add=1), MinMaxScaler()])
         X_features = self.transform_.fit_transform(X[self.features])*self.feature_importances.max(axis=1).to_numpy()
-        for k in [4, 6, 8, 10, 15, 30, 50]:
-            self.model_ = KMeans(k=k)
-            self.labels_ = self.model_.fit_predict(X_features)
-            print(f"SCORE k={k}: {self.score(X_features, self.labels_)}")
+        #for k in [4, 6, 8, 10, 15, 30, 50]:
+        #    self.model_ = KMeans(k=k)
+        #    self.labels_ = self.model_.fit_predict(X_features)
+        #    print(f"SCORE k={k}: {self.score(X_features, self.labels_)}")
+        self.model_ = KMeans(k=10)
+        self.labels_ = self.model_.fit_predict(X_features)
         #Cluster non-transformed data
-        #self.app_classes = self.standardize(X)
-        #self.app_classes = self._create_groups(self.app_classes, self.labels_, other=self.mandatory_features)
+        self.app_classes = self.standardize(X)
+        self.app_classes = self._create_groups(self.app_classes, self.labels_, other=self.mandatory_features)
+        print(self.app_classes)
         return self
 
     def filter_qosas(self, storage_classifier, top_n=10):
@@ -88,30 +91,25 @@ class AppClassifier(BehaviorClassifier):
         """
 
     def standardize(self, io_identifier):
-        MD = ["TOTAL_STDIO_OPENS", "TOTAL_POSIX_OPENS", "TOTAL_MPIIO_COLL_OPENS", "TOTAL_POSIX_STATS", "TOTAL_STDIO_SEEKS"]
-        READ_OPS = ["TOTAL_STDIO_READS", "TOTAL_POSIX_SIZE_READ_0_100"]
-        WRITE_OPS = ["TOTAL_WRITE_OPS", "TOTAL_POSIX_WRITES", "TOTAL_MPIIO_SIZE_WRITE_AGG_10K_100K", "TOTAL_MPIIO_SIZE_WRITE_AGG_0_100"]
-        BYTES_READ = ["TOTAL_BYTES_READ"]
-        BYTES_WRITTEN = ["TOTAL_BYTES_WRITTEN"]
+        MD = ["TOTAL_STDIO_OPENS", "TOTAL_POSIX_OPENS", "TOTAL_MPIIO_COLL_OPENS", "TOTAL_POSIX_STATS"]
+        READ_OPS = ["TOTAL_READ_OPS", "TOTAL_STDIO_READS", "TOTAL_POSIX_SIZE_READ_0_100", "TOTAL_POSIX_SIZE_READ_4M_10M"]
+        WRITE_OPS = ["TOTAL_WRITE_OPS", "TOTAL_MPIIO_COLL_WRITES", "TOTAL_MPIIO_SIZE_WRITE_AGG_1M_4M", "TOTAL_POSIX_WRITES", "TOTAL_STDIO_WRITES"]
+        BYTES_READ = ["TOTAL_BYTES_READ", "TOTAL_POSIX_MAX_BYTE_READ"]
+        BYTES_WRITTEN = ["TOTAL_BYTES_WRITTEN", "TOTAL_POSIX_MAX_BYTE_WRITTEN"]
         SEQUENTIAL_IO = ["TOTAL_POSIX_SEQ_WRITES"]
-        #SCALE = ["NPROCS"]
+        SCALE = ["NPROCS"]
+        SCORES = [MD, READ_OPS, WRITE_OPS, BYTES_READ, BYTES_WRITTEN, SEQUENTIAL_IO, SCALE]
+
         scaled_features = pd.DataFrame(self.transform_.transform(io_identifier[self.features].astype(float)), columns=self.features)
+        io_identifier.loc[:,"MD_SCORE"] = (scaled_features[MD] * self.feature_importances[MD].to_numpy()).sum(axis=1).to_numpy()
+        io_identifier.loc[:,"READ_OPS"] = (scaled_features[READ_OPS] * self.feature_importances[READ_OPS].to_numpy()).sum(axis=1).to_numpy()
+        io_identifier.loc[:,"BYTES_READ"] = (scaled_features[BYTES_READ] * self.feature_importances[BYTES_READ].to_numpy()).sum(axis=1).to_numpy()
+        io_identifier.loc[:,"BYTES_WRITTEN"] = (scaled_features[BYTES_WRITTEN] * self.feature_importances[BYTES_WRITTEN].to_numpy()).sum(axis=1).to_numpy()
+        io_identifier.loc[:,"SCALE"] = (scaled_features[SCALE] * self.feature_importances[SCALE].to_numpy()).sum(axis=1).to_numpy()
+
         if self.scores is None:
-            self.scores = []
-            self.score_weights = []
-            self.scores.append("MD_SCORE")
-            self.scores.append("BYTES_READ")
-            self.scores.append("BYTES_WRITTEN")
-            self.score_weights.append(np.sum(self.feature_importances["TOTAL_MD_TIME"].transpose()[MD].to_numpy()))
-            self.score_weights.append(np.sum(self.feature_importances["TOTAL_READ_TIME"].transpose()[BYTES_READ].to_numpy()))
-            self.score_weights.append(np.sum(self.feature_importances["TOTAL_WRITE_TIME"].transpose()[BYTES_WRITTEN].to_numpy()))
-            #self.score_weights.append(np.sum(self.feature_importances["TOTAL_READ_TIME"].transpose()[SCALE].to_numpy()))
-            self.score_weights = np.array(self.score_weights)
-        io_identifier.assign()
-        io_identifier.loc[:,"MD_SCORE"] = (scaled_features[MD] * self.feature_importances["TOTAL_MD_TIME"].transpose()[MD].to_numpy()).sum(axis=1).to_numpy()
-        io_identifier.loc[:,"BYTES_READ"] = (scaled_features[BYTES_READ] * self.feature_importances["TOTAL_READ_TIME"].transpose()[BYTES_READ].to_numpy()).sum(axis=1).to_numpy()
-        io_identifier.loc[:,"BYTES_WRITTEN"] = (scaled_features[BYTES_WRITTEN] * self.feature_importances["TOTAL_WRITE_TIME"].transpose()[BYTES_WRITTEN].to_numpy()).sum(axis=1).to_numpy()
-        #io_identifier.loc[:,"SCALE"] = (scaled_features[BYTES_WRITTEN] * self.feature_importances["TOTAL_WRITE_TIME"].transpose()[BYTES_WRITTEN].to_numpy()).sum(axis=1).to_numpy()
+            self.scores = ["MD_SCORE", "READ_OPS", "BYTES_READ", "BYTES_WRITTEN", "SCALE"]
+            self.score_weights = np.array([self.feature_importances[score].to_numpy().sum() for score in SCORES])
         return io_identifier
 
     def get_magnitude(self, fitness:pd.DataFrame):
@@ -120,20 +118,21 @@ class AppClassifier(BehaviorClassifier):
         Some features are mandatory, and will cause fitness to be 0 if not met.
         Some features are continuous, and have a spectrum of values
         """
-        return ((fitness[self.scores]*self.score_weights).sum(axis=1)/np.sum(self.score_weights)).to_numpy()
+        #fitness.loc[fitness[self.mandatory_features] != 1, self.mandatory_features] = 0
+        #mandatory = fitness[self.mandatory_features].product(axis=1).to_numpy()
+        thresh = ((fitness[self.scores]*self.score_weights).sum(axis=1)/np.sum(self.score_weights)).to_numpy()
+        return mandatory * thresh
 
     def get_fitnesses(self, io_identifier:pd.DataFrame) -> pd.DataFrame:
         """
         Determine how well the I/O Identifier fits within each class of behavior
         """
         #Calculate the scores
-        io_identifier = self.standardize(io_identifier[self.features])
-        #Get the distance between io_identifier and every app class (in units of standard deviations)
-        std_distance = 1 - np.absolute(self.app_qosa_mapping[self.scores] - io_identifier[self.scores].to_numpy())
+        io_identifier = self.standardize(io_identifier)
+        #Get the distance between io_identifier and every app class
+        distance = 1 - np.absolute(self.app_qosa_mapping[self.scores] - io_identifier[self.scores].to_numpy())
         #Get the magnitude of the fitnesses
-        std_distance.loc[:,"magnitude"] = self.get_magnitude(std_distance)
-        #Add qosas to dataframe
-        #std_distance.loc[:,"qosas"] = self.app_classes["qosas"].to_numpy()
+        distance.loc[:,"magnitude"] = self.get_magnitude(distance)
         #Add features
-        std_distance.loc[:,self.features] = self.app_qosa_mapping[self.features].to_numpy()
-        return std_distance
+        distance.loc[:,self.features] = self.app_qosa_mapping[self.features].to_numpy()
+        return distance

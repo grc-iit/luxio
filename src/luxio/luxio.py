@@ -3,6 +3,7 @@ from luxio.storage_configurator.storage_configurator_factory import *
 from luxio.storage_requirement_builder.storage_requirement_builder import *
 from luxio.external_clients.json_client import *
 from luxio.database.database import *
+from luxio.common.timer import Timer
 
 class LUXIO:
     def __init__(self):
@@ -31,9 +32,11 @@ class LUXIO:
             db = DataBase.get_instance()
         try:
             if self.conf.check_db:
+                self.conf.timer.resume()
                 req_dict = db.get(job_spec)
                 io_requirement = req_dict["io"]
                 storage_requirement = req_dict["storage"]
+                self.conf.timer.pause().log("CheckDB")
             else:
                 raise 1
         except:
@@ -45,7 +48,9 @@ class LUXIO:
             storage_requirement = builder.run(io_requirement)
             # store the io requirement and storage requirement into database
             if self.conf.check_db:
+                self.conf.timer.resume()
                 db.put(job_spec, {"io": io_requirement, "storage": storage_requirement})
+                self.conf.timer.pause().log("PutReqsToDB")
 
         #run storage configurator
         configurator = StorageConfiguratorFactory.get(self.conf.storage_configurator_type)
@@ -54,7 +59,8 @@ class LUXIO:
         return configuration
 
     def _finalize(self) -> None:
-        pass
+        if self.conf.timer_log_path:
+            self.conf.timer.save(self.conf.timer_log_path)
 
 
 if __name__ == '__main__':
