@@ -35,37 +35,37 @@ class DarshanTraceParser(TraceParser):
         )
         df.loc[:, "TOTAL_IO_OPS"] = (df.TOTAL_READ_OPS + df.TOTAL_WRITE_OPS)
 
-        #Total IO ops for varying sizes (fractional)
+        #Total IO ops for varying sizes
         df.loc[:, "TOTAL_SIZE_IO_0_100"] = (
             df.TOTAL_POSIX_SIZE_READ_0_100 +
             df.TOTAL_POSIX_SIZE_WRITE_0_100 +
             df.TOTAL_MPIIO_SIZE_READ_AGG_0_100 +
             df.TOTAL_MPIIO_SIZE_WRITE_AGG_0_100
-        )/df.TOTAL_IO_OPS
+        )
         df.loc[:, "TOTAL_SIZE_IO_100_1K"] = (
             df.TOTAL_POSIX_SIZE_READ_100_1K +
             df.TOTAL_POSIX_SIZE_WRITE_100_1K +
             df.TOTAL_MPIIO_SIZE_READ_AGG_100_1K +
             df.TOTAL_MPIIO_SIZE_WRITE_AGG_100_1K
-        )/df.TOTAL_IO_OPS
+        )
         df.loc[:, "TOTAL_SIZE_IO_1K_10K"] = (
             df.TOTAL_POSIX_SIZE_READ_1K_10K +
             df.TOTAL_POSIX_SIZE_WRITE_1K_10K +
             df.TOTAL_MPIIO_SIZE_READ_AGG_1K_10K +
             df.TOTAL_MPIIO_SIZE_WRITE_AGG_1K_10K
-        )/df.TOTAL_IO_OPS
+        )
         df.loc[:, "TOTAL_SIZE_IO_10K_100K"] = (
             df.TOTAL_POSIX_SIZE_READ_10K_100K +
             df.TOTAL_POSIX_SIZE_WRITE_10K_100K +
             df.TOTAL_MPIIO_SIZE_READ_AGG_10K_100K +
             df.TOTAL_MPIIO_SIZE_WRITE_AGG_10K_100K
-        )/df.TOTAL_IO_OPS
+        )
         df.loc[:, "TOTAL_SIZE_IO_100K_1M"] = (
             df.TOTAL_POSIX_SIZE_READ_100K_1M +
             df.TOTAL_POSIX_SIZE_WRITE_100K_1M +
             df.TOTAL_MPIIO_SIZE_READ_AGG_100K_1M +
             df.TOTAL_MPIIO_SIZE_WRITE_AGG_100K_1M
-        )/df.TOTAL_IO_OPS
+        )
         df.loc[:, "TOTAL_SIZE_IO_0_1M"] = (
             df.TOTAL_SIZE_IO_0_100 +
             df.TOTAL_SIZE_IO_100_1K +
@@ -78,19 +78,19 @@ class DarshanTraceParser(TraceParser):
             df.TOTAL_POSIX_SIZE_WRITE_1M_4M +
             df.TOTAL_MPIIO_SIZE_READ_AGG_1M_4M +
             df.TOTAL_MPIIO_SIZE_WRITE_AGG_1M_4M
-        )/df.TOTAL_IO_OPS
+        )
         df.loc[:, "TOTAL_SIZE_IO_4M_10M"] = (
             df.TOTAL_POSIX_SIZE_READ_4M_10M +
             df.TOTAL_POSIX_SIZE_WRITE_4M_10M +
             df.TOTAL_MPIIO_SIZE_READ_AGG_4M_10M +
             df.TOTAL_MPIIO_SIZE_WRITE_AGG_4M_10M
-        )/df.TOTAL_IO_OPS
+        )
         df.loc[:, "TOTAL_SIZE_IO_10M_100M"] = (
             df.TOTAL_POSIX_SIZE_READ_10M_100M +
             df.TOTAL_POSIX_SIZE_WRITE_10M_100M +
             df.TOTAL_MPIIO_SIZE_READ_AGG_10M_100M +
             df.TOTAL_MPIIO_SIZE_WRITE_AGG_10M_100M
-        )/df.TOTAL_IO_OPS
+        )
         df.loc[:, "TOTAL_SIZE_IO_1M_100M"] = (
             df.TOTAL_SIZE_IO_1M_4M +
             df.TOTAL_SIZE_IO_4M_10M +
@@ -101,13 +101,13 @@ class DarshanTraceParser(TraceParser):
             df.TOTAL_POSIX_SIZE_WRITE_100M_1G +
             df.TOTAL_MPIIO_SIZE_READ_AGG_100M_1G +
             df.TOTAL_MPIIO_SIZE_WRITE_AGG_100M_1G
-        )/df.TOTAL_IO_OPS
+        )
         df.loc[:, "TOTAL_SIZE_IO_1G_PLUS"] = (
             df.TOTAL_POSIX_SIZE_READ_1G_PLUS +
             df.TOTAL_POSIX_SIZE_WRITE_1G_PLUS +
             df.TOTAL_MPIIO_SIZE_READ_AGG_1G_PLUS +
             df.TOTAL_MPIIO_SIZE_WRITE_AGG_1G_PLUS
-        )/df.TOTAL_IO_OPS
+        )
         df.loc[:, "TOTAL_SIZE_IO_100M_PLUS"] = (
             df.TOTAL_SIZE_IO_100M_1G +
             df.TOTAL_SIZE_IO_1G_PLUS

@@ -132,6 +132,37 @@ def feature_selector(params):
     fs.model_.save(params["regressor"])
     fs.save_importances(params["importances"])
 
+#Feature selection module
+def refitter(params):
+    FEATURES = list(pd.read_csv(params["importances"], index_col=0).index)
+    PERFORMANCE = load_features(params["vars"])
+
+    model = EnsembleModelRegressor.load(params["regressor"])
+    model.save_importances(params["importances"] + "2", features=FEATURES)
+    sys.exit(1)
+
+    #Load the training and testing datasets
+    train_df = pd.read_pickle(params["train"])
+    hyper_df = pd.read_pickle(params["hyper"])
+    test_df = pd.read_pickle(params["test"])
+
+    #Divide the datasets into x and y
+    train_x,train_y = train_df[FEATURES],train_df[PERFORMANCE]
+    hyper_x,hyper_y = hyper_df[FEATURES],hyper_df[PERFORMANCE]
+    test_x,test_y = test_df[FEATURES],test_df[PERFORMANCE]
+
+    #Train model for each variable and select minimum feature set
+    model = EnsembleModelRegressor(
+        fitness_metric=RelativeAccuracyMetric(scale=1, add=1),
+        error_metric=RMLSEMetric(add=1),
+        transform_x=LogTransformer(base=10,add=10),
+        transform_y=LogTransformer(base=10,add=1)
+    ).fit(train_x, train_y)
+
+    #Save and analyze
+    model.save(params["regressor"])
+    model.save_importances(params["importances"] + "2")
+
 #Get metrics from stacked ensemble
 def ensemble_model_stats(analysis:dict, columns:list, path:str):
     metrics = list(analysis['metrics'].keys())
@@ -191,10 +222,11 @@ def storage_behavior_classifier(params):
 
 #Behavior Classification statistics module
 def behavior_classifier_stats(params):
+    #df = pd.read_csv(params["trace"])
     bc = BehaviorClassifier.load(params["classifier"])
     analysis = bc.analyze(dir=params["class_stats"])
-    pp.pprint(analysis)
-    #bc.visualize()
+    #pp.pprint(analysis)
+    #bc.visualize(df)
 
 #Filter out QoSAs
 def filter_qosas(app_params, storage_params):
@@ -218,6 +250,8 @@ if __name__ == "__main__":
         analyze_partitions(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_reg" or args.tool == "all":
         feature_selector(args.conf["APP_BEHAVIOR_MODEL"])
+    if args.tool == "app_reg_refit":
+        refitter(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_reg_stats" or args.tool == "all" or args.tool == "app_reg":
         feature_selector_stats(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_gen" or args.tool == "all":

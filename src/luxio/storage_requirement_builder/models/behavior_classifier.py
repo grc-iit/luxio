@@ -24,18 +24,18 @@ class BehaviorClassifier(ABC):
 
     def _smash(self, df:pd.DataFrame, cols:np.array):
         grp = df.groupby(cols)
-        means = grp.mean().reset_index()
-        std_col_map = {orig_col:f"std_{orig_col}" for orig_col in means.columns}
-        std_cols = list(std_col_map.values())
+        medians = grp.median().reset_index()
+        #std_col_map = {orig_col:f"std_{orig_col}" for orig_col in means.columns}
+        #std_cols = list(std_col_map.values())
         #stds = grp.std().reset_index().rename(std_col_map)
         ns = grp.size().reset_index(name="count")["count"].to_numpy()/len(df)
         idxs = np.argsort(-ns)
-        means = means.iloc[idxs,:]
+        medians = medians.iloc[idxs,:]
         #stds = stds.iloc[idxs,:]
         ns = ns[idxs]
         #means.loc[:,std_cols] = stds.to_numpy()
-        means.loc[:,"count"] = ns
-        return means
+        medians.loc[:,"count"] = ns
+        return medians
 
     def _create_groups(self, df:pd.DataFrame, labels:np.array, other:List[str]=None):
         df = pd.DataFrame(df)

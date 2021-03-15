@@ -16,32 +16,34 @@ class StorageClassifier(BehaviorClassifier):
         self.qosas = None #A dataframe containing: means, stds, ns
 
     def fit(self, X:pd.DataFrame=None):
-        self.features = ["Read_Large_BW", "Write_Large_BW", "Read_Small_BW", "Write_Small_BW", "Price"]
-        self.qosas = X[self.features]
-        self.transform_ = MinMaxScaler().fit(self.qosas)
-        for k in [4, 6, 8, 10, 15, 30, 50]:
-            self.model_ = KMeans(k=k)
-            self.labels_ = self.model_.fit_predict(X_features)
-            print(f"SCORE k={k}: {self.score(X_features, self.labels_)}")
-        self.qosas = self.standardize(self.qosas)
+        X = X.iloc[0:100,:]
+        #Identify clusters of transformed data
+        self.transform_ = ChainTransformer([LogTransformer(base=10,add=1), MinMaxScaler()])
+        X_features = self.transform_.fit_transform(X[self.features])*self.feature_importances.max(axis=1).to_numpy()
+        #for k in [4, 6, 8, 10, 15, 30, 50]:
+        #    self.model_ = KMeans(k=k)
+        #    self.labels_ = self.model_.fit_predict(X_features)
+        #    print(f"SCORE k={k}: {self.score(X_features, self.labels_)}")
+        self.model_ = KMeans(k=10)
+        self.labels_ = self.model_.fit_predict(X_features)
+        #Cluster non-transformed data
+        self.app_classes = self.standardize(X)
+        self.app_classes = self._create_groups(self.app_classes, self.labels_, other=self.mandatory_features)
+        print(self.app_classes)
         return self
 
     def standardize(self, qosas:pd.DataFrame):
-        scaled_features = pd.DataFrame(self.transform_.transform(qosas[self.features]), columns=self.features)
+        scaled_features = pd.DataFrame(self.transform_.transform(qosas[self.features].astype(float)), columns=self.features)
+        io_identifier.loc[:,"MD_SCORE"] = (scaled_features[MD]).sum(axis=1).to_numpy()
+        io_identifier.loc[:,"READ_OPS"] = (scaled_features[READ_OPS]).sum(axis=1).to_numpy()
+        io_identifier.loc[:,"BYTES_READ"] = (scaled_features[BYTES_READ]).sum(axis=1).to_numpy()
+        io_identifier.loc[:,"BYTES_WRITTEN"] = (scaled_features[BYTES_WRITTEN]).sum(axis=1).to_numpy()
+        io_identifier.loc[:,"SCALE"] = (scaled_features[SCALE]).sum(axis=1).to_numpy()
+
         if self.scores is None:
-            self.scores = []
-            self.score_weights = []
-            self.scores.append(f"MD_SCORE")
-            self.scores.append(f"BYTES_READ")
-            self.scores.append(f"BYTES_WRITTEN")
-            self.score_weights.append(.33)
-            self.score_weights.append(.33)
-            self.score_weights.append(.33)
-            self.score_weights = np.array(self.score_weights)
-        qosas.loc[:,f"MD_SCORE"] = ((scaled_features["Read_Small_BW"] + scaled_features["Write_Small_BW"])/2).to_numpy()
-        qosas.loc[:,f"BYTES_READ"] = scaled_features["Read_Large_BW"].to_numpy()
-        qosas.loc[:,f"BYTES_WRITTEN"] = scaled_features["Write_Large_BW"].to_numpy()
-        return qosas
+            self.scores = ["MD_SCORE", "READ_OPS", "BYTES_READ", "BYTES_WRITTEN", "SCALE"]
+            self.score_weights = np.array([1]*len(self.scores))
+        return io_identifier
 
     def get_magnitude(self, coverage:pd.DataFrame):
         return ((coverage[self.scores]*self.score_weights).sum(axis=1)/np.sum(self.score_weights)).to_numpy()
