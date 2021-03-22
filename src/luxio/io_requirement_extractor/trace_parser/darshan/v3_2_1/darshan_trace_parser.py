@@ -4,6 +4,8 @@ from luxio.io_requirement_extractor.trace_parser.darshan import DarshanTracePars
 from typing import List, Dict, Tuple
 from luxio.common.configuration_manager import *
 import pandas as pd
+import numpy as np
+import re
 
 import pprint, warnings
 
@@ -32,19 +34,26 @@ class DarshanTraceParser_3_2_1(DarshanTraceParser):
         file_ = conf.darshan_trace_path
         self.report = darshan.DarshanReport(file_, read_all=True)
         self.dar_dict = self.report.records_as_dict()
-        pp.pprint(self.dar_dict)
         self.counter_types = ['counters', 'fcounters']
         features = {}
+
         for module in self.dar_dict.values():
             for rank in module:
                 for ctype in self.counter_types:
                     for feature, value in rank[ctype].items():
-                        if feature not in features:
-                            features[feature] = 0
-                        features[feature] += value
-
-        pp.pprint(features)
-
+                        if re.search("FASTEST", feature) or re.search("_MAX_", feature) or re.search("TIMESTAMP", feature) or re.search("ALIGNMENT", feature):
+                            if feature not in features:
+                                features[feature] = 0
+                            features[feature] = max(features[feature], value)
+                        elif re.search("SLOWEST", feature) or re.search("_MIN_", feature):
+                            if feature not in features:
+                                features[feature] = np.inf
+                            features[feature] = min(features[feature], value)
+                        else:
+                            if feature not in features:
+                                features[feature] = 0
+                            features[feature] += value
+        
         #Convert features into dataframe
         min_features = self._minimum_features(__file__)
         self.df = pd.DataFrame(features, index=[0], columns=min_features)
