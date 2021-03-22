@@ -5,6 +5,10 @@ from typing import List, Dict, Tuple
 from luxio.common.configuration_manager import *
 import pandas as pd
 
+import pprint, warnings
+
+pp = pprint.PrettyPrinter(depth=6)
+
 class DarshanTraceParser_3_2_1(DarshanTraceParser):
     """
     A Darshan Parser to extract certain Variables for Luxio
@@ -28,12 +32,18 @@ class DarshanTraceParser_3_2_1(DarshanTraceParser):
         file_ = conf.darshan_trace_path
         self.report = darshan.DarshanReport(file_, read_all=True)
         self.dar_dict = self.report.records_as_dict()
+        pp.pprint(self.dar_dict)
         self.counter_types = ['counters', 'fcounters']
         features = {}
         for module in self.dar_dict.values():
-            for ctype in self.counter_types:
-                for feature, value in module[0][ctype].items():
-                    features[feature] = value
+            for rank in module:
+                for ctype in self.counter_types:
+                    for feature, value in rank[ctype].items():
+                        if feature not in features:
+                            features[feature] = 0
+                        features[feature] += value
+
+        pp.pprint(features)
 
         #Convert features into dataframe
         min_features = self._minimum_features(__file__)

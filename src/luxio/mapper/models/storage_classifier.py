@@ -44,6 +44,7 @@ class StorageClassifier(BehaviorClassifier):
         #Cluster non-transformed data
         self.qosas = self.standardize(X)
         self.qosas = self._create_groups(self.qosas, self.labels_, other=self.mandatory_features)
+        #TODO: Classify deployments into QoSAs 100% correctly...
         self.qosas.rename(columns={"labels":"qosa_id"}, inplace=True)
         self.qosa_to_deployment = X
         self.qosa_to_deployment.loc[:,"qosa_id"] = self.labels_
@@ -110,7 +111,6 @@ class StorageClassifier(BehaviorClassifier):
         Get the extent to which an qosas is covered by each QoSA
         qosas: Either the centroid of an app class or the signature of a unique application
         """
-        print("HERE!!!")
         if qosas is None:
             qosas = self.qosas
         #Filter out incompatible qosas (TODO: fix this hack, interface was float for some reason...)

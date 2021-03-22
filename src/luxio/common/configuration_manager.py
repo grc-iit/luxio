@@ -40,7 +40,7 @@ class ConfigurationManager:
         self.scheduler_type = SchedulerType.DUMMY
         self.price_type = PriceType.AVAILABILITY
         self.price_conf = None
-        self.resolver_policy = ResolverPolicyType.MAX_PERFORMANCE
+        self.resolver_policy = ResolverPolicyType.MAX_UTILIZATION
         self.min_performance_improvement = .1 #At least 10% faster than baseline qosa
         self.max_tolerable_interference = np.inf #Tolerate up to X% interference
 

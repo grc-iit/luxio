@@ -8,5 +8,5 @@ import numpy as np
 
 class MaxUtilization(ResolverPolicy):
     def rank(self, deployments:pd.DataFrame) -> pd.DataFrame:
-        deployments.sort_values(by="utilization", inplace=True, ascending=False)
+        deployments.sort_values(by="price", inplace=True, ascending=True)
         return deployments
