@@ -1,0 +1,21 @@
+{
+    "SMALL_READ" : [
+      "sequential_read_bw_small", "random_read_bw_small"
+    ],
+    "MEDIUM_READ" : [
+      "sequential_read_bw_medium", "random_read_bw_medium"
+    ],
+    "LARGE_READ" : [
+      "sequential_read_bw_large", "random_read_bw_large"
+    ],
+    "SMALL_WRITE" : [
+      "sequential_write_bw_small", "random_write_bw_small"
+    ],
+    "MEDIUM_WRITE" : [
+      "sequential_write_bw_medium", "random_write_bw_medium"
+    ],
+    "LARGE_WRITE" : [
+      "sequential_write_bw_large", "random_write_bw_large"
+    ],
+    "MD_HEAVINESS" : ["mdm_thrpt"]
+}

@@ -2,10 +2,9 @@ from time import process_time_ns
 import pandas as pd
 
 class Timer:
-    log = {}
-
     def __init__(self):
         self.count = 0
+        self.count_log = {}
         return
 
     def resume(self):
@@ -23,8 +22,10 @@ class Timer:
         return self.count/10**6
 
     def log(self, id:str):
-        self.log[id] = self.msec()
+        self.count_log[id] = self.msec()
         self.reset()
+        return self
 
     def save(self, path):
-        pd.DataFrame(self.log).to_csv(path)
+        if path is not None:
+            pd.Series(self.count_log).to_csv(path)

@@ -1,0 +1,15 @@
+features,importance
+capacity,1
+random_write_bw_small,1
+random_read_bw_small,1
+sequential_write_bw_small,1
+sequential_read_bw_small,1
+random_write_bw_medium,1
+random_read_bw_medium,1
+sequential_write_bw_medium,1
+sequential_read_bw_medium,1
+random_write_bw_large,1
+random_read_bw_large,1
+sequential_write_bw_large,1
+sequential_read_bw_large,1
+mdm_thrpt,1

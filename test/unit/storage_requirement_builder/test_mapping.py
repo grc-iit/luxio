@@ -2,10 +2,10 @@ import unittest, pytest
 from luxio.common.error_codes import *
 from luxio.common.enumerations import *
 from luxio.common.configuration_manager import *
-from luxio.storage_requirement_builder.models.app_io_classifier import *
+from luxio.mapper.models.app_io_classifier import *
 import pandas as pd
 
-class TestStorageRequirementBuilder(unittest.TestCase):
+class TestMapping(unittest.TestCase):
 
     def get_fitnesses(self, io_identifier:pd.DataFrame, ac:AppClassifier) -> pd.DataFrame:
         """

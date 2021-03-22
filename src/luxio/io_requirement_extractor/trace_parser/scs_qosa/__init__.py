@@ -1,1 +1,2 @@
+from .scs_stress_test_parser import SCSStressTestParser
 from .scs_qosa_parser import SCSQosaParser

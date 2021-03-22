@@ -48,3 +48,6 @@ class ErrorCode:
     REDISDB_STORE_ERROR = {"id": 3001, "msg": "RedisDB: Failed to store data into Redis"}
     REDISDB_GET_ERROR = {"id": 3002, "msg": "RedisDB: Failed to get data from Redis"}
     REDISDB_QUERY_ERROR = {"id": 3003, "msg": "RedisDB: Failed to query data from Redis"}
+
+    # Resource resolution
+    RESROUCES_UNAVAILABLE = {"id": 4000, "msg": "Requested {} tier-{} resources, but only {} available"}

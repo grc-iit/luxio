@@ -13,26 +13,10 @@ class ArgumentParser:
         self.parser.add_argument("-c", default="sample/stor_req_conf_output.json", help="Storage Configuration template")
         self.parser.add_argument("-o", default=None, help="Output file")
         self.parser.add_argument("--app-classifier", default="sample/app_classifier/app_class_model.pkl", help="The Application I/O Behavior Classifier model")
-        #     self.parser.add_argument(
-        #         "-r",
-        #         "--enable-redis",
-        #         help="""Enable use of
-        # Redis""",
-        #         action="store_true",
-        #     )
         self.parser.add_argument(
             "--redis-host", default="localhost", help="Host to use for redis"
         )
         self.parser.add_argument("--redis-port", default=6379, help="Port to use for redis")
-        # self.parser.add_argument(
-        #     "--redis-db", default=0, help="Database number to use for redis"
-        # )
-        # self.parser.add_argument(
-        #     "-v",
-        #     "--verbose",
-        #     help="Toggle extra detail in\noutput",
-        #     action="store_true",
-        # )
 
     def run(self) -> ConfigurationManager:
         args = self.parser.parse_args()

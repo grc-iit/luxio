@@ -1,6 +1,5 @@
-from luxio.storage_requirement_builder.models import AppClassifier
+from luxio.mapper.models import AppClassifier
 from luxio.external_clients.json_client import JSONClient
-from luxio.utils.mapper_manager import MapperManager
 from luxio.common.configuration_manager import *
 from luxio.common.enumerations import *
 from luxio.io_requirement_extractor.trace_parser.trace_parser_factory import *
@@ -46,7 +45,7 @@ class IORequirementExtractor:
 
         #Feature projection
         self.conf.timer.resume()
-        io_identifier = all_features[self.conf.app_classifier.features]
+        io_identifier = all_features[self.conf.app_classifier.features + self.conf.app_classifier.mandatory_features]
         self.conf.timer.pause().log("FeatureProjection")
 
         #Return the I/O Identifier

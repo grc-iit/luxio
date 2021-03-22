@@ -12,12 +12,14 @@ import pandas as pd
 import numpy as np
 
 from luxio.io_requirement_extractor.trace_parser.trace_parser_factory import *
-from luxio.storage_requirement_builder.models import AppClassifier, StorageClassifier, BehaviorClassifier
+from luxio.mapper.models import AppClassifier, StorageClassifier, BehaviorClassifier
 from luxio.common.configuration_manager import *
+from luxio.external_clients.json_client import *
 from clever.common import *
 from clever.models.regression.multioutput import *
 from clever.models.regression.forest import *
 from clever.models.regression.ensemble import *
+from clever.models.regression.linear import *
 from clever.models.cluster import *
 from clever.transformers import *
 from clever.feature_selection import *
@@ -52,8 +54,12 @@ def preprocess_dataset(params):
     conf.__dict__.update(params)
     dataset = params["dataset_type"]
     parser = TraceParserFactory.get_parser(TraceParserType[dataset])
+    conf.dataset_type = params["serializer_type"]
     df = parser.preprocess()
-    df.to_csv(params["out"], index=False)
+    if params["serializer_type"] == "CSV":
+        df.to_csv(params["out"], index=False)
+    if params["serializer_type"] == "PICKLE":
+        df.to_pickle(params["out"])
 
 #Preliminary analysis of a dataset
 def preliminary_analysis(params):
@@ -88,7 +94,7 @@ def analyze_partitions(params):
         pd.DataFrame(analysis[var]).transpose().to_csv(f"{var}.csv")
 
 #Feature selection module
-def feature_selector(params):
+def app_feature_selector(params):
     FEATURES = load_features(params["features"])
     PERFORMANCE = load_features(params["vars"])
 
@@ -133,7 +139,7 @@ def feature_selector(params):
     fs.save_importances(params["importances"])
 
 #Feature selection module
-def refitter(params):
+def app_refitter(params):
     FEATURES = list(pd.read_csv(params["importances"], index_col=0).index)
     PERFORMANCE = load_features(params["vars"])
 
@@ -175,7 +181,7 @@ def ensemble_model_stats(analysis:dict, columns:list, path:str):
         df.to_csv(os.path.join(path, f"{metric}.csv"))
 
 #Feature selection statistics module
-def feature_selector_stats(params):
+def app_feature_selector_stats(params):
     FEATURES = load_features(params["features"])
     PERFORMANCE = load_features(params["vars"])
     #Load testing dataset
@@ -202,21 +208,112 @@ def feature_selector_stats(params):
     fs.model_.save(params["regressor"])
     fs.save_importances(params["importances"])
 
+#Feature selection module
+def storage_feature_selector(params):
+    FEATURES = load_features(params["features"])
+    PERFORMANCE = load_features(params["vars"])
+
+    #Load the training and testing datasets
+    try:
+        train_df = pd.read_pickle(params["train"])
+        hyper_df = pd.read_pickle(params["hyper"])
+        test_df = pd.read_pickle(params["test"])
+    except:
+        partitioner, train_df, hyper_df, test_df = dataset_splitter(params)
+
+    pp.pprint(list(train_df.columns))
+
+    #Divide the datasets into x and y
+    train_x,train_y = train_df[FEATURES],train_df[PERFORMANCE]
+    hyper_x,hyper_y = hyper_df[FEATURES],hyper_df[PERFORMANCE]
+    test_x,test_y = test_df[FEATURES],test_df[PERFORMANCE]
+
+    """
+    models = {
+        "RandomForestRegressor" : RandomForestRegressor(n_estimators=3, max_leaf_nodes=128, random_state=1, verbose=2),
+        "XGBRegressor" : MultiOutputRegressor(XGBRegressor(objective ='reg:squarederror', n_estimators = 20, verbosity=2)),
+        "AdaBoostRegressor" : MultiOutputRegressor(AdaBoostRegressor()),
+        #"LinearRegression" : LinearRegression(),
+        #"ARDRegression" : ARDRegression(),
+        #"BayesianRidge" : BayesianRidge(),
+        #"ElasticNetRegression" : ElasticNetRegression(),
+        #"HuberRegressor" : HuberRegressor(),
+        "LassoRegression" : LassoRegression(),
+        #"LassoLarsRegression" : LassoLarsRegression(),
+        #"OrthogonalMatchingPursuit" : OrthogonalMatchingPursuit(),
+        "RidgeRegression" : RidgeRegression(),
+        #"SGDRegressor" : SGDRegressor()
+    },
+    """
+
+    #Train model for each variable and select minimum feature set
+    model = EnsembleModelRegressor(
+        models = {
+            "XGBRegressor" : MultiOutputRegressor(XGBRegressor(objective ='reg:squarederror', n_estimators = 20, verbosity=2)),
+            #"LinearRegression" : LinearRegression(),
+            #"ARDRegression" : ARDRegression(),
+            #"BayesianRidge" : BayesianRidge(),
+            #"ElasticNetRegression" : ElasticNetRegression(),
+            #"HuberRegressor" : HuberRegressor(),
+            "LassoRegression" : LassoRegression(),
+            #"LassoLarsRegression" : LassoLarsRegression(),
+            #"OrthogonalMatchingPursuit" : OrthogonalMatchingPursuit(),
+            "RidgeRegression" : RidgeRegression(),
+            #"SGDRegressor" : SGDRegressor()
+        },
+        fitness_metric=RelativeAccuracyMetric(scale=1, add=1),
+        error_metric=RMLSEMetric(add=1)
+    )
+
+    model.tune(train_x, train_y, hyper_x, hyper_y, max_iter=50)
+
+    #Save and analyze
+    model.save(params["regressor"])
+    model.save_importances(params["importances"], features=FEATURES)
+
+def storage_feature_selector_stats(params):
+    FEATURES = load_features(params["features"])
+    PERFORMANCE = load_features(params["vars"])
+    #Load testing dataset
+    test_df = pd.read_pickle(params["test"])
+    #Divide the datasets into x and y
+    test_x,test_y = test_df[FEATURES],test_df[PERFORMANCE]
+    #Load the feature selector
+    model = EnsembleModelRegressor.load(params["regressor"])
+    #Determine how well model performs per-features
+    analysis = model.analyze(test_x, test_y, metrics={
+        "r2Metric": r2Metric(mode='all'),
+        #"MAPE" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), part_mode='avg', feature_mode='all'),
+        #"RMLSE" : SegmentedMetric(partitioners, metric=RMLSEMetric(add=1), part_mode='avg', feature_mode='all'),
+        #"PER_FEATURE_MAPE" : SegmentedMetric(partitioners, metric=RelativeErrorMetric(add=1), part_mode='avg', feature_mode='all'),
+        #"PER_FEATURE_RMLSE" : RMLSEMetric(add=1, mode='all'),
+    })
+    pp.pprint(analysis)
+
+    #Store statistics
+    ensemble_model_stats(analysis, PERFORMANCE, params["reg_stats"])
+
+    model.save(params["regressor"])
+    model.save_importances(params["importances"], features=FEATURES)
+
 #Application Behavior Classifaction module
 def app_behavior_classifier(params):
     df = pd.read_csv(params["trace"])
+    #df = pd.read_pickle(params["trace"])
     feature_importances = pd.read_csv(params["importances"], index_col=0)
+    score_conf = JSONClient().load(params["score_conf"])
     mandatory_features = load_features(params["mandatory_features"])
-    bc = AppClassifier(feature_importances, mandatory_features)
+    bc = AppClassifier(df.columns, score_conf, feature_importances, mandatory_features)
     bc.fit(df)
     bc.save(params["classifier"])
 
 #Storage Behavior Classifaction module
 def storage_behavior_classifier(params):
     df = pd.read_csv(params["trace"])
-    feature_importances = pd.DataFrame()
+    score_conf = JSONClient().load(params["score_conf"])
+    feature_importances = pd.read_csv(params["importances"], index_col=0)
     mandatory_features = load_features(params["mandatory_features"])
-    bc = StorageClassifier(feature_importances, mandatory_features)
+    bc = StorageClassifier(df.columns, score_conf, feature_importances, mandatory_features)
     bc.fit(df)
     bc.save(params["classifier"])
 
@@ -249,17 +346,16 @@ if __name__ == "__main__":
     if args.tool == "app_dataset_stats" or args.tool == "all" or  args.tool == "app_dataset":
         analyze_partitions(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_reg" or args.tool == "all":
-        feature_selector(args.conf["APP_BEHAVIOR_MODEL"])
+        app_feature_selector(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_reg_refit":
-        refitter(args.conf["APP_BEHAVIOR_MODEL"])
+        app_refitter(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_reg_stats" or args.tool == "all" or args.tool == "app_reg":
-        feature_selector_stats(args.conf["APP_BEHAVIOR_MODEL"])
+        app_feature_selector_stats(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_gen" or args.tool == "all":
         app_behavior_classifier(args.conf["APP_BEHAVIOR_MODEL"])
     if args.tool == "app_gen_stats" or args.tool == "all" or args.tool == "app_gen":
         behavior_classifier_stats(args.conf["APP_BEHAVIOR_MODEL"])
 
-    """
     if args.tool == "qosa_prelim_stats":
         preliminary_analysis(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "qosa_dataset" or args.tool == "all":
@@ -267,10 +363,9 @@ if __name__ == "__main__":
     if args.tool == "qosa_dataset_stats" or args.tool == "all" or args.tool == "qosa_dataset":
         analyze_partitions(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "qosa_reg" or args.tool == "all":
-        feature_selector(args.conf["STORAGE_BEHAVIOR_MODEL"])
+        storage_feature_selector(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "qosa_reg_stats" or args.tool == "all" or args.tool == "qosa_reg":
-        feature_selector_stats(args.conf["STORAGE_BEHAVIOR_MODEL"])
-    """
+        storage_feature_selector_stats(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "qosa_gen" or args.tool == "all":
         storage_behavior_classifier(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "qosa_gen_stats" or args.tool == "all" or args.tool == "qosa_gen":

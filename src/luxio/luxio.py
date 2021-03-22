@@ -1,7 +1,8 @@
 from luxio.io_requirement_extractor.io_requirement_extractor import IORequirementExtractor
-from luxio.storage_configurator.storage_configurator_factory import *
-from luxio.storage_requirement_builder.storage_requirement_builder import *
-from luxio.external_clients.json_client import *
+from luxio.mapper.mapper import Mapper
+from luxio.resolver.resolver import Resolver
+from luxio.scheduler.client import LuxioSchedulerClient
+from luxio.external_clients.json_client import JSONClient
 from luxio.database.database import *
 from luxio.common.timer import Timer
 
@@ -27,46 +28,42 @@ class LUXIO:
         """
         self._initialize()
 
-        job_spec = JSONClient().load(self.conf.job_spec)
+        self.conf.job_spec = JSONClient().load(self.conf.job_spec_path)
         if self.conf.check_db:
             db = DataBase.get_instance()
         try:
             if self.conf.check_db:
                 self.conf.timer.resume()
                 req_dict = db.get(job_spec)
-                io_requirement = req_dict["io"]
-                storage_requirement = req_dict["storage"]
+                io_identifier = req_dict["io"]
+                ranked_qosas = req_dict["storage"]
                 self.conf.timer.pause().log("CheckDB")
             else:
                 raise 1
         except:
             # run io requirement extractor
             extractor = IORequirementExtractor()
-            io_requirement = extractor.run()
-            # run storage requirement builder
-            builder = StorageRequirementBuilder()
-            storage_requirement = builder.run(io_requirement)
-            # store the io requirement and storage requirement into database
+            io_identifier = extractor.run()
+            # map I/O requiremnt to QoSAs
+            mapper = Mapper()
+            ranked_qosas = mapper.run(io_identifier)
+            # store the io requirement and ranked_qosas into database
             if self.conf.check_db:
                 self.conf.timer.resume()
-                db.put(job_spec, {"io": io_requirement, "storage": storage_requirement})
+                db.put(job_spec, {"io": io_identifier, "storage": ranked_qosas})
                 self.conf.timer.pause().log("PutReqsToDB")
 
-        #run storage configurator
-        configurator = StorageConfiguratorFactory.get(self.conf.storage_configurator_type)
-        configuration = configurator.run(storage_requirement)
+        # Build and configure the qosas
+        resolver = Resolver()
+        deployments = resolver.run(io_identifier, ranked_qosas)
+
+        # Schedule the job
+        scheduler = LuxioSchedulerClient()
+        scheduler.schedule(self.conf.job_spec, deployments)
+
         self._finalize()
-        return configuration
+        return self.conf.job_spec
 
     def _finalize(self) -> None:
         if self.conf.timer_log_path:
             self.conf.timer.save(self.conf.timer_log_path)
-
-
-if __name__ == '__main__':
-    """
-    The main method to start the benchmark runtime.
-    """
-    tool = LUXIO()
-    tool.run()
-    exit(0)

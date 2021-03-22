@@ -5,3 +5,4 @@ pytest
 pyyaml
 pandas
 numpy
+python-daemon

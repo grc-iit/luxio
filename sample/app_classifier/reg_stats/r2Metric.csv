@@ -1,0 +1,7 @@
+,model_id,TOTAL_READ_TIME,TOTAL_WRITE_TIME,TOTAL_MD_TIME
+0,RandomForestRegressor,0.0,0.0,0.0
+1,XGBRegressor,0.5266129552204718,0.05381262547825805,0.0
+2,AdaBoostRegressor,0.0,0.0,0.0
+3,LassoRegression,0.0,0.0,0.0
+4,RidgeRegression,0.0,0.0,0.06172572218077843
+5,"['Stacked', 0.49807262969169597, 0.0, 0.0]",,,

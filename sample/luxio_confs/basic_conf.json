@@ -1,0 +1,12 @@
+{
+  "job_spec_path": "sample/job_specs/basic_spec.json",
+  "darshan_trace_path": "sample/traces/hacc_read.darshan",
+  "app_classifier_path": "sample/app_classifier/app_class_model.pkl",
+  "storage_classifier_path": "sample/qosa_classifier/qosa_class_model.pkl",
+  "price_conf": "sample/price_confs/avail_price.json",
+  "timer_log_path": "datasets/luxio_timer_log.csv",
+  "check_db": false,
+  "db_type": "REDIS",
+  "db_addr": "127.0.0.1",
+  "db_port": "6379"
+}
