@@ -158,10 +158,9 @@ class AppClassifier(BehaviorClassifier):
     def get_fitnesses(self, io_identifier:pd.DataFrame) -> pd.DataFrame:
         """
         Determine how well the I/O Identifier fits within each class of behavior
+        This assumes the io_identifier has already been standardized
         """
         scores = self.scores
-        #Calculate the scores
-        io_identifier = self.standardize(io_identifier)
         #Filter out incompatible app classes
         ioid_mandatory = io_identifier[self.mandatory_features].astype(int).to_numpy()
         app_mandatory = self.app_classes[self.mandatory_features].astype(int).to_numpy()

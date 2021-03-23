@@ -1,5 +1,34 @@
 from luxio.common.configuration_manager import *
+from luxio.common.constants import *
 import pandas as pd
+from typing import Tuple
+
+groupings  = {
+    "SMALL_READ" : [
+        "TOTAL_POSIX_SIZE_READ_0_100", "TOTAL_POSIX_SIZE_READ_100_1K",
+        "TOTAL_MPIIO_SIZE_READ_AGG_0_100", "TOTAL_MPIIO_SIZE_READ_AGG_100_1K"
+    ],
+    "MEDIUM_READ" : [
+        "TOTAL_POSIX_SIZE_READ_1K_10K", "TOTAL_POSIX_SIZE_READ_10K_100K", "TOTAL_POSIX_SIZE_READ_100K_1M",
+        "TOTAL_MPIIO_SIZE_READ_AGG_1K_10K", "TOTAL_MPIIO_SIZE_READ_AGG_10K_100K", "TOTAL_MPIIO_SIZE_READ_AGG_100K_1M"
+    ],
+    "LARGE_READ" : [
+        "TOTAL_POSIX_SIZE_READ_1M_4M", "TOTAL_POSIX_SIZE_READ_4M_10M", "TOTAL_POSIX_SIZE_READ_10M_100M", "TOTAL_POSIX_SIZE_READ_100M_1G", "TOTAL_POSIX_SIZE_READ_1G_PLUS",
+        "TOTAL_MPIIO_SIZE_READ_AGG_1M_4M", "TOTAL_MPIIO_SIZE_READ_AGG_4M_10M", "TOTAL_MPIIO_SIZE_READ_AGG_10M_100M", "TOTAL_MPIIO_SIZE_READ_AGG_100M_1G", "TOTAL_MPIIO_SIZE_READ_AGG_1G_PLUS"
+    ],
+    "SMALL_WRITE" : [
+        "TOTAL_POSIX_SIZE_WRITE_0_100", "TOTAL_POSIX_SIZE_WRITE_100_1K",
+        "TOTAL_MPIIO_SIZE_WRITE_AGG_0_100", "TOTAL_MPIIO_SIZE_WRITE_AGG_100_1K"
+    ],
+    "MEDIUM_WRITE" : [
+        "TOTAL_POSIX_SIZE_WRITE_1K_10K", "TOTAL_POSIX_SIZE_WRITE_10K_100K", "TOTAL_POSIX_SIZE_WRITE_100K_1M",
+        "TOTAL_MPIIO_SIZE_WRITE_AGG_1K_10K", "TOTAL_MPIIO_SIZE_WRITE_AGG_10K_100K", "TOTAL_MPIIO_SIZE_WRITE_AGG_100K_1M"
+    ],
+    "LARGE_WRITE" : [
+        "TOTAL_POSIX_SIZE_WRITE_1M_4M", "TOTAL_POSIX_SIZE_WRITE_4M_10M", "TOTAL_POSIX_SIZE_WRITE_10M_100M", "TOTAL_POSIX_SIZE_WRITE_100M_1G", "TOTAL_POSIX_SIZE_WRITE_1G_PLUS",
+        "TOTAL_MPIIO_SIZE_WRITE_AGG_1M_4M", "TOTAL_MPIIO_SIZE_WRITE_AGG_4M_10M", "TOTAL_MPIIO_SIZE_WRITE_AGG_10M_100M", "TOTAL_MPIIO_SIZE_WRITE_AGG_100M_1G", "TOTAL_MPIIO_SIZE_WRITE_AGG_1G_PLUS"
+    ]
+}
 
 class RuntimeEmulator():
     def __init__(self):
@@ -13,84 +42,68 @@ class RuntimeEmulator():
     def _finalize(self):
         return
 
-    def simulate_apps_runtime(self, darshan_trace_path:str, qosas_csv_path:str):
-        # Load the darshan trace
-        self.apps_trace_df = pd.read_csv(darshan_trace_path)
-        # Load the Qosas
-        self.qosas_df = pd.read_csv(qosas_csv_path)
+    def complex_run(self, io_traits_vec:pd.DataFrame, deployment:pd.DataFrame) -> Tuple[float,float]:
+        return
 
-        # Calculate each application's runtime on each Qosa
-        idx = 0
-        apps_runtime_df = pd.DataFrame(columns=['APP_NAME', 'Qosa_Seq', 'IO_runtime'])
-        for trace_idx in self.apps_trace_df.index:
-            app_trace_df = self.apps_trace_df.loc[[trace_idx]]
-            for qosa_idx in self.qosas_df.index:
-                qosa_df = self.qosas_df.loc[[qosa_idx]]
-                apps_runtime_df.loc[idx, 'APP_NAME'] = app_trace_df.at[trace_idx, 'APP_NAME']
-                apps_runtime_df.loc[idx, 'Qosa_Seq'] = qosa_idx + 1
-                apps_runtime_df.loc[idx, 'IO_runtime'] = self._estimate_app_runtime(trace_idx, app_trace_df, qosa_idx, qosa_df)
-                idx += 1
+    def run(self, io_traits_vec:pd.DataFrame, deployment:pd.DataFrame) -> Tuple[float,float]:
+        # Estimate runtime and utilization using performance counters
 
-        # save the result into a csv file
-        apps_runtime_df.to_csv(self.conf.apps_runtime_csv_path, index=False)
+        io_traits_vec = io_traits_vec.iloc[0,:]
 
+        # Get the number of I/O and MD requests
+        num_small_reads = io_traits_vec[groupings["SMALL_READ"]].sum()
+        num_small_writes = io_traits_vec[groupings["SMALL_WRITE"]].sum()
+        num_med_reads = io_traits_vec[groupings["MEDIUM_READ"]].sum()
+        num_med_writes = io_traits_vec[groupings["MEDIUM_WRITE"]].sum()
+        num_large_reads = io_traits_vec[groupings["LARGE_READ"]].sum()
+        num_large_writes = io_traits_vec[groupings["LARGE_WRITE"]].sum()
+        total_md_ops = io_traits_vec["TOTAL_MD_OPS"]
 
-    def _estimate_app_runtime(self, trace_idx: int, darshan_trace:pd.DataFrame, qosa_idx:int, qosa:pd.DataFrame) -> float:
-        # Estimate the application io_runtime on the qosa (io_time = read_time + write_time + metadata_time)
+        #Get the amount of data for different request sizes
+        small_bytes_read = num_small_reads*1*KB
+        small_bytes_write = num_small_writes*1*KB
+        med_bytes_read = num_med_reads*1*MB
+        med_bytes_write = num_med_writes*1*MB
+        large_bytes_read = num_large_reads*16*MB
+        large_bytes_write = num_large_writes*16*MB
+        est_total_byte_read = small_bytes_read + med_bytes_read + large_bytes_read
+        est_total_byte_write = small_bytes_write + med_bytes_write + large_bytes_write
+        total_byte_read = io_traits_vec["TOTAL_BYTES_READ"]
+        total_byte_write = io_traits_vec["TOTAL_BYTES_WRITTEN"]
 
-        # Getting the app information from the darshan_trace. Including: TOTAL_POSIX_CONSEC_READS, TOTAL_POSIX_CONSEC_WRITES,
-        # TOTAL_SIZE_IO_0_1M, TOTAL_SIZE_IO_1M_100M, TOTAL_SIZE_IO_100M_PLUS, TOTAL_BYTES_READ, TOTAL_BYTES_WRITTEN,
-        # TOTAL_MD_OPS
-        posix_consec_reads = darshan_trace.at[trace_idx, "TOTAL_POSIX_CONSEC_READS"]
-        posix_consec_writes = darshan_trace.at[trace_idx, "TOTAL_POSIX_CONSEC_WRITES"]
-        total_size_io_0_1m = darshan_trace.at[trace_idx, "TOTAL_SIZE_IO_0_1M"]
-        total_size_io_1m_100m = darshan_trace.at[trace_idx, "TOTAL_SIZE_IO_1M_100M"]
-        total_size_io_100m_plus = darshan_trace.at[trace_idx, "TOTAL_SIZE_IO_100M_PLUS"]
-        total_byte_read = darshan_trace.at[trace_idx, "TOTAL_BYTES_READ"]
-        total_byte_written = darshan_trace.at[trace_idx, "TOTAL_BYTES_WRITTEN"]
-        total_md_ops = darshan_trace.at[trace_idx, "TOTAL_MD_OPS"]
+        #Scale the different byte sizes
+        read_scale = total_byte_read / est_total_byte_read
+        write_scale = total_byte_write / est_total_byte_write
+        small_bytes_read = small_bytes_read
+        small_bytes_write = small_bytes_write
+        med_bytes_read = med_bytes_read
+        med_bytes_write = med_bytes_write
+        large_bytes_read = large_bytes_read
+        large_bytes_write = large_bytes_write
 
-        # Getting the qosa information from the QOSA dataframe. Including: sequential_mdm_thrpt_small, sequential_write_bw_small,
-        # sequential_read_bw_small,sequential_mdm_thrpt_large, sequential_write_bw_large,sequential_read_bw_large,
-        # random_mdm_thrpt_small,random_write_bw_small, random_read_bw_small,random_mdm_thrpt_large,random_write_bw_large,
-        # random_read_bw_large
-        seq_mdm_thrpt_small = qosa.at[qosa_idx, "sequential_mdm_thrpt_small"]
-        seq_write_bw_small = qosa.at[qosa_idx, "sequential_write_bw_small"]
-        seq_read_bw_small = qosa.at[qosa_idx, "sequential_read_bw_small"]
-        seq_mdm_thrpt_large = qosa.at[qosa_idx, "sequential_mdm_thrpt_large"]
-        seq_write_bw_large = qosa.at[qosa_idx, "sequential_write_bw_large"]
-        seq_read_bw_large = qosa.at[qosa_idx, "sequential_read_bw_large"]
+        # Get throughputs and bandwidths for different request sizes
+        write_bw_small = deployment["sequential_write_bw_small"]*MB
+        read_bw_small = deployment["sequential_read_bw_small"]*MB
+        write_bw_med = deployment["sequential_write_bw_medium"]*MB
+        read_bw_med = deployment["sequential_read_bw_medium"]*MB
+        write_bw_large = deployment["sequential_write_bw_large"]*MB
+        read_bw_large = deployment["sequential_read_bw_large"]*MB
+        mdm_thrpt = deployment["mdm_thrpt"]
+        if mdm_thrpt == 0:
+            mdm_thrpt = read_bw_small
+            total_md_ops *= 512 #Estimate 512 bytes / md op
 
-        total_size_big_io = total_size_io_1m_100m + total_size_io_100m_plus
+        #Estimate I/O time
+        write_time = small_bytes_write/write_bw_small + med_bytes_read/write_bw_med + large_bytes_read/write_bw_large
+        read_time = small_bytes_read/read_bw_small + med_bytes_write/read_bw_med + large_bytes_write/read_bw_large
+        md_time = total_md_ops / mdm_thrpt
 
-        io_time = 0
-        if posix_consec_reads > 0 or posix_consec_writes > 0:
-            # sequential read/write
-            if total_size_io_0_1m > total_size_big_io:
-                #small read/write
-                write_time = total_byte_written / seq_write_bw_small
-                read_time = total_byte_read / seq_read_bw_small
-                md_time = total_md_ops / seq_mdm_thrpt_small
-                io_time = write_time + read_time + md_time
-            else:
-                #large read/write
-                write_time = total_byte_written / seq_write_bw_large
-                read_time = total_byte_read / seq_read_bw_large
-                md_time = total_md_ops / seq_mdm_thrpt_large
-                io_time = write_time + read_time + md_time
-        else:
-            # random read/write
-            if total_size_io_0_1m > total_size_big_io:
-                #small read/write
-                write_time = total_byte_written / seq_write_bw_small
-                read_time = total_byte_read / seq_read_bw_small
-                md_time = total_md_ops / seq_mdm_thrpt_small
-                io_time = write_time + read_time + md_time
-            else:
-                #large read/write
-                write_time = total_byte_written / seq_write_bw_large
-                read_time = total_byte_read / seq_read_bw_large
-                md_time = total_md_ops / seq_mdm_thrpt_large
-                io_time = write_time + read_time + md_time
+        #Estimate runtime and disk utilization
+        orig_runtime = io_traits_vec["RUNTIME"]
+        orig_io_time = io_traits_vec["TOTAL_IO_TIME"]
+        compute_time = orig_runtime - orig_io_time
+        io_time = write_time + read_time + md_time
+        runtime = compute_time + io_time
+        utilization = io_time / runtime
 
-        return io_time;
+        return runtime,utilization

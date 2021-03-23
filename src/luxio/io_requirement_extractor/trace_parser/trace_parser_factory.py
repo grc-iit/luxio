@@ -1,6 +1,7 @@
 
 from luxio.common.enumerations import TraceParserType
 from luxio.common.error_codes import Error, ErrorCode
+from luxio.io_requirement_extractor.trace_parser.darshan.dict import DarshanDictParser
 from luxio.io_requirement_extractor.trace_parser.darshan.v3_2_1 import DarshanTraceParser_3_2_1
 from luxio.io_requirement_extractor.trace_parser.darshan.anl import ArgonneTraceParser
 from luxio.io_requirement_extractor.trace_parser.scs_qosa import SCSStressTestParser
@@ -25,6 +26,8 @@ class TraceParserFactory:
         """
         if type == TraceParserType.DARSHAN:
             return DarshanTraceParser_3_2_1()
+        elif type == TraceParserType.DARSHAN_DICT:
+            return DarshanDictParser()
         elif type == TraceParserType.ARGONNE:
             return ArgonneTraceParser()
         elif type == TraceParserType.SCS_STRESS_TEST:

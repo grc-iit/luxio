@@ -11,14 +11,26 @@ class TestLuxio(unittest.TestCase):
     def test_luxio_sample(self):
         conf = ConfigurationManager.get_instance()
         conf.load("sample/luxio_confs/basic_conf.json")
-
-        #Schedule the Job
         tool = LUXIO()
-        config = tool.run()
-        print(config)
+        job_spec = tool.run()
+        print(job_spec)
+        #print(RuntimeEmulator().run(conf.io_traits_vec, job_spec['qosa']))
 
-        #Emulate the runtime of the Job
-
+    def test_luxio_resource_awareness(self):
+        conf = ConfigurationManager.get_instance()
+        conf_paths = [
+            "sample/luxio_confs/resource_utilization/compute_intense.json",
+            "sample/luxio_confs/resource_utilization/compute_heavy.json",
+            "sample/luxio_confs/resource_utilization/balanced.json",
+            "sample/luxio_confs/resource_utilization/data_intense.json",
+            "sample/luxio_confs/resource_utilization/data_heavy.json"
+        ]
+        conf.load(conf_paths[0])
+        
+        print("HERE!!!")
+        job_spec = LUXIO().run()
+        print(job_spec)
+        print(RuntimeEmulator().run(conf.io_traits_vec, job_spec['qosa']))
 
 
 if __name__ == "__main__":

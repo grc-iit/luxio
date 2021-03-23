@@ -3,7 +3,7 @@ from luxio.common.constants import *
 
 class GenIORTraceJsonFile():
     def __init__(self):
-        self.ior_trace_dict += {
+        self.ior_trace_dict = {
             "RUNTIME": 0,
             "TOTAL_READ_TIME": 0,
             "TOTAL_WRITE_TIME": 0,
@@ -121,12 +121,12 @@ class GenIORTraceJsonFile():
     # file_per_proc=1 ==> each proc has a file    file_per_proc ====> only one file
     # fsync_per_write=1 ===> perform fsyn after each write    fsync_per_write=0 ===> disable fsync_per_write
     def gen(self, num_checkpoints, io_intensity, num_procs, num_reads, num_writes, req_size, file_per_proc, fsync_per_write, fsync, randomness) -> dict:
+        self.ior_trace_dict['NPROCS'] = num_procs
         for i in range(num_checkpoints):
-            self.ior_trace_dict['NPROCS'] += num_procs
             self.ior_trace_dict['TOTAL_BYTES_READ'] += num_reads * req_size
             self.ior_trace_dict['TOTAL_BYTES_WRITTEN'] += num_writes * req_size
-            self.ior_trace_dict['TOTAL_POSIX_MAX_BYTE_READ'] += req_size
-            self.ior_trace_dict['TOTAL_POSIX_MAX_BYTE_WRITTEN'] += req_size
+            self.ior_trace_dict['TOTAL_POSIX_MAX_BYTE_READ'] = req_size
+            self.ior_trace_dict['TOTAL_POSIX_MAX_BYTE_WRITTEN'] = req_size
 
             if randomness == 1:
                 # random read and write
@@ -220,22 +220,22 @@ class GenIORTraceJsonFile():
                                                   self.ior_trace_dict['TOTAL_POSIX_FDSYNCS'] + self.ior_trace_dict['TOTAL_POSIX_FSYNCS']
 
         if req_size < 1*KB:
-            self.ior_trace_dict['TOTAL_READ_TIME'] = num_checkpoints * num_reads * req_size / 7.68
-            self.ior_trace_dict['TOTAL_WRITE_TIME'] = num_checkpoints * num_writes * req_size / 7.68
+            self.ior_trace_dict['TOTAL_READ_TIME'] = num_checkpoints * (num_reads) * req_size / (7.68*MB)
+            self.ior_trace_dict['TOTAL_WRITE_TIME'] = num_checkpoints * (num_writes) * req_size / (7.68*MB)
         elif req_size < 1*MB:
-            self.ior_trace_dict['TOTAL_READ_TIME'] = num_checkpoints * num_reads * req_size / 110
-            self.ior_trace_dict['TOTAL_WRITE_TIME'] = num_checkpoints * num_writes * req_size / 110
+            self.ior_trace_dict['TOTAL_READ_TIME'] = num_checkpoints * (num_reads) * req_size / (110*MB)
+            self.ior_trace_dict['TOTAL_WRITE_TIME'] = num_checkpoints * (num_writes) * req_size / (110*MB)
         else:
-            self.ior_trace_dict['TOTAL_READ_TIME'] = num_checkpoints * num_reads * req_size / 112
-            self.ior_trace_dict['TOTAL_WRITE_TIME'] = num_checkpoints * num_writes * req_size / 111
-        self.ior_trace_dict['TOTAL_MD_TIME'] = num_checkpoints * self.ior_trace_dict['TOTAL_MD_OPS'] * 512 / 7.68
+            self.ior_trace_dict['TOTAL_READ_TIME'] = num_checkpoints * (num_reads) * req_size / (112*MB)
+            self.ior_trace_dict['TOTAL_WRITE_TIME'] = num_checkpoints * (num_writes) * req_size / (111*MB)
+        self.ior_trace_dict['TOTAL_MD_TIME'] = num_checkpoints * (self.ior_trace_dict['TOTAL_MD_OPS']/num_procs) * 512 / (7.68*MB)
 
         self.ior_trace_dict['TOTAL_IO_TIME'] = (
             self.ior_trace_dict['TOTAL_READ_TIME'] +
             self.ior_trace_dict['TOTAL_WRITE_TIME'] +
             self.ior_trace_dict['TOTAL_MD_TIME']
         )
-        self.ior_trace_dict['RUNTIME'] = self.ior_trace_dict['TOTAL_IO_TIME'] * (1 - io_intensity)/io_intensity
+        self.ior_trace_dict['RUNTIME'] = self.ior_trace_dict['TOTAL_IO_TIME'] + self.ior_trace_dict['TOTAL_IO_TIME'] * (1 - io_intensity)/io_intensity
 
         return self
 

@@ -36,7 +36,8 @@ class IORequirementExtractor:
         for trace in self.conf.traces:
             parser = TraceParserFactory.get_parser(trace['type'])
             features.append(parser.preprocess(trace))
-        all_features = pd.concat(features).mean().to_frame().transpose()
+        io_traits_vec = pd.concat(features).mean().to_frame().transpose()
+        self.conf.io_traits_vec = io_traits_vec
         self.conf.timer.pause().log("Preprocessing")
 
         #Load I/O behavior classifier model
@@ -47,7 +48,8 @@ class IORequirementExtractor:
 
         #Feature projection
         self.conf.timer.resume()
-        io_identifier = all_features[self.conf.app_classifier.features + self.conf.app_classifier.mandatory_features]
+        io_identifier = io_traits_vec[self.conf.app_classifier.features + self.conf.app_classifier.mandatory_features]
+        io_identifier = self.conf.app_classifier.standardize(io_identifier)
         self.conf.timer.pause().log("FeatureProjection")
 
         #Return the I/O Identifier
