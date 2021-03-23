@@ -7,14 +7,14 @@ class ThetaTraceParser(DarshanTraceParser):
         return
 
     def _initialize(self):
-        self.conf = ConfigurationManager.get_instance()
+        return
 
     def _finalize(self):
         return
 
-    def parse(self):
+    def parse(self, params):
         self._initialize()
-        self.df = pd.read_csv(self.conf.theta_path)
+        self.df = pd.read_csv(param["theta_path"])
         self._finalize()
 
     def standardize(self):

@@ -12,9 +12,9 @@ class MiraTraceParser(DarshanTraceParser):
     def _finalize(self):
         return
 
-    def parse(self):
+    def parse(self, params):
         self._initialize()
-        self.df = pd.read_csv(self.conf.mira_path)
+        self.df = pd.read_csv(params["mira_path"])
         self._finalize()
 
     def standardize(self):

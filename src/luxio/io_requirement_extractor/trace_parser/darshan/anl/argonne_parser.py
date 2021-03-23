@@ -15,9 +15,9 @@ class ArgonneTraceParser(DarshanTraceParser):
     def _finalize(self):
         return
 
-    def parse(self):
-        self.theta.parse()
-        self.mira.parse()
+    def parse(self, params):
+        self.theta.parse(params)
+        self.mira.parse(params)
 
     def standardize(self):
         """
