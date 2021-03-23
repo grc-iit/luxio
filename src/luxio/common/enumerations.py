@@ -15,6 +15,7 @@ class TraceParserType(Enum):
     """
     Trace Parser Types supported in Luxio
     """
+    DARSHAN_DICT = 'darshan_dict'
     DARSHAN = 'darshan'
     ARGONNE = 'argonne'
     SCS_STRESS_TEST = 'scs_stress_test'

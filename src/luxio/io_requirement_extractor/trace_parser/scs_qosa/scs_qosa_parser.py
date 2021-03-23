@@ -14,20 +14,19 @@ class SCSQosaParser(TraceParser):
     A Darshan Parser to extract certain Variables for Luxio
     """
     def _initialize(self):
-        self.conf = ConfigurationManager.get_instance()
+        return
 
     def _finalize(self):
         return
 
-    def parse(self) -> pd.DataFrame:
+    def parse(self, params) -> pd.DataFrame:
         """
         Parses the SCS stress test CSV and converts to pandas
         """
-        conf = self.conf
-        path = conf.scs_stress_test_csv
-        if conf.dataset_type == "CSV":
+        path = params["scs_stress_test_csv"]
+        if params["dataset_type"] == "CSV":
             self.df = pd.read_csv(path)
-        if conf.dataset_type == "PICKLE":
+        if params["dataset_type"] == "PICKLE":
             self.df = pd.read_pickle(path)
         return self.df
 

@@ -20,18 +20,17 @@ class DarshanTraceParser_3_2_1(DarshanTraceParser):
         pass
 
     def _initialize(self):
-        self.conf = ConfigurationManager.get_instance()
+        return
 
     def _finalize(self):
         return
 
-    def parse(self) -> pd.DataFrame:
+    def parse(self, params) -> pd.DataFrame:
         """
         Parses an inputted Darshan File and returns all Darshan variables
         """
         #Load Darshan features
-        conf = self.conf
-        file_ = conf.darshan_trace_path
+        file_ = params["path"]
         self.report = darshan.DarshanReport(file_, read_all=True)
         self.dar_dict = self.report.records_as_dict()
         self.counter_types = ['counters', 'fcounters']
@@ -53,7 +52,7 @@ class DarshanTraceParser_3_2_1(DarshanTraceParser):
                             if feature not in features:
                                 features[feature] = 0
                             features[feature] += value
-        
+
         #Convert features into dataframe
         min_features = self._minimum_features(__file__)
         self.df = pd.DataFrame(features, index=[0], columns=min_features)

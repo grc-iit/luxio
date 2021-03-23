@@ -13,19 +13,19 @@ class SCSOrangeFSParser(TraceParser):
     """
 
     def _initialize(self):
-        self.conf = ConfigurationManager.get_instance()
+        return
 
     def _finalize(self):
         return
 
-    def parse(self) -> pd.DataFrame:
+    def parse(self, params) -> pd.DataFrame:
         """
         Parses the SCS stress test CSV and converts to pandas
         """
         #Load SCS QoSA CSV
         self._initialize()
         conf = self.conf
-        path = conf.scs_orangefs_csv
+        path = params["scs_orangefs_csv"]
         self.df = pd.read_csv(path)
         self._finalize()
         return self.df

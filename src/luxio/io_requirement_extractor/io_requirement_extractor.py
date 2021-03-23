@@ -2,6 +2,7 @@ from luxio.mapper.models import AppClassifier
 from luxio.external_clients.json_client import JSONClient
 from luxio.common.configuration_manager import *
 from luxio.common.enumerations import *
+from luxio.database.database import *
 from luxio.io_requirement_extractor.trace_parser.trace_parser_factory import *
 import pandas as pd
 import os
@@ -18,10 +19,7 @@ class IORequirementExtractor:
 
     def _initialize(self) -> None:
         self.conf = ConfigurationManager.get_instance()
-
-        #TODO: remove this hack
-        #ac = AppClassifier.load(self.conf.app_classifier_path)
-        #db.put({"app_classifier", ac})
+        self.db = DataBase.get_instance()
 
     def run(self) -> pd.DataFrame:
         """
@@ -34,14 +32,18 @@ class IORequirementExtractor:
 
         #Acquire historical trace data
         self.conf.timer.resume()
-        darshan_parser = TraceParserFactory.get_parser(TraceParserType.DARSHAN)
-        all_features = darshan_parser.preprocess()
+        features = []
+        for trace in self.conf.traces:
+            parser = TraceParserFactory.get_parser(trace['type'])
+            features.append(parser.preprocess(trace))
+        all_features = pd.concat(features).mean().to_frame().transpose()
         self.conf.timer.pause().log("Preprocessing")
 
         #Load I/O behavior classifier model
         self.conf.timer.resume()
-        self.conf.app_classifier = AppClassifier.load(self.conf.app_classifier_path)
-        self.conf.timer.pause().log("LoadAppClassifier")
+        self.conf.app_classifier = self.db.get("app_classifier")
+        self.conf.storage_classifier = self.db.get("storage_classifier")
+        self.conf.timer.pause().log("DownloadModels")
 
         #Feature projection
         self.conf.timer.resume()

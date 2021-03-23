@@ -21,7 +21,7 @@ class TraceParser(abc.ABC):
         raise Error(ErrorCode.NOT_IMPLEMENTED)
 
     @abc.abstractmethod
-    def parse(self) -> None:
+    def parse(self, params) -> None:
         """
         Parse a Trace and return extracted variables
         """
@@ -34,14 +34,13 @@ class TraceParser(abc.ABC):
         """
         raise Error(ErrorCode.NOT_IMPLEMENTED)
 
-    def preprocess(self, out=None):
+    def preprocess(self, params):
         """
         Parse and standardize data
         """
         self._initialize()
-        self.parse()
+        self.parse(params)
         self.standardize()
-        self.to_csv(out)
         self._finalize()
         return self.df
 
@@ -79,11 +78,3 @@ class TraceParser(abc.ABC):
         dfs = [df[common] for df in dfs]
         df = pd.concat(dfs)
         return df
-
-    def to_csv(self, path):
-        """
-        Save the preprocessed dataframe to a CSV
-        """
-        if path == None:
-            return
-        self.df.to_csv(path, index=False)

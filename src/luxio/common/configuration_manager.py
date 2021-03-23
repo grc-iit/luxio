@@ -29,7 +29,7 @@ class ConfigurationManager:
 
         self.job_spec = None
         self.job_spec_path = None
-        self.darshan_trace_path = None
+        self.traces = []
         self.app_classifier_path = None
         self.storage_classifier_path = None
 
@@ -82,4 +82,6 @@ class ConfigurationManager:
         if "resolver_policy" in conf_json: conf.resolver_policy = ResolverPolicyType[conf_json['resolver_policy']]
         if "luxio_server_mode" in conf_json: conf.luxio_server_mode = LuxioServerMode[conf_json['luxio_server_mode']]
         if "serializer_type" in conf_json: conf.serializer_type = SerializerType[conf_json['serializer_type']]
+        for trace in conf.traces:
+            trace['type'] = TraceParserType[trace['type']]
         return conf

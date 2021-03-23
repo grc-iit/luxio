@@ -29,7 +29,6 @@ class Resolver:
         """
         self._initialize()
         #Get the set of deployments corresponding to each of the QoSAs
-        self.conf.storage_classifier = StorageClassifier.load(self.conf.storage_classifier_path)
         new_deployments = pd.merge(ranked_qosas['qosa_id'], self.conf.storage_classifier.qosa_to_deployment, on="qosa_id")
         new_deployments.loc[:,"status"] = DeploymentStatus.NEW
         #Get the availability of the resources

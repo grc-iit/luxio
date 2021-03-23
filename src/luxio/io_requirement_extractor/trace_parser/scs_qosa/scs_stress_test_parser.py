@@ -21,7 +21,7 @@ class SCSStressTestParser(TraceParser):
     def _finalize(self):
         return
 
-    def parse(self) -> pd.DataFrame:
+    def parse(self, params) -> pd.DataFrame:
         """
         Parses the SCS stress test CSV and converts to pandas
         """

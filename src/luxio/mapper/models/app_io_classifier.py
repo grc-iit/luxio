@@ -39,13 +39,16 @@ class AppClassifier(BehaviorClassifier):
         #X = X.iloc[0:100,:]
         #Identify clusters of transformed data
         self.transform_ = ChainTransformer([LogTransformer(base=10,add=1), MinMaxScaler()])
+        #self.transform_ =  MinMaxScaler()
         X_features = self.transform_.fit_transform(X[self.features])*self.feature_importances.max(axis=1).to_numpy()
-        #for k in [2, 4, 6, 8, 10, 12, 15, 18, 20, 25, 30, 35, 40, 45, 50]:
-        #    self.model_ = KMeans(k=k)
-        #    self.labels_ = self.model_.fit_predict(X_features)
-        #    print(f"SCORE k={k}: {self.score(X_features, self.labels_)} {self.model_.km_.inertia_}")
-        #sys.exit(1)
-        self.model_ = KMeans(k=12)
+        """
+        for k in [2, 4, 6, 8, 10, 12, 15, 18, 20, 25, 30, 35, 40, 45, 50]:
+            self.model_ = KMeans(k=k)
+            self.labels_ = self.model_.fit_predict(X_features)
+            print(f"SCORE k={k}: {self.score(X_features, self.labels_)} {self.model_.km_.inertia_}")
+        sys.exit(1)
+        """
+        self.model_ = KMeans(k=15)
         self.labels_ = self.model_.fit_predict(X_features)
         #Cluster non-transformed data
         self.app_classes = self.standardize(X)
@@ -65,7 +68,6 @@ class AppClassifier(BehaviorClassifier):
         for idx,app_class in self.app_classes.iterrows():
             coverages = storage_classifier.get_coverages(app_class)
             coverages = coverages[coverages.magnitude >= self.conf.min_coverage_thresh]
-            print(coverages)
             coverages['app_id'] = app_class['app_id'].astype(int)
             qosas.append(coverages)
         #Add the qosas to the dataframe
@@ -149,7 +151,8 @@ class AppClassifier(BehaviorClassifier):
         scores = self.app_classes[self.scores].columns.intersection(fitness.columns)
         fitness = fitness.fillna(0)
         fitness[fitness[scores] > 1] = 1
-        magnitude = ((fitness[scores].to_numpy()*self.score_weights[scores].to_numpy()).sum(axis=1)/self.score_weights[scores].sum())
+        magnitude = (fitness[scores].to_numpy()*self.score_weights[scores].to_numpy()).sum(axis=1)/self.score_weights[scores].sum()
+        #magnitude = (fitness[scores].to_numpy()).min(axis=1)
         return magnitude
 
     def get_fitnesses(self, io_identifier:pd.DataFrame) -> pd.DataFrame:
@@ -160,10 +163,12 @@ class AppClassifier(BehaviorClassifier):
         #Calculate the scores
         io_identifier = self.standardize(io_identifier)
         #Filter out incompatible app classes
-        mandatory = (io_identifier[self.mandatory_features].to_numpy() & self.app_classes[self.mandatory_features].to_numpy()) == io_identifier[self.mandatory_features].to_numpy()
+        ioid_mandatory = io_identifier[self.mandatory_features].astype(int).to_numpy()
+        app_mandatory = self.app_classes[self.mandatory_features].astype(int).to_numpy()
+        mandatory = (ioid_mandatory & app_mandatory) == ioid_mandatory
         app_classes = self.app_classes[mandatory]
         #Get the fitness between io_identifier and every app class (score)
-        fitness = 1 - (app_classes[scores] - io_identifier[scores].to_numpy())
+        fitness = 1 - np.abs(app_classes[scores] - io_identifier[scores].to_numpy())
         #Add features
         fitness.loc[:,self.features] = app_classes[self.features].to_numpy()
         fitness.loc[:,'app_id'] = app_classes['app_id']

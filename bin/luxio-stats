@@ -11,6 +11,7 @@ import sys,os
 import pandas as pd
 import numpy as np
 
+from luxio.database.database import *
 from luxio.io_requirement_extractor.trace_parser.trace_parser_factory import *
 from luxio.mapper.models import AppClassifier, StorageClassifier, BehaviorClassifier
 from luxio.common.configuration_manager import *
@@ -51,11 +52,9 @@ class ArgumentParser:
 #Dataset preprocessing
 def preprocess_dataset(params):
     conf = ConfigurationManager.get_instance()
-    conf.__dict__.update(params)
     dataset = params["dataset_type"]
     parser = TraceParserFactory.get_parser(TraceParserType[dataset])
-    conf.dataset_type = params["serializer_type"]
-    df = parser.preprocess()
+    df = parser.preprocess(params)
     if params["serializer_type"] == "CSV":
         df.to_csv(params["out"], index=False)
     if params["serializer_type"] == "PICKLE":
@@ -332,6 +331,14 @@ def filter_qosas(app_params, storage_params):
     ac.filter_qosas(sc)
     ac.save(app_params["classifier"])
 
+#Upload storage and app classifier to DB
+def upload_models(app_params, storage_params):
+    ac = AppClassifier.load(app_params["classifier"])
+    sc = StorageClassifier.load(storage_params["classifier"])
+    db = DataBase.get_instance()
+    db.put("app_classifier", ac)
+    db.put("storage_classifier", sc)
+
 ##############MAIN##################
 if __name__ == "__main__":
     args = ArgumentParser().parse()
@@ -373,3 +380,5 @@ if __name__ == "__main__":
 
     if args.tool == "filter" or args.tool == "all":
         filter_qosas(args.conf["APP_BEHAVIOR_MODEL"], args.conf["STORAGE_BEHAVIOR_MODEL"])
+    if args.tool == "upload" or args.tool == "filter" or args.tool == "all":
+        upload_models(args.conf["APP_BEHAVIOR_MODEL"], args.conf["STORAGE_BEHAVIOR_MODEL"])
