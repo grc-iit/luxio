@@ -18,20 +18,36 @@ class TestLuxio(unittest.TestCase):
 
     def test_luxio_resource_awareness(self):
         conf = ConfigurationManager.get_instance()
-        conf_paths = [
-            "sample/luxio_confs/resource_utilization/compute_intense.json",
-            "sample/luxio_confs/resource_utilization/compute_heavy.json",
-            "sample/luxio_confs/resource_utilization/balanced.json",
-            "sample/luxio_confs/resource_utilization/data_intense.json",
-            "sample/luxio_confs/resource_utilization/data_heavy.json"
-        ]
-        conf.load(conf_paths[0])
-        
-        print("HERE!!!")
-        job_spec = LUXIO().run()
-        print(job_spec)
-        print(RuntimeEmulator().run(conf.io_traits_vec, job_spec['qosa']))
+        dev_counts = [8,16]
+        networks = [10,40]
+        workloads = ["compute_intense", "compute_heavy", "balanced", "data_heavy", "data_intense"]
 
+        results = []
+        for network in networks:
+            for dev_count in dev_counts:
+                for workload in workloads:
+                    conf_json = {
+                      "job_spec_path": f"sample/job_specs/resource_aware/{dev_count}hdd_{network}g.json",
+                      "price_conf": "sample/price_confs/avail_price.json",
+                      "timer_log_path": "datasets/luxio_timer_log.csv",
+                      "check_db": False,
+                      "db_type": "REDIS",
+                      "db_addr": "127.0.0.1",
+                      "db_port": "6379",
+                      "traces": [
+                        {
+                          "path": f"sample/traces/ior/{workload}.json",
+                          "type": "DARSHAN_DICT"
+                        }
+                      ]
+                    }
+                    conf.update(conf_json)
+
+                    job_spec = LUXIO().run()
+                    runtime, util = RuntimeEmulator().run(conf.io_traits_vec, job_spec['qosa'])
+                    results.append({"runtime": runtime, "util": util, "dev_count": dev_count, "network": network, "workload": workload})
+        df = pd.DataFrame(results)
+        df.to_csv("datasets/results/resource_awareness_internal.csv")
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,7 +2,16 @@ from luxio.external_clients.json_client import *
 from luxio.common.constants import *
 
 class GenIORTraceJsonFile():
-    def __init__(self):
+    def __init__(self, read_bw_small=7.68, read_bw_med=110, read_bw_large=112, write_bw_small=7.68, write_bw_med=110, write_bw_large=112, mdm_thrpt=0):
+        self.read_bw_small = read_bw_small*MB
+        self.read_bw_med = read_bw_med*MB
+        self.read_bw_large = read_bw_large*MB
+        self.write_bw_small = write_bw_small*MB
+        self.write_bw_med = write_bw_med*MB
+        self.write_bw_large = write_bw_large*MB
+        self.mdm_thrpt = mdm_thrpt
+        if mdm_thrpt == 0:
+            self.mdm_thrpt = self.read_bw_small
         self.ior_trace_dict = {
             "RUNTIME": 0,
             "TOTAL_READ_TIME": 0,
@@ -115,12 +124,62 @@ class GenIORTraceJsonFile():
     def _finalize(self):
         return
 
-    # ior command line parameters (-e:perform fsyn upon posix write close -F: filePerProc -Y: fsyncPerWrite -z: randomness)
-    # randomness=1 ===> random read/write      randomness=0 ====> sequential read/write
-    # fsyn=1 ==> perform fsyn when file close  fsyn=0 ==> disable fsyn
-    # file_per_proc=1 ==> each proc has a file    file_per_proc ====> only one file
-    # fsync_per_write=1 ===> perform fsyn after each write    fsync_per_write=0 ===> disable fsync_per_write
-    def gen(self, num_checkpoints, io_intensity, num_procs, num_reads, num_writes, req_size, file_per_proc, fsync_per_write, fsync, randomness) -> dict:
+    def fixed_compute(self, num_checkpoints, sleep_size, io_intensity, rfrac, req_size, num_procs, file_per_proc, fsync_per_write, sync, randomness):
+        """
+        Calculate # of requests to get runtime given compute
+        req_size is in bytes
+        runtime is in seconds
+        io_intensity is between 0 and 1
+        """
+        compute_time = sleep_size * num_checkpoints
+        io_time = compute_time/(1-io_intensity) - compute_time
+        read_time = io_time * rfrac
+        write_time = io_time * (1-rfrac)
+        if req_size <= 1*KB:
+            num_reads = int(read_time * self.read_bw_small / req_size / num_checkpoints)
+            num_writes = int(write_time * self.write_bw_small / req_size / num_checkpoints)
+        elif req_size <= 1*MB:
+            num_reads = int(read_time * self.read_bw_med / req_size / num_checkpoints)
+            num_writes = int(write_time * self.write_bw_med / req_size / num_checkpoints)
+        else:
+            num_reads = int(read_time * self.read_bw_large / req_size / num_checkpoints)
+            num_writes = int(write_time * self.write_bw_large / req_size / num_checkpoints)
+        self.num_reads = num_reads
+        self.num_writes = num_writes
+        return self.gen(num_checkpoints, sleep_size, num_procs, num_reads, num_writes, req_size, file_per_proc, fsync_per_write, sync, randomness)
+
+    def cap_runtime(self, num_checkpoints, io_intensity, rfrac, req_size, runtime, num_procs, file_per_proc, fsync_per_write, sync, randomness):
+        """
+        Calculate # of requests to get runtime given compute
+        req_size is in bytes
+        runtime is in seconds
+        io_intensity is between 0 and 1
+        """
+        io_time = runtime*io_intensity
+        compute_time = runtime - io_time
+        sleep_size = compute_time / num_checkpoints
+        read_time = io_time * rfrac
+        write_time = io_time * (1-rfrac)
+        if req_size <= 1*KB:
+            num_reads = int(read_time * self.read_bw_small / req_size / num_checkpoints)
+            num_writes = int(write_time * self.write_bw_small / req_size / num_checkpoints)
+        elif req_size <= 1*MB:
+            num_reads = int(read_time * self.read_bw_med / req_size / num_checkpoints)
+            num_writes = int(write_time * self.write_bw_med / req_size / num_checkpoints)
+        else:
+            num_reads = int(read_time * self.read_bw_large / req_size / num_checkpoints)
+            num_writes = int(write_time * self.write_bw_large / req_size / num_checkpoints)
+        self.num_reads = num_reads
+        self.num_writes = num_writes
+        return self.gen(num_checkpoints, sleep_size, num_procs, num_reads, num_writes, req_size, file_per_proc, fsync_per_write, sync, randomness)
+
+    def gen(self, num_checkpoints, sleep_size, num_procs, num_reads, num_writes, req_size, file_per_proc, fsync_per_write, fsync, randomness) -> dict:
+        """
+        sleep_size in seconds
+        num_reads/writes per checkpoint
+        req_size in bytes
+        """
+
         self.ior_trace_dict['NPROCS'] = num_procs
         for i in range(num_checkpoints):
             self.ior_trace_dict['TOTAL_BYTES_READ'] += num_reads * req_size
@@ -160,34 +219,34 @@ class GenIORTraceJsonFile():
             self.ior_trace_dict['TOTAL_POSIX_READS'] += num_reads
             self.ior_trace_dict['TOTAL_POSIX_WRITES'] += num_writes
 
-            if req_size >= 0 and req_size < 100:
+            if req_size >= 0 and req_size <= 100:
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_0_100'] += num_reads
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_0_100'] += num_writes
-            elif req_size >= 100 and req_size < 1024:
+            elif req_size > 100 and req_size <= 1*KB:
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_100_1K'] += num_reads
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_100_1K'] += num_writes
-            elif req_size >= 1024 and req_size < 10240:
+            elif req_size > 1*KB and req_size <= 10*KB:
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_1K_10K'] += num_reads
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_1K_10K'] += num_writes
-            elif req_size >= 10240 and req_size < 102400:
+            elif req_size > 10*KB and req_size <= 100*KB:
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_10K_100K'] += num_reads
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_10K_100K'] += num_writes
-            elif req_size >= 102400 and req_size < 1048576:
+            elif req_size > 100*KB and req_size <= 1*MB:
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_100K_1M'] += num_reads
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_100K_1M'] += num_writes
-            elif req_size >= 1048576 and req_size < 4194304:
+            elif req_size > 1*MB and req_size <= 4*MB:
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_1M_4M'] += num_reads
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_1M_4M'] += num_writes
-            elif req_size >= 4194304 and req_size < 10485760:
+            elif req_size > 4*MB and req_size <= 10*MB:
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_4M_10M'] += num_reads
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_4M_10M'] += num_writes
-            elif req_size >= 10485760 and req_size < 104857600:
+            elif req_size > 10*MB and req_size <= 100*MB:
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_10M_100M'] += num_reads
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_10M_100M'] += num_writes
-            elif req_size >= 104857600 and req_size < 1073741824:
+            elif req_size > 100*MB and req_size <= 1*GB:
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_100M_1G'] += num_reads
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_100M_1G'] += num_writes
-            elif req_size >= 1073741824:
+            elif req_size > 1*GB:
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_1G_PLUS'] += num_reads
                 self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_1G_PLUS'] += num_writes
 
@@ -214,30 +273,66 @@ class GenIORTraceJsonFile():
             self.ior_trace_dict['TOTAL_SIZE_IO_100M_1G'] += (self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_100M_1G'] + self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_100M_1G'])/self.ior_trace_dict['TOTAL_IO_OPS']
             self.ior_trace_dict['TOTAL_SIZE_IO_1G_PLUS'] += (self.ior_trace_dict['TOTAL_POSIX_SIZE_READ_1G_PLUS'] + self.ior_trace_dict['TOTAL_POSIX_SIZE_WRITE_1G_PLUS'])/self.ior_trace_dict['TOTAL_IO_OPS']
             self.ior_trace_dict['TOTAL_SIZE_IO_100M_PLUS'] += self.ior_trace_dict['TOTAL_SIZE_IO_100M_1G'] + self.ior_trace_dict['TOTAL_SIZE_IO_1G_PLUS']
-            self.ior_trace_dict['TOTAL_MD_OPS'] += self.ior_trace_dict['TOTAL_POSIX_OPENS'] + self.ior_trace_dict['TOTAL_POSIX_READS'] + \
-                                                  self.ior_trace_dict['TOTAL_POSIX_WRITES'] + self.ior_trace_dict['TOTAL_POSIX_SEEKS'] + \
+            self.ior_trace_dict['TOTAL_MD_OPS'] += self.ior_trace_dict['TOTAL_POSIX_OPENS'] + self.ior_trace_dict['TOTAL_POSIX_SEEKS'] + \
                                                   self.ior_trace_dict['TOTAL_POSIX_STATS'] + self.ior_trace_dict['TOTAL_POSIX_MMAPS'] + \
-                                                  self.ior_trace_dict['TOTAL_POSIX_FDSYNCS'] + self.ior_trace_dict['TOTAL_POSIX_FSYNCS']
-
-        if req_size < 1*KB:
-            self.ior_trace_dict['TOTAL_READ_TIME'] = num_checkpoints * (num_reads) * req_size / (7.68*MB)
-            self.ior_trace_dict['TOTAL_WRITE_TIME'] = num_checkpoints * (num_writes) * req_size / (7.68*MB)
-        elif req_size < 1*MB:
-            self.ior_trace_dict['TOTAL_READ_TIME'] = num_checkpoints * (num_reads) * req_size / (110*MB)
-            self.ior_trace_dict['TOTAL_WRITE_TIME'] = num_checkpoints * (num_writes) * req_size / (110*MB)
+                                                  self.ior_trace_dict['TOTAL_POSIX_FDSYNCS'] + self.ior_trace_dict['TOTAL_POSIX_FSYNCS'] #+ \
+                                                  #self.ior_trace_dict['TOTAL_POSIX_READS'] + self.ior_trace_dict['TOTAL_POSIX_WRITES']
+        #Time in milliseconds
+        if req_size <= 1*KB:
+            self.ior_trace_dict['TOTAL_READ_TIME'] = 1000*num_checkpoints * (num_reads) * req_size / self.read_bw_small
+            self.ior_trace_dict['TOTAL_WRITE_TIME'] = 1000*num_checkpoints * (num_writes) * req_size / self.write_bw_small
+        elif req_size <= 1*MB:
+            self.ior_trace_dict['TOTAL_READ_TIME'] = 1000*num_checkpoints * (num_reads) * req_size / self.read_bw_med
+            self.ior_trace_dict['TOTAL_WRITE_TIME'] = 1000*num_checkpoints * (num_writes) * req_size / self.write_bw_med
         else:
-            self.ior_trace_dict['TOTAL_READ_TIME'] = num_checkpoints * (num_reads) * req_size / (112*MB)
-            self.ior_trace_dict['TOTAL_WRITE_TIME'] = num_checkpoints * (num_writes) * req_size / (111*MB)
-        self.ior_trace_dict['TOTAL_MD_TIME'] = num_checkpoints * (self.ior_trace_dict['TOTAL_MD_OPS']/num_procs) * 512 / (7.68*MB)
+            self.ior_trace_dict['TOTAL_READ_TIME'] = 1000*num_checkpoints * (num_reads) * req_size / self.read_bw_large
+            self.ior_trace_dict['TOTAL_WRITE_TIME'] = 1000*num_checkpoints * (num_writes) * req_size / self.write_bw_large
+        self.ior_trace_dict['TOTAL_MD_TIME'] = 1000*(self.ior_trace_dict['TOTAL_MD_OPS']) / self.mdm_thrpt
 
         self.ior_trace_dict['TOTAL_IO_TIME'] = (
             self.ior_trace_dict['TOTAL_READ_TIME'] +
             self.ior_trace_dict['TOTAL_WRITE_TIME'] +
             self.ior_trace_dict['TOTAL_MD_TIME']
         )
-        self.ior_trace_dict['RUNTIME'] = self.ior_trace_dict['TOTAL_IO_TIME'] + self.ior_trace_dict['TOTAL_IO_TIME'] * (1 - io_intensity)/io_intensity
 
+        """
+        print(f"TOTAL_MD_OPS={self.ior_trace_dict['TOTAL_MD_OPS']}")
+        print(f"MD_THRPT={self.mdm_thrpt}")
+        print(f"TOTAL_WRITE_TIME={self.ior_trace_dict['TOTAL_WRITE_TIME']/1000}")
+        print(f"TOTAL_MD_TIME={self.ior_trace_dict['TOTAL_MD_TIME']/1000}")
+        print()
+        """
+
+        self.ior_trace_dict['RUNTIME'] = self.ior_trace_dict['TOTAL_IO_TIME'] + num_checkpoints*sleep_size*1000
         return self
+
+    def gen_time_series(self, num_checkpoints, sleep_size, num_procs, num_reads, num_writes, req_size, file_per_proc, fsync_per_write, fsync, randomness):
+        ts = []
+        for checkpoint in range(2*num_checkpoints):
+            if checkpoint % 2 == 0:
+                ts.append(GenIORTraceJsonFile(
+                    read_bw_small = self.read_bw_small/MB,
+                    read_bw_med = self.read_bw_med/MB,
+                    read_bw_large = self.read_bw_large/MB,
+                    write_bw_small = self.write_bw_small/MB,
+                    write_bw_med = self.write_bw_med/MB,
+                    write_bw_large = self.write_bw_large/MB,
+                    mdm_thrpt = self.mdm_thrpt
+                ).gen(1, sleep_size, 0, 0, 0, 0, 0, 0, 0, 0))
+            if checkpoint % 2 == 1:
+                ts.append(GenIORTraceJsonFile(
+                    read_bw_small = self.read_bw_small/MB,
+                    read_bw_med = self.read_bw_med/MB,
+                    read_bw_large = self.read_bw_large/MB,
+                    write_bw_small = self.write_bw_small/MB,
+                    write_bw_med = self.write_bw_med/MB,
+                    write_bw_large = self.write_bw_large/MB,
+                    mdm_thrpt = self.mdm_thrpt
+                ).gen(
+                    1, 0, num_procs,
+                    num_reads, num_writes, req_size,
+                    file_per_proc, fsync_per_write, fsync, randomness)
+                )
 
     def get(self):
         return self.ior_trace_dict

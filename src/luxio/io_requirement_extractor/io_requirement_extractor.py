@@ -43,8 +43,7 @@ class IORequirementExtractor:
         #Load I/O behavior classifier model
         self.conf.timer.resume()
         self.conf.app_classifier = self.db.get("app_classifier")
-        self.conf.storage_classifier = self.db.get("storage_classifier")
-        self.conf.timer.pause().log("DownloadModels")
+        self.conf.timer.pause().log("DownloadAppModel")
 
         #Feature projection
         self.conf.timer.resume()

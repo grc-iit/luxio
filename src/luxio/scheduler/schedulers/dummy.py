@@ -4,6 +4,7 @@ from luxio.external_clients.json_client import JSONClient
 from luxio.common.enumerations import DeploymentStatus
 from luxio.common.configuration_manager import ConfigurationManager
 from typing import Dict
+import pandas as pd
 
 class DummyScheduler(Scheduler):
     """
@@ -16,7 +17,7 @@ class DummyScheduler(Scheduler):
         self.resource_graph = None
         conf = ConfigurationManager.get_instance()
         self.resource_graph = JSONClient().load(conf.resource_graph_path)
-        self.existing_deployments = {}
+        self.existing_deployments = pd.DataFrame()
         self.callbacks = None
 
     def set_callbacks(self, scheduler):
@@ -35,11 +36,7 @@ class DummyScheduler(Scheduler):
             job_id = len(self.existing_deployments.keys())
             job_spec['qosa']['job_id'] = job_id
             job_spec['qosa']['status'] = DeploymentStatus.RUNNING
-            self.existing_deployments[job_id] = {
-                "job_spec": [job_spec],
-                "qosa": job_spec['qosa'],
-                "status": DeploymentStatus.RUNNING
-            }
+            self.existing_deployments.append(job_spec['qosa'])
         if self.callbacks is not None:
             self.callbacks.refresh_resource_graph()
             self.callbacks.refresh_existing_deployments()

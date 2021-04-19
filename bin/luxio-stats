@@ -55,10 +55,7 @@ def preprocess_dataset(params):
     dataset = params["dataset_type"]
     parser = TraceParserFactory.get_parser(TraceParserType[dataset])
     df = parser.preprocess(params)
-    if params["serializer_type"] == "CSV":
-        df.to_csv(params["out"], index=False)
-    if params["serializer_type"] == "PICKLE":
-        df.to_pickle(params["out"])
+    df.to_csv(params["out"], index=False)
 
 #Preliminary analysis of a dataset
 def preliminary_analysis(params):
@@ -339,6 +336,18 @@ def upload_models(app_params, storage_params):
     db.put("app_classifier", ac)
     db.put("storage_classifier", sc)
 
+#Find deployments that have nice properties
+def analyze_deployments(params):
+    df = pd.read_csv(params["trace"])
+    df = df[(
+        ((df.servers == 8) |
+        (df.servers == 16)) &
+        df.storage == "OrangeFS"
+    )]
+    grps = df.groupby('capacity')
+    print(df.iloc[grps.sequential_read_bw_large.idxmax(),:])
+
+
 ##############MAIN##################
 if __name__ == "__main__":
     args = ArgumentParser().parse()
@@ -382,3 +391,5 @@ if __name__ == "__main__":
         filter_qosas(args.conf["APP_BEHAVIOR_MODEL"], args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "upload" or args.tool == "filter" or args.tool == "all":
         upload_models(args.conf["APP_BEHAVIOR_MODEL"], args.conf["STORAGE_BEHAVIOR_MODEL"])
+    if args.tool == "analyze_deployments":
+        analyze_deployments(args.conf["STORAGE_BEHAVIOR_MODEL"])

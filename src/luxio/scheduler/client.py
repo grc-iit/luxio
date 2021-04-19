@@ -17,9 +17,11 @@ class LuxioSchedulerClient:
 
     def download_resource_graph(self):
         self.resource_graph = self.db.get("resource_graph")
+        return self.resource_graph
 
     def download_existing_deployments(self):
         self.existing_deployments = self.db.get("existing_deployments")
+        return self.existing_deployments
 
     def remove_resources(self, resources:dict):
         for tier,count in resources.items():

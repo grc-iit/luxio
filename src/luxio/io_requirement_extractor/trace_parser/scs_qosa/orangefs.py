@@ -24,7 +24,6 @@ class SCSOrangeFSParser(TraceParser):
         """
         #Load SCS QoSA CSV
         self._initialize()
-        conf = self.conf
         path = params["scs_orangefs_csv"]
         self.df = pd.read_csv(path)
         self._finalize()

@@ -24,6 +24,6 @@ class AvailabilityPrice(Price):
             idx = deployments.status == DeploymentStatus.NEW
             resource_count = deployments[idx][tier].to_numpy()
             avail_resources = rg[tier] - resource_count
-            deployments.loc[idx,"price"] += resource_count * (tier_cost / avail_resources)
+            deployments.loc[idx,"price"] += resource_count * (tier_cost / (avail_resources + 1))
         deployments[deployments.price < 0] = np.inf
         return deployments

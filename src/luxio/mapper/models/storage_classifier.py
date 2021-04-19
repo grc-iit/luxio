@@ -26,20 +26,19 @@ class StorageClassifier(BehaviorClassifier):
     def score(self, X:pd.DataFrame, labels:np.array) -> float:
         return davies_bouldin_score(X, labels)
 
-    def fit(self, X:pd.DataFrame=None):
+    def fit(self, X:pd.DataFrame=None, k=None):
         X = X.drop_duplicates()
         #Identify clusters of transformed data
         #self.transform_ = ChainTransformer([LogTransformer(base=10,add=1), MinMaxScaler()])
         self.transform_ = MinMaxScaler()
         X_features = self.transform_.fit_transform(X[self.features])*self.feature_importances.max(axis=1).to_numpy()
-        """
-        for k in [4, 6, 8, 10, 15, 20, 30, 50, 100, 150, 300]:
-            self.model_ = KMeans(k=k)
-            self.labels_ = self.model_.fit_predict(X_features)
-            print(f"SCORE k={k}: {self.score(X_features, self.labels_)} {self.model_.km_.inertia_}")
-        sys.exit(1)
-        """
-        self.model_ = KMeans(k=20)
+        if k is None:
+            for k in [4, 6, 8, 10, 15, 20, 30, 50, 100, 150, 300]:
+                self.model_ = KMeans(k=k)
+                self.labels_ = self.model_.fit_predict(X_features)
+                print(f"SCORE k={k}: {self.score(X_features, self.labels_)} {self.model_.km_.inertia_}")
+            k = int(input("Optimal k: "))
+        self.model_ = KMeans(k=k)
         self.labels_ = self.model_.fit_predict(X_features)
         #Cluster non-transformed data
         self.qosas = self.standardize(X)

@@ -25,8 +25,8 @@ class SCSStressTestParser(TraceParser):
         """
         Parses the SCS stress test CSV and converts to pandas
         """
-        self.redis.parse()
-        self.orangefs.parse()
+        self.redis.parse(params)
+        self.orangefs.parse(params)
 
     def standardize(self):
         """
@@ -43,12 +43,13 @@ class SCSStressTestParser(TraceParser):
         #Create device type mapping
         MB = (1<<20)
         df = self.df
+        nprocs = df['clients']*40
         df.loc[:,"storage_id"] = pd.factorize(df["storage"])[0]
         df.loc[:,"device_id"] = pd.factorize(df["device"])[0]
         df.loc[:,"io_type_id"] = pd.factorize(df["io_type"])[0]
-        df.loc[:,"read_bw"] = (df['total_size_per_proc']/(2*MB))*df['clients']*40 / df['read_time']
-        df.loc[:,"write_bw"] = (df['total_size_per_proc']/(2*MB))*df['clients']*40 / df['write_time']
-        df.loc[:,"mdm_thrpt"] = (df['mdm_reqs_per_proc'] / df['mdm_time'])
+        df.loc[:,"read_bw"] = (df['total_size_per_proc']/(2*MB))*nprocs / df['read_time']
+        df.loc[:,"write_bw"] = (df['total_size_per_proc']/(2*MB))*nprocs / df['write_time']
+        df.loc[:,"mdm_thrpt"] = (df['mdm_reqs_per_proc']*nprocs / df['mdm_time'])
         df = df.groupby(UNIQUE).mean().reset_index().fillna(0)
 
         #Create compact resource vector

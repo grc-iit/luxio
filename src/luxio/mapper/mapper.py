@@ -31,6 +31,9 @@ class Mapper:
         #Get candidate AppClasses
         fitnesses = app_classifier.get_fitnesses(io_identifier)
         fitnesses = fitnesses[fitnesses.magnitude > self.conf.min_fitness_thresh]
+        if len(fitnesses) == 0:
+            print("There were no existing classes for this application. Exiting.")
+            exit(1)
         #Get candidate QoSAs from the AppClasses
         name_mapping = {score:f'qosa_{score}' for score in scores if score in app_classifier.app_qosa_mapping.columns}
         reverse_mapping = {f'qosa_{score}':score for score in scores if score in app_classifier.app_qosa_mapping.columns}
@@ -46,6 +49,10 @@ class Mapper:
         ranked_qosas[ranked_qosas.satisfaction >= self.conf.min_satisfaction_thresh]
         #Sort the QoSAs in descending order
         ranked_qosas.sort_values("satisfaction")
+        #Verify that at least on qosa was selected
+        if len(ranked_qosas) == 0:
+            print("There were no existing QoSAs that were able to satisfy the application. Exiting.")
+            exit(1)
         #Return the ranked set of QoSAs
         self.conf.timer.pause().log("MappingAlgorithm")
         self._finalize()

@@ -1,0 +1,6 @@
+Waiting for first packet to arrive (see sourceforge.net bug 1019381)
+[?1049h[22;0;0t[1;24r(B[m[4l[?7h[H[2JNetHogs version 0.8.5-2build2
+
+(B[0;7m    PID USER     PROGRAM                    DEV        SENT      RECEIVED       [4;7H(B[m? root     unknown TCP[4;57H0.000[69G0.000 KB/sec[6;1H(B[0;7m  TOTAL                                                 0.000       0.000 KB/sec[7;1H (B[m[4d[L   6300 lukema.. ..pt/google/chrome/chrome  enp5s0[57G0.000[69G0.012 KB/sec[7;72H(B[0;7m12
+(B[m[4d[L 135601 lukema.. ..nap/twist/8/twist --typ  enp5s0[57G0.092[69G0.145 KB/sec[8;60H(B[0;7m92[8;71H156
+(B[m[24;1H[?1049l[23;0;0t[?1l>Ethernet link detected

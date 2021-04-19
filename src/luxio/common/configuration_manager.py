@@ -43,6 +43,8 @@ class ConfigurationManager:
         self.resolver_policy = ResolverPolicyType.MAX_UTILIZATION
         self.min_performance_improvement = .1 #At least 10% faster than baseline qosa
         self.max_tolerable_interference = np.inf #Tolerate up to X% interference
+        self.isolate_deployments = False
+        self.force_colocate = False
 
         self.io_req_out_path = None
         self.storage_req_out_path = None
@@ -66,14 +68,12 @@ class ConfigurationManager:
         self.timer = Timer()
 
     @staticmethod
-    def load(filename):
+    def update(conf_json):
         """
         Read configuration info from the given json file.
         :param filename: str
         :return: ConfigurationManager
         """
-        with open(filename) as fp:
-            conf_json = json.load(fp)
         conf = ConfigurationManager.get_instance()
         conf.__dict__.update(conf_json)
         if "db_type" in conf_json: conf.db_type = KVStoreType[conf_json['db_type']]
@@ -85,3 +85,14 @@ class ConfigurationManager:
         for trace in conf.traces:
             trace['type'] = TraceParserType[trace['type']]
         return conf
+
+    @staticmethod
+    def load(filename):
+        """
+        Read configuration info from the given json file.
+        :param filename: str
+        :return: ConfigurationManager
+        """
+        with open(filename) as fp:
+            conf_json = json.load(fp)
+        return ConfigurationManager.update(conf_json)

@@ -2,6 +2,7 @@
 from luxio.io_requirement_extractor.trace_parser import TraceParser
 from typing import List, Dict, Tuple
 from luxio.common.configuration_manager import *
+from luxio.common.constants import *
 import pandas as pd
 import numpy as np
 from functools import reduce
@@ -24,10 +25,7 @@ class SCSQosaParser(TraceParser):
         Parses the SCS stress test CSV and converts to pandas
         """
         path = params["scs_stress_test_csv"]
-        if params["dataset_type"] == "CSV":
-            self.df = pd.read_csv(path)
-        if params["dataset_type"] == "PICKLE":
-            self.df = pd.read_pickle(path)
+        self.df = pd.read_csv(path)
         return self.df
 
     def standardize(self):
@@ -43,28 +41,28 @@ class SCSQosaParser(TraceParser):
         BWS = ["write_bw", "read_bw"]
         THRPTS = ["mdm_thrpt"]
         SEQ = [
-            "sequential_write_bw_small", "sequential_read_bw_small", "sequential_write_bw_medium",
-            "sequential_read_bw_medium", "sequential_write_bw_large", "sequential_read_bw_large"
+            "sequential_write_bw_small", "sequential_read_bw_small",
+            "sequential_write_bw_large", "sequential_read_bw_large"
         ]
         RAND = [
-            "random_write_bw_small", "random_read_bw_small", "random_write_bw_medium",
-            "random_read_bw_medium", "random_write_bw_large", "random_read_bw_large"
+            "random_write_bw_small", "random_read_bw_small",
+            "random_write_bw_large", "random_read_bw_large"
         ]
 
         df = self.df
 
-        #Get the unique request sizes and I/O patterns
-        req_size_ids = ['small', 'medium', 'large']
-        req_sizes = np.sort(df['req_size'].unique())
-        io_types = df['io_type'].unique()
-        if len(req_sizes) != 3:
-            raise
+        #Classify request sizes
+        df['req_size_id'] = "small"
+        df.loc[df.req_size <= 64*KB, 'req_size_id'] = "small"
+        df.loc[df.req_size > 64*KB, 'req_size_id'] = "large"
+        req_size_ids = ["small","large"]
+        io_types = ["random", "sequential"]
 
         #Calculate seq and random bw (MB/s) for different request sizes
         dfs = []
-        for req_size, req_size_id in zip(req_sizes, req_size_ids):
+        for req_size_id in req_size_ids:
             for io_type in io_types:
-                sub_df = df[(df.io_type == io_type) & (df.req_size == req_size)]
+                sub_df = df[(df.io_type == io_type) & (df.req_size_id == req_size_id)]
                 bws = {bw_type:f"{io_type}_{bw_type}_{req_size_id}" for bw_type in BWS}
                 sub_df.rename(columns=bws, inplace=True)
                 dfs.append(sub_df[MERGE + list(bws.values())])
@@ -75,19 +73,18 @@ class SCSQosaParser(TraceParser):
         #Combine the partial dataframes
         df = reduce(lambda x, y: pd.merge(x, y, on=MERGE, how='outer'), dfs)
 
-        #Impute missing bandwidth values
-        MEDIUM_BWS = ["random_write_bw_medium", "random_read_bw_medium", "sequential_write_bw_medium", "sequential_read_bw_medium"]
-        LARGE_BWS = ["random_write_bw_large", "random_read_bw_large", "sequential_write_bw_large", "sequential_read_bw_large"]
-        df.loc[df.storage == "Redis", MEDIUM_BWS] = (df[df.storage == "Redis"][LARGE_BWS]).to_numpy()
-
-        #Sensitivity to Concurrency
+        #Sensitivity to Concurrency (% )
         CONC = ['network', 'device', 'config', 'storage', 'capacity']
         grp = df.groupby(CONC)
         df = grp.max().reset_index()
         df.loc[:,'sensitivity2concurrency'] = (grp[SEQ+RAND].std().to_numpy() / grp[SEQ+RAND].mean().to_numpy()).mean(axis=1)
+        df = df.drop(columns='clients')
 
-        #Sensitivity to Randomness
-        df.loc[:,'sensitivity2randomness'] = (1 - df[RAND].to_numpy()/df[SEQ].to_numpy()).mean(axis=1)
+        #Sensitivity to Randomness (% faster seq is over rand)
+        df.loc[:,'sensitivity2randomness'] = (df[SEQ].to_numpy()/df[RAND].to_numpy() - 1).mean(axis=1)
         df.loc[:,'sequentiality'] = -1*df['sensitivity2randomness']
+
+        #Deployment ID
+        df.loc[:,'deployment_id'] = df.index
 
         self.df = df

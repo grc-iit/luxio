@@ -45,5 +45,7 @@ class SCSRedisParser(TraceParser):
         df.loc[df.device == 'nvme', 'capacity'] = 250*(GB/GB)*df[df.device == 'nvme']['servers'].to_numpy() #250GB / node
         #Set malleability
         df.loc[:,'malleable'] = 0
+        #Impute read_time values
+        df['read_time'] = df['write_time']
 
         return

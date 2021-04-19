@@ -31,7 +31,7 @@ class AppClassifier(BehaviorClassifier):
     def score(self, X:pd.DataFrame, labels:np.array) -> float:
         return davies_bouldin_score(X, labels)
 
-    def fit(self, X:pd.DataFrame):
+    def fit(self, X:pd.DataFrame, k=None):
         """
         Identify groups of application behavior from a dataset of traces using the features.
         Calculate a standardized set of scores that are common between the apps and QoSAs
@@ -41,14 +41,13 @@ class AppClassifier(BehaviorClassifier):
         self.transform_ = ChainTransformer([LogTransformer(base=10,add=1), MinMaxScaler()])
         #self.transform_ =  MinMaxScaler()
         X_features = self.transform_.fit_transform(X[self.features])*self.feature_importances.max(axis=1).to_numpy()
-        """
-        for k in [2, 4, 6, 8, 10, 12, 15, 18, 20, 25, 30, 35, 40, 45, 50]:
-            self.model_ = KMeans(k=k)
-            self.labels_ = self.model_.fit_predict(X_features)
-            print(f"SCORE k={k}: {self.score(X_features, self.labels_)} {self.model_.km_.inertia_}")
-        sys.exit(1)
-        """
-        self.model_ = KMeans(k=15)
+        if k is None:
+            for k in [2, 4, 6, 8, 10, 12, 15, 18, 20, 25, 30, 35, 40, 45, 50]:
+                self.model_ = KMeans(k=k)
+                self.labels_ = self.model_.fit_predict(X_features)
+                print(f"SCORE k={k}: {self.score(X_features, self.labels_)} {self.model_.km_.inertia_}")
+            k = int(input("Optimal k: "))
+        self.model_ = KMeans(k=k)
         self.labels_ = self.model_.fit_predict(X_features)
         #Cluster non-transformed data
         self.app_classes = self.standardize(X)
@@ -90,8 +89,8 @@ class AppClassifier(BehaviorClassifier):
         if dir is not None:
             self.define_low_med_high(dir)
             app_classes = self.app_classes.copy()
-            #Apply standardization
-            app_classes[self.scores].to_csv(os.path.join(dir, "orig_behavior_means.csv"))
+            #Save set of appclasses
+            app_classes[self.mandatory_features + self.features + self.scores + ["count"]].transpose().to_csv(os.path.join(dir, "orig_behavior_means.csv"))
             #Apply transformation to features
             app_classes.loc[:,self.features] = (self.transform_.transform(app_classes[self.features])*3).astype(int)
             #Apply transformation to scores
@@ -105,7 +104,7 @@ class AppClassifier(BehaviorClassifier):
             app_classes = app_classes[self.scores + self.features + self.mandatory_features + ["count"]]
             app_classes = app_classes.groupby(self.scores + self.features + self.mandatory_features).sum().reset_index()
             app_classes.sort_values("count", ascending=False, inplace=True)
-            app_classes[self.scores + self.mandatory_features + ["count"]].to_csv(os.path.join(dir, "behavior_means.csv"))
+            app_classes[self.mandatory_features + self.scores + ["count"]].transpose().to_csv(os.path.join(dir, "behavior_means.csv"))
 
     def visualize(self, df, path=None):
         df = self.standardize(df)
@@ -152,7 +151,6 @@ class AppClassifier(BehaviorClassifier):
         fitness = fitness.fillna(0)
         fitness[fitness[scores] > 1] = 1
         magnitude = (fitness[scores].to_numpy()*self.score_weights[scores].to_numpy()).sum(axis=1)/self.score_weights[scores].sum()
-        #magnitude = (fitness[scores].to_numpy()).min(axis=1)
         return magnitude
 
     def get_fitnesses(self, io_identifier:pd.DataFrame) -> pd.DataFrame:
@@ -173,4 +171,5 @@ class AppClassifier(BehaviorClassifier):
         fitness.loc[:,'app_id'] = app_classes['app_id']
         #Get the magnitude of the fitnesses
         fitness.loc[:,"magnitude"] = self.get_magnitude(fitness)
+        print(fitness["magnitude"])
         return fitness

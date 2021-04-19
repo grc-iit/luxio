@@ -47,7 +47,6 @@ class RuntimeEmulator():
 
     def run(self, io_traits_vec:pd.DataFrame, deployment:pd.DataFrame) -> Tuple[float,float]:
         # Estimate runtime and utilization using performance counters
-
         io_traits_vec = io_traits_vec.iloc[0,:]
 
         # Get the number of I/O and MD requests
@@ -72,14 +71,14 @@ class RuntimeEmulator():
         total_byte_write = io_traits_vec["TOTAL_BYTES_WRITTEN"]
 
         #Scale the different byte sizes
-        read_scale = total_byte_read / est_total_byte_read
-        write_scale = total_byte_write / est_total_byte_write
-        small_bytes_read = small_bytes_read
-        small_bytes_write = small_bytes_write
-        med_bytes_read = med_bytes_read
-        med_bytes_write = med_bytes_write
-        large_bytes_read = large_bytes_read
-        large_bytes_write = large_bytes_write
+        read_scale = total_byte_read / est_total_byte_read if est_total_byte_read > 0 else 0
+        write_scale = total_byte_write / est_total_byte_write if est_total_byte_write > 0 else 0
+        small_bytes_read = small_bytes_read*read_scale
+        small_bytes_write = small_bytes_write*write_scale
+        med_bytes_read = med_bytes_read*read_scale
+        med_bytes_write = med_bytes_write*write_scale
+        large_bytes_read = large_bytes_read*read_scale
+        large_bytes_write = large_bytes_write*write_scale
 
         # Get throughputs and bandwidths for different request sizes
         write_bw_small = deployment["sequential_write_bw_small"]*MB
@@ -91,19 +90,31 @@ class RuntimeEmulator():
         mdm_thrpt = deployment["mdm_thrpt"]
         if mdm_thrpt == 0:
             mdm_thrpt = read_bw_small
-            total_md_ops *= 512 #Estimate 512 bytes / md op
 
         #Estimate I/O time
-        write_time = small_bytes_write/write_bw_small + med_bytes_read/write_bw_med + large_bytes_read/write_bw_large
-        read_time = small_bytes_read/read_bw_small + med_bytes_write/read_bw_med + large_bytes_write/read_bw_large
+        write_time = small_bytes_write/write_bw_small + med_bytes_write/write_bw_med + large_bytes_write/write_bw_large
+        read_time = small_bytes_read/read_bw_small + med_bytes_read/read_bw_med + large_bytes_read/read_bw_large
         md_time = total_md_ops / mdm_thrpt
 
-        #Estimate runtime and disk utilization
-        orig_runtime = io_traits_vec["RUNTIME"]
-        orig_io_time = io_traits_vec["TOTAL_IO_TIME"]
+        #Estimate runtime and disk utilization (orig times in ms)
+        orig_runtime = io_traits_vec["RUNTIME"]/1000
+        orig_io_time = io_traits_vec["TOTAL_IO_TIME"]/1000
         compute_time = orig_runtime - orig_io_time
         io_time = write_time + read_time + md_time
         runtime = compute_time + io_time
         utilization = io_time / runtime
+
+        """
+        print(f"total_md_ops={total_md_ops}, mdm_thrpt={mdm_thrpt}, md_time={md_time}")
+        print(f"MB: large={large_bytes_write/MB} med={med_bytes_write/MB} small={small_bytes_write/MB}")
+        print(f"BW: large={write_bw_large/MB} med={write_bw_med/MB} small={write_bw_small/MB}")
+        print(f"orig_runtime={orig_runtime} orig_io_time={orig_io_time} compute_time={compute_time}")
+        print(f"total_byte_read={total_byte_read}, total_byte_write={total_byte_write}")
+        print(f"small_bytes_read={small_bytes_read}, small_bytes_write={small_bytes_write}, med_bytes_read={med_bytes_read}")
+        print(f"small_bytes_write={small_bytes_write}, med_bytes_write={med_bytes_write}, large_bytes_write={large_bytes_write}")
+        print(f"write_time={write_time}, read_time={read_time}, md_time={md_time}")
+        print(f"io_time={io_time}")
+        print()
+        #"""
 
         return runtime,utilization

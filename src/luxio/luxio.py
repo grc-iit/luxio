@@ -14,6 +14,39 @@ class LUXIO:
     def _initialize(self) -> None:
         pass
 
+    def _download_requirements(self):
+        self.conf.timer.resume()
+        print("Can check DB")
+        db = DataBase.get_instance()
+        print("Checking cached results from database")
+        req_dict = db.get(self.conf.job_spec)
+        if req_dict is None:
+            io_identifier, ranked_qosas = self._extract_requirements(db)
+        else:
+            print(f"Using cached results from database: {req_dict}")
+            io_identifier = req_dict["io"]
+            ranked_qosas = req_dict["storage"]
+        self.conf.timer.pause().log("CheckDB")
+        return io_identifier, ranked_qosas
+
+    def _extract_requirements(self, db=None):
+        print("Extracting I/O requirements")
+        #Extract I/O requirements
+        extractor = IORequirementExtractor()
+        io_identifier = extractor.run()
+        #Map I/O requirement to QoSAs
+        if "qosa" in self.conf.job_spec or "job_id" in self.conf.job_spec or "deployment" in self.conf.job_spec:
+            pass
+        else:
+            mapper = Mapper()
+            ranked_qosas = mapper.run(io_identifier)
+        #Store the io requirement and ranked_qosas into database
+        if self.conf.check_db:
+            self.conf.timer.resume()
+            db.put(self.conf.job_spec, {"io": io_identifier, "storage": ranked_qosas})
+            self.conf.timer.pause().log("PutReqsToDB")
+        return io_identifier, ranked_qosas
+
     def run(self) -> dict:
         """
         Run the luxio to get storage configuration.
@@ -28,36 +61,24 @@ class LUXIO:
         """
         self._initialize()
 
+        self.conf.timer.resume()
         self.conf.job_spec = JSONClient().load(self.conf.job_spec_path)
-        if self.conf.check_db:
-            db = DataBase.get_instance()
-        try:
-            if self.conf.check_db:
-                self.conf.timer.resume()
-                req_dict = db.get(job_spec)
-                io_identifier = req_dict["io"]
-                ranked_qosas = req_dict["storage"]
-                self.conf.timer.pause().log("CheckDB")
-            else:
-                raise 1
-        except:
-            # run io requirement extractor
-            extractor = IORequirementExtractor()
-            io_identifier = extractor.run()
-            # map I/O requiremnt to QoSAs
-            mapper = Mapper()
-            ranked_qosas = mapper.run(io_identifier)
-            # store the io requirement and ranked_qosas into database
-            if self.conf.check_db:
-                self.conf.timer.resume()
-                db.put(job_spec, {"io": io_identifier, "storage": ranked_qosas})
-                self.conf.timer.pause().log("PutReqsToDB")
+        self.conf.timer.pause().log("LoadJobSpec")
 
-        # Build and configure the qosas
+        io_identifier = None
+        ranked_qosas = None
+
+        #Extract or download I/O requirements
+        if self.conf.check_db:
+            io_identifier, ranked_qosas = self._download_requirements()
+        else:
+            io_identifier, ranked_qosas = self._extract_requirements()
+
+        #Identify candidate deployments
         resolver = Resolver()
         deployments = resolver.run(io_identifier, ranked_qosas)
 
-        # Schedule the job
+        #Schedule the job
         scheduler = LuxioSchedulerClient()
         scheduler.schedule(self.conf.job_spec, deployments)
 
