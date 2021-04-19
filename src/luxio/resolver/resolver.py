@@ -25,7 +25,7 @@ class Resolver:
         return
 
     def choose_deployment(self):
-        id = self.conf.job_spec["deployment"]
+        id = self.conf.job_spec["deployment_id"]
         #Get the set of deployments
         self.conf.timer.resume()
         self.conf.storage_classifier = self.db.get("storage_classifier")
@@ -50,11 +50,11 @@ class Resolver:
         self.conf.storage_classifier = self.db.get("storage_classifier")
         self.conf.timer.pause().log("DownloadStorageModel")
         self.conf.timer.resume()
-        print(ranked_qosas['qosa_id'])
-        print(self.conf.storage_classifier.qosa_to_deployment)
-        new_deployments = pd.merge(ranked_qosas['qosa_id'], self.conf.storage_classifier.qosa_to_deployment, on="qosa_id")
-        #new_deployments = ranked_qosas
-        new_deployments.loc[:,"status"] = DeploymentStatus.NEW
+        if not self.conf.force_colocate:
+            new_deployments = pd.merge(ranked_qosas['qosa_id'], self.conf.storage_classifier.qosa_to_deployment, on="qosa_id")
+            new_deployments.loc[:,"status"] = DeploymentStatus.NEW
+        else:
+            new_deployments = pd.DataFrame(columns=list(self.conf.storage_classifier.qosa_to_deployment.columns) + ["status"])
         #Get the set of existing deployments
         if self.conf.isolate_deployments == False:
             existing_deployments = scheduler.download_existing_deployments()
@@ -70,6 +70,10 @@ class Resolver:
                     elastic_deployments.loc[:,tiers] = new_deployments[tiers] - elastic_deployments[tiers]
                 deployments = pd.concat([deployments, elastic_deployments, inelastic_deployments])
         deployments = pd.concat([deployments, new_deployments])
+        #Verify that there are deployments
+        if len(deployments) == 0:
+            print("There are no deployments to satisfy for your job!")
+            exit(1)
         #Get the set of user resources from the job spec
         if "resources" in self.conf.job_spec:
             scheduler.remove_resources(self.conf.job_spec["resources"])
@@ -79,7 +83,7 @@ class Resolver:
         #Get the price of each deployment (0 for queued/running deployments)
         pricer = PriceFactory.get(self.conf.price_type)
         deployments = pricer.price(deployments, scheduler)
-        deployments = deployments[deployments.price < np.inf]
+        deployments = deployments[deployments.price < np.inf] #Remove infeasible deployments
         #Get the performance of each deployment
         deployments = pd.merge(ranked_qosas[['qosa_id','satisfaction']], deployments, on = 'qosa_id')
         #Rank deployments according to some policy
@@ -95,10 +99,12 @@ class Resolver:
         :return: dict
         """
         self._initialize()
-        if "deployment" in self.conf.job_spec:
+        if "deployment_id" in self.conf.job_spec:
             deployments = self.choose_deployment()
+        elif "qosa_id" in self.conf.job_spec:
+            ranked_qosas = pd.DataFrame({"qosa_id": self.conf.job_spec["qosa_id"], "satisfaction": 1}, index=[0])
+            deployments = self.build_qosas(io_identifier, ranked_qosas)
         else:
             deployments = self.build_qosas(io_identifier, ranked_qosas)
-
         self._finalize()
         return deployments

@@ -5,6 +5,8 @@ from luxio.common.configuration_manager import *
 from luxio.emulator.runtime_emulator import *
 from luxio.external_clients.json_client import *
 from luxio.luxio import LUXIO
+import pprint, warnings
+pp = pprint.PrettyPrinter(depth=6)
 
 class TestLuxio(unittest.TestCase):
 
@@ -13,10 +15,11 @@ class TestLuxio(unittest.TestCase):
         conf.load("sample/luxio_confs/basic_conf.json")
         tool = LUXIO()
         job_spec = tool.run()
-        print(job_spec)
-        #print(RuntimeEmulator().run(conf.io_traits_vec, job_spec['qosa']))
+        pp.pprint(job_spec)
+        #print(RuntimeEmulator().run(conf.io_traits_vec, job_spec['deployment']))
 
     def test_luxio_resource_awareness(self):
+        return
         conf = ConfigurationManager.get_instance()
         dev_counts = [8,16]
         networks = [10,40]

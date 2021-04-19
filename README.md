@@ -102,13 +102,13 @@ pytest
 To run only unit tests:
 ```{bash}
 cd /path/to/luxio
-pytest -k unit
+pytest -k unit -s
 ```
 
 To run only integration tests:
 ```{bash}
 cd /path/to/luxio
-pytest -k integration
+pytest -k integration -s
 ```
 
 ## License

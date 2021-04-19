@@ -23,7 +23,7 @@ class LUXIO:
         if req_dict is None:
             io_identifier, ranked_qosas = self._extract_requirements(db)
         else:
-            print(f"Using cached results from database: {req_dict}")
+            print("Using cached results from database")
             io_identifier = req_dict["io"]
             ranked_qosas = req_dict["storage"]
         self.conf.timer.pause().log("CheckDB")
@@ -34,17 +34,21 @@ class LUXIO:
         #Extract I/O requirements
         extractor = IORequirementExtractor()
         io_identifier = extractor.run()
+        ranked_qosas = None
+        #The user has passed a qosa, job_id, or deployment directly
+        if "qosa_id" in self.conf.job_spec or "job_id" in self.conf.job_spec or "deployment_id" in self.conf.job_spec:
+            if self.conf.check_db:
+                self.conf.timer.resume()
+                db.put(self.conf.job_spec, {"io": io_identifier, "storage": None})
+                self.conf.timer.pause().log("PutReqsToDB")
         #Map I/O requirement to QoSAs
-        if "qosa" in self.conf.job_spec or "job_id" in self.conf.job_spec or "deployment" in self.conf.job_spec:
-            pass
         else:
             mapper = Mapper()
             ranked_qosas = mapper.run(io_identifier)
-        #Store the io requirement and ranked_qosas into database
-        if self.conf.check_db:
-            self.conf.timer.resume()
-            db.put(self.conf.job_spec, {"io": io_identifier, "storage": ranked_qosas})
-            self.conf.timer.pause().log("PutReqsToDB")
+            if self.conf.check_db:
+                self.conf.timer.resume()
+                db.put(self.conf.job_spec, {"io": io_identifier, "storage": ranked_qosas})
+                self.conf.timer.pause().log("PutReqsToDB")
         return io_identifier, ranked_qosas
 
     def run(self) -> dict:
@@ -75,8 +79,9 @@ class LUXIO:
             io_identifier, ranked_qosas = self._extract_requirements()
 
         #Identify candidate deployments
-        resolver = Resolver()
-        deployments = resolver.run(io_identifier, ranked_qosas)
+        if 'job_id' not in self.conf.job_spec:
+            resolver = Resolver()
+            deployments = resolver.run(io_identifier, ranked_qosas)
 
         #Schedule the job
         scheduler = LuxioSchedulerClient()

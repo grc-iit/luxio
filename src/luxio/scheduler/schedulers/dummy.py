@@ -30,13 +30,15 @@ class DummyScheduler(Scheduler):
         return self.existing_deployments
 
     def schedule(self, job_spec:dict):
-        if job_spec['qosa']['status'] == DeploymentStatus.RUNNING:
-            self.existing_deployments[job_spec['qosa']['job_id']].append(job_spec)
+        if 'job_id' in job_spec:
+            job_spec['deployment'] = self.existing_deployments[job_spec['job_id']]
+        if job_spec['deployment']['status'] == DeploymentStatus.RUNNING:
+            self.existing_deployments[job_spec['deployment']['job_id']].append(job_spec)
         else:
             job_id = len(self.existing_deployments.keys())
-            job_spec['qosa']['job_id'] = job_id
-            job_spec['qosa']['status'] = DeploymentStatus.RUNNING
-            self.existing_deployments.append(job_spec['qosa'])
+            job_spec['deployment']['job_id'] = job_id
+            job_spec['deployment']['status'] = DeploymentStatus.RUNNING
+            self.existing_deployments.append(job_spec['deployment'])
         if self.callbacks is not None:
             self.callbacks.refresh_resource_graph()
             self.callbacks.refresh_existing_deployments()

@@ -31,7 +31,10 @@ class LuxioSchedulerClient:
                 raise Error(ErrorCode.RESOURCES_UNAVAILABLE).format(count, tier, self.resource_graph[tier])
 
     def schedule(self, job_spec:dict, deployments:pd.DataFrame):
+        if 'job_id' in self.conf.job_spec:
+            self.scheduler.schedule(job_spec)
+            return
         for id,deployment in deployments.iterrows():
-            job_spec['qosa'] = deployment
+            job_spec['deployment'] = deployment
             if self.scheduler.schedule(job_spec):
                 break
