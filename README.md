@@ -69,7 +69,7 @@ python3 setup.py develop --user
 
 Start the luxio server to maintain resource graph:
 ```{bash}
-luxio-server -c [/path/to/luxio-conf.json]
+luxio-server --conf [/path/to/luxio-conf.json]
 ```
 
 Run the Luxio scheduler assistance command line tool:
