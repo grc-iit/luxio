@@ -171,5 +171,4 @@ class AppClassifier(BehaviorClassifier):
         fitness.loc[:,'app_id'] = app_classes['app_id']
         #Get the magnitude of the fitnesses
         fitness.loc[:,"magnitude"] = self.get_magnitude(fitness)
-        print(fitness["magnitude"])
         return fitness

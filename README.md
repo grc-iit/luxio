@@ -37,10 +37,9 @@ Luxio depends on the following:
 ### Darshan
 
 ```{bash}
-#git clone https://xgitlab.cels.anl.gov/darshan/darshan   
-wget ftp://ftp.mcs.anl.gov/pub/darshan/releases/darshan-3.2.1.tar.gz
-tar -xzf darshan-3.2.1.tar.gz
-cd darshan-3.2.1/darshan-util
+git clone https://xgitlab.cels.anl.gov/darshan/darshan
+git checkout f1b80c21e6693eb8b2a153a2d5fc25f08f1058c0
+cd darshan/darshan-util
 ./configure --prefix=</path/to/wherever> --enable-pydarshan --enable-shared  
 make install
 ```

@@ -2,6 +2,5 @@
   "uid": {"val": "kbateman"},
   "exeids": {"val": [["flux", "start"]]},
   "runtime": {"val": 3600.0},
-  "nprocs": {"val": [4]},
-  "qosa_id": 2
+  "nprocs": {"val": [4]}
 }
