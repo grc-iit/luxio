@@ -37,7 +37,8 @@ Luxio depends on the following:
 ### Darshan
 
 ```{bash}
-git clone https://xgitlab.cels.anl.gov/darshan/darshan
+#New repo: git clone https://github.com/darshan-hpc/darshan.git
+git clone https://xgitlab.cels.anl.gov/darshan/darshan.git
 cd darshan/darshan-util
 git checkout 932d69994064af315b736ab55f386cffd6289a15
 ./configure --prefix=</path/to/wherever> --enable-pydarshan --enable-shared  
@@ -46,6 +47,15 @@ cd pydarshan
 python3 -m pip install -r requirements.txt
 python3 setup.py sdist bdist_wheel  
 python3 -m pip install dist/*.whl  
+```
+
+```{bash}
+#New repo: git clone https://github.com/darshan-hpc/darshan.git
+git clone https://xgitlab.cels.anl.gov/darshan/darshan.git
+cd darshan/darshan-runtime
+git checkout 932d69994064af315b736ab55f386cffd6289a15
+./configure --prefix=</path/to/wherever> --with-log-path-by-env=DARSHAN_LOG_PATH --with-jobid-env=DARSHAN_JOB_ID
+make install
 ```
 
 ### Redis
