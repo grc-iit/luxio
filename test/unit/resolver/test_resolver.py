@@ -15,13 +15,13 @@ class TestResolver(unittest.TestCase):
         conf = ConfigurationManager.get_instance()
         conf.load("sample/luxio_confs/basic_conf.json")
         conf.job_spec = {}
-        ranked_qosas = pd.read_csv("datasets/stress_tests/qosa.csv")
-        ranked_qosas['qosa_id'] = ranked_qosas['deployment_id']
-        ranked_qosas['satisfaction'] = 1
+        ranked_sslos = pd.read_csv("datasets/stress_tests/sslo.csv")
+        ranked_sslos['sslo_id'] = ranked_sslos['deployment_id']
+        ranked_sslos['satisfaction'] = 1
 
-        for n_qosas in [10, 20, 30]:
+        for n_sslos in [10, 20, 30]:
             for n_malleable in [0, 10, 20, 50, 100, 1000, 5000]:
-                existing_deployments = ranked_qosas.sample(n_malleable, replace=True)
+                existing_deployments = ranked_sslos.sample(n_malleable, replace=True)
                 existing_deployments['malleable'] = 1
                 existing_deployments['status'] = DeploymentStatus.RUNNING
                 db = DataBase.get_instance()
@@ -30,9 +30,9 @@ class TestResolver(unittest.TestCase):
                 t = Timer()
                 t.resume()
                 resolver = Resolver()
-                resolver.run(None, ranked_qosas)
+                resolver.run(None, ranked_sslos)
                 t.pause()
-                print(f"{n_qosas}, {n_malleable}: {t.msec()}")
+                print(f"{n_sslos}, {n_malleable}: {t.msec()}")
                 t.reset()
 
 if __name__ == "__main__":

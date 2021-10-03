@@ -1,6 +1,0 @@
-,SMALL_READ,MEDIUM_READ,LARGE_READ,SMALL_WRITE,MEDIUM_WRITE,LARGE_WRITE,MD_HEAVINESS,interface,count
-1,low,low,low,low,low,low,low,7,0.36666666666666664
-2,low,low,low,low,low,low,medium,8,0.26666666666666666
-3,low,low,medium,low,low,low,low,7,0.2333333333333333
-0,high,high,high,high,high,high,high,8,0.06666666666666667
-4,medium,medium,medium,medium,medium,medium,high,8,0.06666666666666667

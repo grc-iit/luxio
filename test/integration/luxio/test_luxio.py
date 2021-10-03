@@ -47,7 +47,7 @@ class TestLuxio(unittest.TestCase):
                     conf.update(conf_json)
 
                     job_spec = LUXIO().run()
-                    runtime, util = RuntimeEmulator().run(conf.io_traits_vec, job_spec['qosa'])
+                    runtime, util = RuntimeEmulator().run(conf.io_traits_vec, job_spec['sslo'])
                     results.append({"runtime": runtime, "util": util, "dev_count": dev_count, "network": network, "workload": workload})
         df = pd.DataFrame(results)
         df.to_csv("datasets/results/resource_awareness_internal.csv")

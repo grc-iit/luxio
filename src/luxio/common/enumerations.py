@@ -19,7 +19,6 @@ class TraceParserType(Enum):
     DARSHAN = 'darshan'
     ARGONNE = 'argonne'
     SCS_STRESS_TEST = 'scs_stress_test'
-    SCS_QOSA = 'scs_qosa'
 
     def __str__(self) -> str:
         return self.value

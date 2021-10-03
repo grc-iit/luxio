@@ -69,14 +69,6 @@ cp src/redis-server /path/to/bin
 cp src/redis-cli /path/to/bin
 ```
 
-### Clever
-
-```{bash}
-git clone https://github.com/lukemartinlogan/clever.git
-cd clever
-python3 -m pip install -r requirements.txt  
-python3 setup.py develop --user
-```
 
 ## Usage
 

@@ -21,35 +21,35 @@ class LUXIO:
         print("Checking cached results from database")
         req_dict = db.get(self.conf.job_spec)
         if req_dict is None:
-            io_identifier, ranked_qosas = self._extract_requirements(db)
+            io_identifier, ranked_sslos = self._extract_requirements(db)
         else:
             print("Using cached results from database")
             io_identifier = req_dict["io"]
-            ranked_qosas = req_dict["storage"]
+            ranked_sslos = req_dict["storage"]
         self.conf.timer.pause().log("CheckDB")
-        return io_identifier, ranked_qosas
+        return io_identifier, ranked_sslos
 
     def _extract_requirements(self, db=None):
         print("Extracting I/O requirements")
         #Extract I/O requirements
         extractor = IORequirementExtractor()
         io_identifier = extractor.run()
-        ranked_qosas = None
-        #The user has passed a qosa, job_id, or deployment directly
-        if "qosa_id" in self.conf.job_spec or "job_id" in self.conf.job_spec or "deployment_id" in self.conf.job_spec:
+        ranked_sslos = None
+        #The user has passed a sslo, job_id, or deployment directly
+        if "sslo_id" in self.conf.job_spec or "job_id" in self.conf.job_spec or "deployment_id" in self.conf.job_spec:
             if self.conf.check_db:
                 self.conf.timer.resume()
                 db.put(self.conf.job_spec, {"io": io_identifier, "storage": None})
                 self.conf.timer.pause().log("PutReqsToDB")
-        #Map I/O requirement to QoSAs
+        #Map I/O requirement to sslos
         else:
             mapper = Mapper()
-            ranked_qosas = mapper.run(io_identifier)
+            ranked_sslos = mapper.run(io_identifier)
             if self.conf.check_db:
                 self.conf.timer.resume()
-                db.put(self.conf.job_spec, {"io": io_identifier, "storage": ranked_qosas})
+                db.put(self.conf.job_spec, {"io": io_identifier, "storage": ranked_sslos})
                 self.conf.timer.pause().log("PutReqsToDB")
-        return io_identifier, ranked_qosas
+        return io_identifier, ranked_sslos
 
     def run(self) -> dict:
         """
@@ -70,18 +70,18 @@ class LUXIO:
         self.conf.timer.pause().log("LoadJobSpec")
 
         io_identifier = None
-        ranked_qosas = None
+        ranked_sslos = None
 
         #Extract or download I/O requirements
         if self.conf.check_db:
-            io_identifier, ranked_qosas = self._download_requirements()
+            io_identifier, ranked_sslos = self._download_requirements()
         else:
-            io_identifier, ranked_qosas = self._extract_requirements()
+            io_identifier, ranked_sslos = self._extract_requirements()
 
         #Identify candidate deployments
         if 'job_id' not in self.conf.job_spec:
             resolver = Resolver()
-            deployments = resolver.run(io_identifier, ranked_qosas)
+            deployments = resolver.run(io_identifier, ranked_sslos)
 
         #Schedule the job
         scheduler = LuxioSchedulerClient()

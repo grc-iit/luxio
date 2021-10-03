@@ -6,3 +6,7 @@ pyyaml
 pandas
 numpy
 python-daemon
+ray[tune]
+ray[rllib]
+xgboost
+scikit-learn

@@ -36,12 +36,12 @@ class ConfigurationManager:
         self.min_coverage_thresh = 0
         self.min_fitness_thresh = .1
         self.min_satisfaction_thresh = self.min_coverage_thresh * self.min_fitness_thresh
-        self.baseline_qosa_id = 0
+        self.baseline_sslo_id = 0
         self.scheduler_type = SchedulerType.DUMMY
         self.price_type = PriceType.AVAILABILITY
         self.price_conf = None
         self.resolver_policy = ResolverPolicyType.MAX_UTILIZATION
-        self.min_performance_improvement = .1 #At least 10% faster than baseline qosa
+        self.min_performance_improvement = .1 #At least 10% faster than baseline sslo
         self.max_tolerable_interference = np.inf #Tolerate up to X% interference
         self.isolate_deployments = False
         self.force_colocate = False

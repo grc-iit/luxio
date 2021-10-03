@@ -37,7 +37,10 @@ class ArgonneTraceParser(DarshanTraceParser):
         numerical_features = self._minimum_features(__file__, "numerical.csv")
         #Remove negative entries
         self.df = self.df[(self.df[numerical_features] >= 0).all(axis=1)]
-        #Select only nonnegative I/O times
-        self.df = self.df[self.df.TOTAL_IO_TIME > 0]
+        #Select apps where at least 10 seconds of I/O occurred
+        self.df = self.df[self.df.TOTAL_IO_TIME > 10000]
+        #Select apps where at least 15% of runtime is spent in I/O
+        self.df['IO_FRAC'] = (df.TOTAL_IO_TIME/1000) / df.RUN_TIME
+        self.df = self.df[self.IO_FRAC > .15]
         #Fill NAs with 0s
         self.df = self.df.fillna(0)

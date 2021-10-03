@@ -16,7 +16,7 @@ MANIFEST
 *_hyper.pkl
 datasets
 #sample/app_classifier*
-#sample/qosa_classifier*
+#sample/sslo_classifier*
 dump.rdb
 
 # Byte-compiled / optimized / DLL files
