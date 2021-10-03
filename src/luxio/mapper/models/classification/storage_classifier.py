@@ -1,14 +1,18 @@
 import sys,os
+import matplotlib.pyplot as plt
 
 from .behavior_classifier import BehaviorClassifier
-from luxio.common.configuration_manager import *
 from luxio.common.configuration_manager import *
 from luxio.mapper.models.common import *
 from luxio.mapper.models.regression.forest.random_forest import RFERandomForestRegressor
 from luxio.mapper.models.metrics import r2Metric, RelativeAccuracyMetric, RelativeErrorMetric
-from luxio.mapper.models.transforms import LogTransformer, ChainTransformer
+from luxio.mapper.models.transforms.transformer_factory import TransformerFactory
+from luxio.mapper.models.transforms.log_transformer import LogTransformer
+from luxio.mapper.models.transforms.chain_transformer import ChainTransformer
+from luxio.mapper.models.dimensionality_reduction.dimension_reducer_factory import DimensionReducerFactory
 
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
+from sklearn.manifold import TSNE
 from sklearn.model_selection import train_test_split, KFold, GridSearchCV
 from sklearn.cluster import KMeans
 
@@ -48,14 +52,16 @@ class StorageClassifier(BehaviorClassifier):
         self.feature_selector_ = search.best_estimator_
         self.feature_importances_ = self.feature_selector_.feature_importances_
         self.features_ = self.feature_selector_.features_
+        self.named_feature_importances_ = pd.DataFrame([(feature, importance) for feature, importance in zip(self.features_, self.feature_importances_)])
 
     def fit(self, X:pd.DataFrame=None, k=None):
         X = X.drop_duplicates()
         #Identify clusters of transformed data
-        self.transform_ = ChainTransformer([LogTransformer(base=10,add=1), MinMaxScaler()])
-        X_features = self.transform_.fit_transform(X[self.features_])*self.feature_importances_
+        self.transform_ = MinMaxScaler()
+        weights = np.array(list(self.feature_importances_) + [1/len(self.output_vars)]*len(self.output_vars))
+        X_features = self.transform_.fit_transform(X[self.features_ + self.output_vars])*weights
         if k is None:
-            for k in [4, 6, 8, 10, 15]:
+            for k in [4, 6, 8, 10, 12, 15, 20]:
                 self.model_ = KMeans(n_clusters=k)
                 self.labels_ = self.model_.fit_predict(X_features)
                 print(f"SCORE k={k}: {self.score(X_features, self.labels_)} {self.model_.inertia_}")
@@ -79,8 +85,8 @@ class StorageClassifier(BehaviorClassifier):
         scaled_features = pd.DataFrame([[size]*n for size in [.33, .66, 1]], columns=self.features)
         unscaled_features = pd.DataFrame(self.transform_.inverse_transform(scaled_features), columns=self.features)
         for score_name,features,score_weight in zip(SCORES.keys(), SCORES.values(), self.score_weights):
-            features = self.feature_importances.columns.intersection(features)
-            unscaled_features.loc[:,score_name] = (unscaled_features[features] * self.feature_importances[features].to_numpy()).sum(axis=1).to_numpy()/score_weight
+            features = self.feature_importances_.columns.intersection(features)
+            unscaled_features.loc[:,score_name] = (unscaled_features[features] * self.feature_importances_[features].to_numpy()).sum(axis=1).to_numpy()/score_weight
         unscaled_features[self.scores].to_csv(os.path.join(dir, "low_med_high.csv"))
 
     def analyze_classes(self, dir=None):
@@ -105,21 +111,36 @@ class StorageClassifier(BehaviorClassifier):
             sslos.sort_values("count", ascending=False, inplace=True)
             sslos[self.scores + ["count"]].to_csv(os.path.join(dir, "behavior_means.csv"))
 
+    def visualize(self, df, path=None):
+        df = self.standardize(df)
+        weights = np.array(list(self.feature_importances_) + [1 / len(self.output_vars)] * len(self.output_vars))
+        X_features = self.transform_.fit_transform(df[self.features_ + self.output_vars]) * weights
+        for lr in [200]:
+            for perplexity in [2, 5, 10, 20, 30, 50]:
+                print(f"PERPLEXITY: {perplexity}")
+                X = TSNE(n_components=2, perplexity=perplexity, learning_rate=lr, n_jobs=6).fit_transform(X_features)
+                plt.scatter(X[:,0], X[:,1], label=self.labels_, c=self.labels_, alpha=.3)
+                plt.show()
+                if path is not None:
+                    plt.savefig(path)
+                plt.close()
+
     def standardize(self, sslos:pd.DataFrame):
+        return sslos
         SCORES = self.score_conf
         #Get score weights and remember the score categories
         if self.scores is None:
             self.scores = list(SCORES.keys())
             self.score_weights = []
             for features in SCORES.values():
-                features = self.feature_importances.columns.intersection(features)
-                self.score_weights.append(self.feature_importances[features].to_numpy().sum())
+                features = self.feature_importances_.columns.intersection(features)
+                self.score_weights.append(self.feature_importances_[features].to_numpy().sum())
             self.score_weights = pd.Series(self.score_weights, index=self.scores) / np.sum(self.score_weights)
 
         scaled_features = pd.DataFrame(self.transform_.transform(sslos[self.features].astype(float)), columns=self.features)
         for score_name,features,score_weight in zip(SCORES.keys(), SCORES.values(), self.score_weights):
             features = scaled_features.columns.intersection(features)
-            sslos.loc[:,score_name] = (scaled_features[features] * self.feature_importances[features].to_numpy()).sum(axis=1).to_numpy()/score_weight
+            sslos.loc[:,score_name] = (scaled_features[features] * self.feature_importances_[features].to_numpy()).sum(axis=1).to_numpy()/score_weight
 
         return sslos
 

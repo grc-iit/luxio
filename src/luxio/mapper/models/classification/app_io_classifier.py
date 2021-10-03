@@ -62,18 +62,20 @@ class AppClassifier(BehaviorClassifier):
         self.feature_selector_ = search.best_estimator_
         self.feature_importances_ = self.feature_selector_.feature_importances_
         self.features_ = self.feature_selector_.features_
+        self.named_feature_importances_ = pd.DataFrame([(feature,importance) for feature,importance in zip(self.features_, self.feature_importances_)])
 
-    def fit(self, X:pd.DataFrame, k=None):
+    def fit(self, X:pd.DataFrame, k=8):
         """
         Identify groups of application behavior from a dataset of traces using the features.
         Calculate a standardized set of scores that are common between the apps and sslos
         """
-        #X = X.iloc[0:100,:]
+        #self.named_feature_importances_ = pd.DataFrame(
+        #    [(feature, importance) for feature, importance in zip(self.features_, self.feature_importances_)])
         #Identify clusters of transformed data
         self.transform_ = ChainTransformer([LogTransformer(base=10,add=1), MinMaxScaler()])
         X_features = self.transform_.fit_transform(X[self.features_])*self.feature_importances_
         if k is None:
-            for k in [2, 4, 6, 8, 10, 12, 15]:
+            for k in [2, 4, 8, 10, 15]:
                 self.model_ = KMeans(n_clusters=k)
                 self.labels_ = self.model_.fit_predict(X_features)
                 print(f"SCORE k={k}: {self.score(X_features, self.labels_)} {self.model_.inertia_}")
@@ -84,28 +86,35 @@ class AppClassifier(BehaviorClassifier):
         self.app_classes = self.standardize(X)
         self.app_classes = self._create_groups(self.app_classes, self.labels_).reset_index()
         self.app_classes['app_id'] = self.app_classes.index
-        #self.app_classes = self.standardize(self.app_classes)
         print(self.app_classes)
         return self
 
     def score(self, X:pd.DataFrame, labels:np.array) -> float:
         return davies_bouldin_score(X, labels)
 
-    def filter_sslos(self, storage_classifier):
-        """
-        For each application class, filter out sslos that have little chance of being useful.
-        """
-        sslos = []
-        app_classes = []
-        #Compare every application class with every sslo
-        for idx,app_class in self.app_classes.iterrows():
-            coverages = storage_classifier.get_coverages(app_class)
-            coverages = coverages[coverages.magnitude >= self.conf.min_coverage_thresh]
-            coverages['app_id'] = app_class['app_id'].astype(int)
-            sslos.append(coverages)
-        #Add the sslos to the dataframe
-        self.app_sslo_mapping = pd.concat(sslos)
-        print(self.app_sslo_mapping)
+    def standardize(self, io_identifier):
+        return io_identifier
+        #Define the scoring categories
+        SCORES = self.score_conf
+        #Get score weights and remember the score categories
+        if self.scores is None:
+            self.scores = list(SCORES.keys())
+            self.score_weights = []
+            for features in SCORES.values():
+                features = self.named_feature_importances_.columns.intersection(features)
+                self.score_weights.append(self.named_feature_importances_[features].to_numpy().sum())
+            self.score_weights = pd.Series(self.score_weights, index=self.scores) / np.sum(self.score_weights)
+
+        #Normalize the IOID to the range [0,1] and scale by feature importance
+        scaled_features = pd.DataFrame(self.transform_.transform(io_identifier[self.features].astype(float)), columns=self.features_)
+        for score_name,features,score_weight in zip(SCORES.keys(), SCORES.values(), self.score_weights.to_numpy()):
+            features = scaled_features.columns.intersection(features)
+            if score_name == 'SEQUENTIALITY' and "TOTAL_IO_OPS" in io_identifier.columns:
+                io_identifier.loc[:,score_name] = io_identifier[features].sum(axis=1).to_numpy()/io_identifier['TOTAL_IO_OPS'].to_numpy()
+            else:
+                io_identifier.loc[:,score_name] = (scaled_features[features] * self.named_feature_importances_[features].to_numpy()).sum(axis=1).to_numpy()/score_weight
+
+        return io_identifier
 
     def define_low_med_high(self, dir):
         SCORES = self.score_conf
@@ -113,8 +122,8 @@ class AppClassifier(BehaviorClassifier):
         scaled_features = pd.DataFrame([[size]*n for size in [.33, .66, 1]], columns=self.features)
         unscaled_features = pd.DataFrame(self.transform_.inverse_transform(scaled_features), columns=self.features)
         for score_name,features,score_weight in zip(SCORES.keys(), SCORES.values(), self.score_weights):
-            features = self.feature_importances.columns.intersection(features)
-            unscaled_features.loc[:,score_name] = (unscaled_features[features] * self.feature_importances[features].to_numpy()).sum(axis=1).to_numpy()/score_weight
+            features = self.feature_importances_.columns.intersection(features)
+            unscaled_features.loc[:,score_name] = (unscaled_features[features] * self.feature_importances_[features].to_numpy()).sum(axis=1).to_numpy()/score_weight
         unscaled_features[self.scores] = LogTransformer(base=10,add=1).transform(unscaled_features[self.scores]).astype(int)
         unscaled_features[self.scores] = "10^" + unscaled_features[self.scores].astype(str)
         unscaled_features[self.scores].to_csv(os.path.join(dir, "low_med_high.csv"))
@@ -143,7 +152,7 @@ class AppClassifier(BehaviorClassifier):
     def visualize(self, df, path=None):
         df = self.standardize(df)
         PERFORMANCE = ["TOTAL_READ_TIME", "TOTAL_WRITE_TIME", "TOTAL_MD_TIME"]
-        train_x, test_x, train_y, test_y = train_test_split(df[PERFORMANCE], self.labels_, test_size=50000, stratify=self.labels_)
+        train_x, test_x, train_y, test_y = train_test_split(df[PERFORMANCE], self.labels_, test_size=5000, stratify=self.labels_)
         for lr in [200]:
             for perplexity in [30, 50]:
                 print(f"PERPLEXITY: {perplexity}")
@@ -154,28 +163,21 @@ class AppClassifier(BehaviorClassifier):
                     plt.savefig(path)
                 plt.close()
 
-    def standardize(self, io_identifier):
-        #Define the scoring categories
-        SCORES = self.score_conf
-        #Get score weights and remember the score categories
-        if self.scores is None:
-            self.scores = list(SCORES.keys())
-            self.score_weights = []
-            for features in SCORES.values():
-                features = self.feature_importances.columns.intersection(features)
-                self.score_weights.append(self.feature_importances[features].to_numpy().sum())
-            self.score_weights = pd.Series(self.score_weights, index=self.scores) / np.sum(self.score_weights)
-
-        #Normalize the IOID to the range [0,1] and scale by feature importance
-        scaled_features = pd.DataFrame(self.transform_.transform(io_identifier[self.features].astype(float)), columns=self.features)
-        for score_name,features,score_weight in zip(SCORES.keys(), SCORES.values(), self.score_weights.to_numpy()):
-            features = scaled_features.columns.intersection(features)
-            if score_name == 'SEQUENTIALITY' and "TOTAL_IO_OPS" in io_identifier.columns:
-                io_identifier.loc[:,score_name] = io_identifier[features].sum(axis=1).to_numpy()/io_identifier['TOTAL_IO_OPS'].to_numpy()
-            else:
-                io_identifier.loc[:,score_name] = (scaled_features[features] * self.feature_importances[features].to_numpy()).sum(axis=1).to_numpy()/score_weight
-
-        return io_identifier
+    def filter_sslos(self, storage_classifier):
+        """
+        For each application class, filter out sslos that have little chance of being useful.
+        """
+        sslos = []
+        app_classes = []
+        #Compare every application class with every sslo
+        for idx,app_class in self.app_classes.iterrows():
+            coverages = storage_classifier.get_coverages(app_class)
+            coverages = coverages[coverages.magnitude >= self.conf.min_coverage_thresh]
+            coverages['app_id'] = app_class['app_id'].astype(int)
+            sslos.append(coverages)
+        #Add the sslos to the dataframe
+        self.app_sslo_mapping = pd.concat(sslos)
+        print(self.app_sslo_mapping)
 
     def get_magnitude(self, fitness:pd.DataFrame):
         """

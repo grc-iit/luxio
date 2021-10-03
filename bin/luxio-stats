@@ -43,11 +43,13 @@ class ArgumentParser:
 
 #Dataset preprocessing
 def preprocess_dataset(params):
-    conf = ConfigurationManager.get_instance()
     dataset = params["dataset_type"]
     parser = TraceParserFactory.get_parser(TraceParserType[dataset])
     df = parser.preprocess(params)
-    df.to_parquet(params["out"], index=False)
+    if params['serializer_type'] == 'CSV':
+        df.to_csv(params["out"], index=False)
+    if params['serializer_type'] == 'PARQUET':
+        df.to_parquet(params["out"], index=False)
 
 #Preliminary analysis of a dataset
 def preliminary_analysis(params):
@@ -60,7 +62,10 @@ def preliminary_analysis(params):
 #Feature selection module
 def feature_selector(params, ModelType):
     FEATURES = load_features(params["features"])
-    MANDATORY_FEATURES = load_features(params["mandatory_features"])
+    if 'mandatory_features' in params:
+        MANDATORY_FEATURES = load_features(params["mandatory_features"])
+    else:
+        MANDATORY_FEATURES = None
     PERFORMANCE = load_features(params["vars"])
     SCORE_CONF = JSONClient().load(params["score_conf"])
 
@@ -85,11 +90,11 @@ def behavior_classifier(params, ModelType):
 
 #Behavior Classification statistics module
 def behavior_classifier_stats(params):
-    #df = pd.read_parquet(params["trace"])
+    df = pd.read_parquet(params["trace"])
     bc = BehaviorClassifier.load(params["classifier"])
-    analysis = bc.analyze(dir=params["class_stats"])
+    #analysis = bc.analyze(dir=params["class_stats"])
     #pp.pprint(analysis)
-    #bc.visualize(df)
+    bc.visualize(df)
 
 #Filter out sslos
 def filter_sslos(app_params, storage_params):

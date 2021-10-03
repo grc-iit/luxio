@@ -61,8 +61,6 @@ class BehaviorClassifier(ABC):
     def _create_groups(self, df:pd.DataFrame, labels:np.array):
         df = pd.DataFrame(df)
         df.loc[:,"labels"] = labels
-        if other is None:
-            other = []
         return self._smash(df, ["labels"])
 
     @abstractmethod
