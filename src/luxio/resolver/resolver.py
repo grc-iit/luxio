@@ -32,7 +32,7 @@ class Resolver:
         self.conf.timer.pause().log("DownloadStorageModel")
         self.conf.timer.resume()
         #Get deployment "id"
-        deployments = self.conf.storage_classifier.sslo_to_deployment
+        deployments = self.conf.storage_classifier.sslo_to_deployment_
         deployments = deployments[deployments.deployment_id == id]
         deployments['status'] = DeploymentStatus.NEW
         return deployments
@@ -51,10 +51,10 @@ class Resolver:
         self.conf.timer.pause().log("DownloadStorageModel")
         self.conf.timer.resume()
         if not self.conf.force_colocate:
-            new_deployments = pd.merge(ranked_sslos['sslo_id'], self.conf.storage_classifier.sslo_to_deployment, on="sslo_id")
+            new_deployments = pd.merge(ranked_sslos['sslo_id'], self.conf.storage_classifier.sslo_to_deployment_, on="sslo_id")
             new_deployments.loc[:,"status"] = DeploymentStatus.NEW
         else:
-            new_deployments = pd.DataFrame(columns=list(self.conf.storage_classifier.sslo_to_deployment.columns) + ["status"])
+            new_deployments = pd.DataFrame(columns=list(self.conf.storage_classifier.sslo_to_deployment_.columns) + ["status"])
         #Get the set of existing deployments
         if self.conf.isolate_deployments == False:
             existing_deployments = scheduler.download_existing_deployments()

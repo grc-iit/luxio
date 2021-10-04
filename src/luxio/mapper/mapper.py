@@ -27,7 +27,7 @@ class Mapper:
         self.conf.timer.resume()
         app_classifier = self.conf.app_classifier
         #Get the common set of scores between app classifier and sslos
-        scores = list(app_classifier.app_classes[app_classifier.scores].columns.intersection(app_classifier.app_sslo_mapping.columns))
+        scores = list(app_classifier.app_classes_[app_classifier.scores].columns.intersection(app_classifier.app_sslo_mapping.columns))
         #Get candidate AppClasses
         fitnesses = app_classifier.get_fitnesses(io_identifier)
         fitnesses = fitnesses[fitnesses.magnitude > self.conf.min_fitness_thresh]

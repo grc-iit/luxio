@@ -29,7 +29,7 @@ class SCSStressTestParser(TraceParser):
         Converts the SCS stress test into the standard format used to train Luxio models
         """
 
-        #Convert categorical to numerical
+        OFS_CONFIG = ['TroveSyncMeta', 'TroveSyncData', 'TroveMaxConcurrentIO', 'TCPBufferReceive', 'TCPBindSpecific']
         CATEGORICAL = [
             'device',
             'storage',
@@ -40,11 +40,20 @@ class SCSStressTestParser(TraceParser):
             'io_type'
         ]
         df = self.df
+
+        #Set orangefs config
+        df.loc[:, 'config'] = df.groupby(OFS_CONFIG).ngroup()
+
+        #Convert categorical to numerical
         for categorial in CATEGORICAL:
             df.loc[:, f"{categorial}_id"] = pd.factorize(df[categorial])[0]
 
-        # Set interface
+        #Set interface
         df.loc[:, 'interface'] = StorageInterface.POSIX | StorageInterface.STDIO | StorageInterface.MPI
+
+        #Emulate write BW
+        df.loc[df.device == 'nvme', 'write_bw'] = df[df.device == 'nvme']['read_bw']*.7
+        df.loc[df.device == 'ssd', 'write_bw'] = df[df.device == 'ssd']['read_bw']*.7
 
         # Set capacity
         df.loc[df.device == 'tmpfs', 'capacity'] = 32 * (GB / GB) * df[df.device == 'tmpfs']['servers'].to_numpy()  # 32GB / node
@@ -53,5 +62,16 @@ class SCSStressTestParser(TraceParser):
 
         # Set malleability
         df.loc[:, 'malleable'] = 0
+
+        #Determine sequentiality of deployment
+        df['sequential'] = 0
+        df.loc[(df.io_type == 'sequential') | (df.io_type == 'mixed-sequential'), 'sequential'] = 1
+
+        #Determine the mixedness of deployment
+        df['mixed'] = 0
+        df.loc[(df.io_type == 'mixed-sequential') | (df.io_type == 'mixed-random'), 'mixed'] = 1
+
+        #Determine performance ratio of clients to servers
+        df.loc[:,'interference'] = (df.read_bw + df.write_bw) / (2 * df.clients / df.servers)
 
         self.df = df

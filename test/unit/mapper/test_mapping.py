@@ -14,7 +14,7 @@ class TestMapping(unittest.TestCase):
 
     def get_logdiff(self, io_identifier:pd.DataFrame, ac:AppClassifier) -> pd.DataFrame:
         ioid_features = io_identifier[ac.features].to_numpy()
-        app_features = ac.app_classes[ac.features].to_numpy()
+        app_features = ac.app_classes_[ac.features].to_numpy()
         logdiff = pd.DataFrame(np.abs(np.log(ioid_features+1)/np.log(10) - np.log(app_features+1)/np.log(10)), columns=ac.features)
         return logdiff
 
@@ -56,7 +56,7 @@ class TestMapping(unittest.TestCase):
         """
         print()
         print("AC:")
-        print(ac.app_classes[features])
+        print(ac.app_classes_[features])
         """
 
         count = 0

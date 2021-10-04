@@ -27,7 +27,7 @@ class Timer:
         return self.count/10**6
 
 def naiive_algo(io_identifier:pd.DataFrame, app_classifier, storage_classifier, counter) -> pd.DataFrame:
-    sslos = storage_classifier.sslos
+    sslos = storage_classifier.sslos_
     #io_identifier = app_classifier.standardize(io_identifier)
     ranked_sslo = sslos.iloc[counter:,:]
     cost = emulated_cost(io_identifier, ranked_sslo)
@@ -49,8 +49,8 @@ def luxio_algo(io_identifier:pd.DataFrame, app_classifier, storage_classifier, c
     #Get the fitness vector of the IOIdentifier to all of the classes
     fitnesses = app_classifier.get_fitnesses(io_identifier)
     #Multiply fitness and coverage
-    ranked_sslos = app_classifier.sslos.copy()
-    ranked_sslos.loc[:,app_classifier.scores] = fitnesses[app_classifier.scores].to_numpy() * app_classifier.sslos[app_classifier.scores].to_numpy()
+    ranked_sslos = app_classifier.sslos_.copy()
+    ranked_sslos.loc[:,app_classifier.scores] = fitnesses[app_classifier.scores].to_numpy() * app_classifier.sslos_[app_classifier.scores].to_numpy()
     #Select the best 20 sslos
     ranked_sslos = ranked_sslos.groupby(["sslo_id"]).max().nlargest(20, "magnitude")
     #Sort the sslos in descending order

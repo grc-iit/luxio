@@ -2,13 +2,7 @@ mpi_procs
 clients
 servers
 network
-device_id
-storage_id
-TroveSyncMeta_id
-TroveSyncData_id
-TroveMaxConcurrentIO
-TCPBufferReceive_id
-TCPBindSpecific_id
-io_type_id
+sequential
+mixed
 req_size
 total_size_per_proc

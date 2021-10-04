@@ -1,21 +1,23 @@
 {
-    "SMALL_READ" : [
-      "sequential_read_bw_small", "random_read_bw_small"
+    "SMALL_IO_HEAVINESS" : [
+        "read_bw", "write_bw"
     ],
-    "MEDIUM_READ" : [
-      "sequential_read_bw_medium", "random_read_bw_medium"
+    "MEDIUM_IO_HEAVINESS" : [
+        "read_bw", "write_bw"
     ],
-    "LARGE_READ" : [
-      "sequential_read_bw_large", "random_read_bw_large"
+    "LARGE_IO_HEAVINESS" : [
+        "read_bw", "write_bw"
     ],
-    "SMALL_WRITE" : [
-      "sequential_write_bw_small", "random_write_bw_small"
+    "READ_HEAVINESS" : [
+        "read_bw"
     ],
-    "MEDIUM_WRITE" : [
-      "sequential_write_bw_medium", "random_write_bw_medium"
+    "WRITE_HEAVINESS" : [
+        "write_bw"
     ],
-    "LARGE_WRITE" : [
-      "sequential_write_bw_large", "random_write_bw_large"
+    "SEQUENTIALITY" : [
+        "sequentiality"
     ],
-    "MD_HEAVINESS" : ["mdm_thrpt"]
+    "SCALE" : [
+        "servers"
+    ]
 }

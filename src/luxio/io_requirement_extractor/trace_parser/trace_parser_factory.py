@@ -5,7 +5,7 @@ from luxio.io_requirement_extractor.trace_parser.darshan.dict import DarshanDict
 from luxio.io_requirement_extractor.trace_parser.darshan.v3_2_1 import DarshanTraceParser_3_2_1
 from luxio.io_requirement_extractor.trace_parser.darshan.anl import ArgonneTraceParser
 from luxio.io_requirement_extractor.trace_parser.scs_sslo import SCSStressTestParser
-from luxio.io_requirement_extractor.trace_parser.scs_sslo import SCSssloParser
+from luxio.io_requirement_extractor.trace_parser.scs_sslo import SCSSSLOParser
 from luxio.io_requirement_extractor.trace_parser.trace_parser import TraceParser
 
 
@@ -32,5 +32,7 @@ class TraceParserFactory:
             return ArgonneTraceParser()
         elif type == TraceParserType.SCS_STRESS_TEST:
             return SCSStressTestParser()
+        elif type == TraceParserType.SCS_SSLO:
+            return SCSSSLOParser()
         else:
             raise Error(ErrorCode.NOT_IMPLEMENTED)

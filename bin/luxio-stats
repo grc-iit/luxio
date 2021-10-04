@@ -92,9 +92,9 @@ def behavior_classifier(params, ModelType):
 def behavior_classifier_stats(params):
     df = pd.read_parquet(params["trace"])
     bc = BehaviorClassifier.load(params["classifier"])
-    #analysis = bc.analyze(dir=params["class_stats"])
-    #pp.pprint(analysis)
-    bc.visualize(df)
+    #bc.analyze_classes(dir=params["class_stats"])
+    bc.analyze_classes(df=df,dir=params["class_stats"])
+    #bc.visualize(df)
 
 #Filter out sslos
 def filter_sslos(app_params, storage_params):
