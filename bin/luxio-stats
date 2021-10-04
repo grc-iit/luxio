@@ -73,7 +73,8 @@ def feature_selector(params, ModelType):
     bc = ModelType(FEATURES, MANDATORY_FEATURES, PERFORMANCE, SCORE_CONF, params["trace"])
     bc.feature_selector(df[FEATURES], df[PERFORMANCE])
     bc.save(params["classifier"])
-    bc.feature_selector_.save_importances(params["importances"], order=True)
+    if bc.feature_selector_:
+        bc.feature_selector_.save_importances(params["importances"], order=True)
 
 #Feature selection statistics module
 def feature_selector_stats(params):
@@ -94,7 +95,7 @@ def behavior_classifier_stats(params):
     bc = BehaviorClassifier.load(params["classifier"])
     #bc.analyze_classes(dir=params["class_stats"])
     bc.analyze_classes(df=df,dir=params["class_stats"])
-    #bc.visualize(df)
+    bc.visualize(df)
 
 #Filter out sslos
 def filter_sslos(app_params, storage_params):
@@ -148,8 +149,8 @@ if __name__ == "__main__":
         preliminary_analysis(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "sslo_feature_select" or args.tool == "all":
         feature_selector(args.conf["STORAGE_BEHAVIOR_MODEL"], StorageClassifier)
-    if args.tool == "sslo_feature_select_stats" or args.tool == "all" or args.tool == "sslo_feature_select":
-        feature_selector_stats(args.conf["STORAGE_BEHAVIOR_MODEL"])
+    #if args.tool == "sslo_feature_select_stats" or args.tool == "all" or args.tool == "sslo_feature_select":
+        #feature_selector_stats(args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "sslo_gen" or args.tool == "all":
         behavior_classifier(args.conf["STORAGE_BEHAVIOR_MODEL"], StorageClassifier)
     if args.tool == "sslo_gen_stats" or args.tool == "all" or args.tool == "sslo_gen":

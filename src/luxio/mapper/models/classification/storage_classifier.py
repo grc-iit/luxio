@@ -24,48 +24,27 @@ pd.options.mode.chained_assignment = None
 
 class StorageClassifier(BehaviorClassifier):
     def __init__(self, features, mandatory_features, output_vars, score_conf, dataset_path, random_seed=132415, n_jobs=4):
-        super().__init__(features, mandatory_features, output_vars, score_conf, dataset_path, random_seed, n_jobs)
+        super().__init__(features, mandatory_features, [], score_conf, dataset_path, random_seed, n_jobs)
         self.sslos_ = None #A dataframe containing: means, stds, ns
 
     def feature_selector(self, X, y):
-        train_x, test_x, train_y, test_y = train_test_split(X, y, test_size=.1, random_state=self.random_seed)
-        param_grid = {
-            'n_features': [2, 4, 6, 8, 10],
-            'max_depth': [5, 10],
-            'reducer_method': ['random-forest']
-        }
-        print("Heuristic Feature Reduction")
-        heuristic_reducer = DimensionReducerFactory(features=self.features, n_jobs=self.n_jobs)
-        heuristic_reducer.fit(X, y)
-        print("Fitting Feature Reduced Model")
-        model = RFERandomForestRegressor(
-            features=self.features,
-            # transform=TransformerFactory(),
-            transform_y=LogTransformer(add=1, base=10),
-            heuristic_reducer=heuristic_reducer,
-            n_features_heur=35,
-            fitness_metric=RelativeAccuracyMetric(),
-            error_metric=RelativeErrorMetric())
-        search = GridSearchCV(model, param_grid, cv=KFold(n_splits=5, random_state=self.random_seed, shuffle=True),
-                              n_jobs=self.n_jobs, verbose=2)
-        search.fit(train_x, train_y)
-        self.feature_selector_ = search.best_estimator_
-        self.feature_importances_ = self.feature_selector_.feature_importances_
-        self.features_ = self.feature_selector_.features_
+        self.feature_selector_ = None
+        self.feature_importances_ = np.array([1]*len(self.features)) / len(self.features)
+        self.features_ = self.features
         self.named_feature_importances_ = pd.DataFrame([(feature, importance) for feature, importance in zip(self.features_, self.feature_importances_)])
 
     def fit(self, X:pd.DataFrame=None, k=None):
         # Initialize scoring data
-        self.score_features_ = list(self.features_) + list(self.output_vars)
+        self.score_features_ = list(self.features_)
         self.score_feature_weights_ = pd.DataFrame(
-            dict([(feature, weight) for feature, weight in zip(self.features_, self.feature_importances_)] +
-            [(feature, 1 / len(self.output_vars)) for feature in self.output_vars]), index=[0]
+            dict([(feature, weight) for feature, weight in zip(self.features_, self.feature_importances_)]),
+            index=[0]
         )
         self._init_scoring()
         #Cluster data
         self.transform_ = MinMaxScaler().fit(X[self.score_features_])
         self.sslos_ = self.standardize(X)
-        X_features = self.sslos_[self.score_names_]
+        X_features = self.transform_.transform(self.sslos_[self.score_features_])
         if k is None:
             for k in [4, 6, 8, 10, 12, 15, 20]:
                 self.model_ = KMeans(n_clusters=k)
@@ -88,7 +67,7 @@ class StorageClassifier(BehaviorClassifier):
 
     def visualize(self, df, path=None):
         df = self.standardize(df)
-        super().visualize(df, self.score_names_, n_iters=[1000])
+        super().visualize(df, self.score_features_, n_iters=[1000])
 
     def get_magnitude(self, io_identity):
         return super().get_magnitude(io_identity, self.sslos_)

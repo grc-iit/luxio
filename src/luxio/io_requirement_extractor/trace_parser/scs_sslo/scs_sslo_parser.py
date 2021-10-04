@@ -77,11 +77,14 @@ class SCSSSLOParser(TraceParser):
         CONC = [feature for feature in MERGE if feature != 'clients']
         grp = df.groupby(CONC)
         df = grp.max().reset_index()
-        df.loc[:,'sensitivity2concurrency'] = (grp[SEQ+RAND].std().to_numpy() / grp[SEQ+RAND].mean().to_numpy()).mean(axis=1)
+        df.loc[:,'sensitivity2concurrency'] = (grp[SEQ].std().to_numpy() / grp[SEQ].mean().to_numpy()).mean(axis=1)
         df = df.drop(columns='clients')
         df = df.fillna(0)
 
         #Sensitivity to Randomness (% faster seq is over rand)
+        #Ideally is 0
+        #> 0 -> randomness decreases performance
+        #Otherwise, randomness increases performance
         df.loc[:,'sensitivity2randomness'] = (df[SEQ].to_numpy()/df[RAND].to_numpy() - 1).mean(axis=1)
         df.loc[:,'sequentiality'] = -1*df['sensitivity2randomness']
         df = df.fillna(0)
