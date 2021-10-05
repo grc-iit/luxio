@@ -11,7 +11,7 @@ from luxio.mapper.models.metrics import r2Metric, RelativeAccuracyMetric, Relati
 from luxio.mapper.models.transforms.transformer_factory import TransformerFactory
 from luxio.mapper.models.transforms.log_transformer import LogTransformer
 from luxio.mapper.models.transforms.chain_transformer import ChainTransformer
-from luxio.mapper.models.dimensionality_reduction.dimension_reducer_factory import DimensionReducerFactory
+from luxio.mapper.models.dimensionality_reduction.dimension_reducer_factory import DimensionReducerFactory,RandomForestReducer
 
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import KFold, train_test_split, GridSearchCV
@@ -39,29 +39,50 @@ class ConfigGenerator:
         self.random_seed = random_seed
         self.n_jobs = n_jobs
 
+    def _normalize_grps(self, df, grp_features):
+        """
+        grps = df.groupby(grp_features)
+        for grp_name,grp_df in grps:
+            df = grp_df.reset_index()
+            if len(df) > 20:
+                return df
+        """
+
+        grps = df.groupby(grp_features)
+        df.loc[:, self.stress_test_output_vars] = grps.transform(lambda x: (x - x.mean()) / x.std()).reset_index()
+        df = df.fillna(0)
+
+        """
+        sub_df = df[self.stress_test_output_vars]
+        sub_df[sub_df < 0] = -1
+        sub_df[sub_df > 0] = 1
+        df.loc[:,self.stress_test_output_vars] = sub_df
+        """
+
+        return df
+
     #Get which configuration parameters impact performance
     #Group by device_type, network, num_servers, io_type, req_size
     #Normalize each group
     #Predict normalized read/write BW
     def config_feature_select(self, df):
-        grps = df.groupby(self.stress_test_dpl_features)
-        df.loc[:,self.stress_test_output_vars] = grps.transform(lambda x: (x - x.mean()) / x.std()).reset_index()
-        df = df.fillna(0)
+        df = self._normalize_grps(df, self.stress_test_dpl_features)
         features = self.stress_test_config_features + self.stress_test_dpl_features
-        sub_df = df[self.stress_test_output_vars]
-        sub_df[sub_df < 0] = -1
-        sub_df[sub_df > 0] = 1
-        #print(sub_df)
-        #exit(1)
-
         X = df[features]
         y = df[self.stress_test_output_vars]
         param_grid = {
-            #'n_features': [15],
-            'max_depth': [2, 5, 8],
-            'reducer_method': ['random-forest']
+            'n_features': [8],
+            'max_depth': [2, 5, 8, 15, 50],
+            'n_estimators': [5, 10]
         }
         print("Fitting Model")
+
+        model = RandomForestReducer(features, max_depth=9)
+        model.fit(X,y)
+        self.feature_selector_ = model
+        self.named_feature_importances_ = model.sorted_features_
+
+        """
         model = RFERandomForestRegressor(
             features=features,
             fitness_metric=r2Metric(),
@@ -74,12 +95,20 @@ class ConfigGenerator:
         self.features_ = self.feature_selector_.features_
         self.named_feature_importances_ = pd.DataFrame(
             [(feature, importance) for feature, importance in zip(self.features_, self.feature_importances_)])
+        """
 
     def config_feature_select_stats(self, df):
+        """
+        df = self._normalize_grps(df, self.stress_test_dpl_features)
         features = self.stress_test_config_features + self.stress_test_dpl_features
         pred_y = self.feature_selector_.predict(df[features])
+        y = df[self.stress_test_output_vars]
+        print(pd.DataFrame(pred_y, columns=self.stress_test_output_vars))
+        print(y)
+        """
+
         print(f"Model Score: {self.feature_selector_.fitness_}")
-        print(f"Overall r2 Score: {r2_score(pred_y, df[self.stress_test_output_vars])}")
+        #print(f"Overall r2 Score: {r2_score(pred_y, df[self.stress_test_output_vars])}")
         pp.pprint(self.named_feature_importances_)
 
     #Given device_type, network, num_devices, config, predict bw set

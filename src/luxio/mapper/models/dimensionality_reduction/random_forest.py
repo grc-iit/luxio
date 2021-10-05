@@ -7,6 +7,7 @@ class RandomForestReducer(FeatureSelector):
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.is_fitted_ = False
+        self.fitness_ = None
 
     def _fit_init(self):
         super()._fit_init()
@@ -20,4 +21,5 @@ class RandomForestReducer(FeatureSelector):
             self.sort_features()
             self.is_fitted_ = True
         self.get_support()
+        self.fitness_ = self.model_.score(X,y)
         return self.transform(X)
