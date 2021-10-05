@@ -33,7 +33,11 @@ class SCSSSLOParser(TraceParser):
         Converts the SCS stress test into the standard format used to train Luxio models
         """
 
-        MERGE = ["clients", "servers", "network", "device", "config", "storage", "capacity", "malleable", "interface"]
+        MERGE = ["clients", "servers", "network", "device", "device_id",
+                 "config", "TroveSyncMeta", "TroveSyncMeta_id",
+                 "TroveSyncData", "TroveSyncData_id",
+                 "TroveMaxConcurrentIO", "TCPBufferReceive", "TCPBindSpecific_id",
+                 "storage", "storage_id", "capacity", "malleable", "interface"]
         RSRC = ["hdd", "ssd", "nvme"]
         BWS = ["write_bw", "read_bw"]
         THRPTS = []

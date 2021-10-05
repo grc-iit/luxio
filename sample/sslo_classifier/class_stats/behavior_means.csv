@@ -1,0 +1,11 @@
+random_write_bw_large,random_read_bw_large,sequential_write_bw_large,sequential_read_bw_large,mixed-sequential_write_bw_large,mixed-sequential_read_bw_large,mixed-random_write_bw_large,mixed-random_read_bw_large,sensitivity2concurrency,sensitivity2randomness,sequentiality,count,sslo_id
+medium,medium,medium,medium,low,low,low,low,low,medium,medium,0.11805555555555555,1
+low,low,low,low,high,high,high,high,medium,medium,medium,0.11342592592592593,6
+high,medium,high,high,high,high,high,high,medium,medium,medium,0.11342592592592593,7
+low,low,low,low,high,high,high,high,low,low,high,0.1087962962962963,0
+low,low,low,low,low,low,low,low,low,low,high,0.1087962962962963,3
+high,high,high,high,low,low,low,low,medium,medium,medium,0.1087962962962963,4
+medium,low,medium,medium,low,low,low,low,high,medium,medium,0.1087962962962963,5
+high,high,high,high,low,low,low,low,low,medium,medium,0.10648148148148148,8
+high,medium,high,high,high,high,high,high,high,medium,medium,0.10185185185185185,2
+medium,medium,high,high,high,high,high,high,high,high,low,0.011574074074074073,9

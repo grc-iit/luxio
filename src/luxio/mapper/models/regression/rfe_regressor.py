@@ -29,7 +29,10 @@ class RFERegressor(GenericRegressor):
             self.heuristic_reducer_ = self.heuristic_reducer.clone()
             self.heuristic_reducer_.set_method(self.reducer_method)
             pipeline.append(("heuristic_reducer", self.heuristic_reducer_))
-        pipeline.append(("feature_eliminator", RFE(model, n_features_to_select=self.n_features)))
+        if self.n_features is not None:
+            pipeline.append(("feature_eliminator", RFE(model, n_features_to_select=self.n_features)))
+        else:
+            pipeline.append(("feature_eliminator", RFE(model, n_features_to_select=1.0)))
         return Pipeline(pipeline)
 
     @abstractmethod
@@ -44,8 +47,8 @@ class RFERegressor(GenericRegressor):
         return support
 
     def _feature_importances(self, X):
-        heuristic_reducer = self.model_.named_steps["heuristic_reducer"]
-        if heuristic_reducer is not None:
+        if self.heuristic_reducer is not None:
+            heuristic_reducer = self.model_.named_steps["heuristic_reducer"]
             self.features_ = heuristic_reducer.get_selected_feature_names()
         else:
             self.features_ = self.features
