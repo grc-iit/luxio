@@ -47,7 +47,7 @@ Configure the tool:
 > conf.db_port = "6379"  
 
 Get the I/O configuration
-> storage_config = LUXIO().run()
+> storage_config = LuxioBin().run()
 
 ## Test
 
@@ -55,7 +55,7 @@ cd /path/to/luxio
 export PYTHONPATH="$(pwd)/src"  
 > python3 -m unittest discover -s test/integration/luxio  
 
-> ./luxio.py -m io -o output_file.json -j job_info.json -t sample.darshan  
+> ./luxio.py -m io -o output_file.json -j job_info.json -t resources.darshan  
 > ./scripts/print-luxio.sh output_file.json  
 The print-luxio.sh script requires the program jq (json query) to be installed, it performs a `jq 'map_values(.val)'` on the given argument
 
@@ -68,14 +68,14 @@ The scripts in the scripts/ directory include luxio.sh, io-req-extractor.sh, sto
 ### Script Run Sample Interaction
 > cd scripts
 > source init-luxio.sh
-> ./luxio.sh ../sample/job_info.json ../sample/sample.darshan
-> ./luxio.sh ../sample/job_info.json ../sample/sample.darshan -o output-0.json
-> ./io-req-extractor.sh ../sample/job_info.json ../sample/sample.darshan
-> ./io-req-extractor.sh ../sample/job_info.json ../sample/sample.darshan -o output-1.json
+> ./luxio.sh ../resources/job_info.json ../sample/sample.darshan
+> ./luxio.sh ../resources/job_info.json ../sample/sample.darshan -o output-0.json
+> ./io-req-extractor.sh ../resources/job_info.json ../sample/sample.darshan
+> ./io-req-extractor.sh ../resources/job_info.json ../sample/sample.darshan -o output-1.json
 > ./storage-requirement-builder.sh output-1.json
 > ./storage-requirement-builder.sh output-1.json output-2.json
-> ./storage-configurator.sh ../sample/job_info.json output-1.json output-2.json
-> ./storage-configurator.sh ../sample/job_info.json output-1.json output-2.json output-3.json
+> ./storage-configurator.sh ../resources/job_info.json output-1.json output-2.json
+> ./storage-configurator.sh ../resources/job_info.json output-1.json output-2.json output-3.json
 > diff output-0.json output-3.json
 
 ## License

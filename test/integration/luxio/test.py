@@ -7,13 +7,13 @@ from luxio import LUXIO
 
 class TestLuxio(unittest.TestCase):
 
-    def test_luxio_sample(self):
+    def test_luxio_resources(self):
         conf = ConfigurationManager.get_instance()
-        conf.job_spec="sample/job_info.json"
-        conf.darshan_trace_path="sample/sample.darshan"
-        conf.io_req_out_path="sample/io_req_output.json"
-        conf.storage_req_out_path="sample/stor_req_output.json"
-        conf.storage_req_config_out_path="sample/stor_req_conf_output.json"
+        conf.job_spec="resources/job_info.json"
+        conf.darshan_trace_path="resources/sample.darshan"
+        conf.io_req_out_path="resources/io_req_output.json"
+        conf.storage_req_out_path="resources/stor_req_output.json"
+        conf.storage_req_config_out_path="resources/stor_req_conf_output.json"
         conf.check_db = False
         conf.db_type = KVStoreType.REDIS
         conf.db_addr="127.0.0.1"
@@ -28,11 +28,11 @@ class TestLuxio(unittest.TestCase):
 
     def test_luxio_vpic(self):
         conf = ConfigurationManager.get_instance()
-        conf.job_spec="sample/job_info.json"
-        conf.darshan_trace_path="sample/vpic.darshan"
-        conf.io_req_out_path="sample/io_req_output.json"
-        conf.storage_req_out_path="sample/stor_req_output.json"
-        conf.storage_req_config_out_path="sample/stor_req_conf_output.json"
+        conf.job_spec="resources/job_info.json"
+        conf.darshan_trace_path="resources/vpic.darshan"
+        conf.io_req_out_path="resources/io_req_output.json"
+        conf.storage_req_out_path="resources/stor_req_output.json"
+        conf.storage_req_config_out_path="resources/stor_req_conf_output.json"
         conf.check_db = False
         conf.db_type = KVStoreType.REDIS
         conf.db_addr="127.0.0.1"
@@ -47,11 +47,11 @@ class TestLuxio(unittest.TestCase):
 
     def test_luxio_hacc_io_read(self):
         conf = ConfigurationManager.get_instance()
-        conf.job_spec="sample/job_info.json"
-        conf.darshan_trace_path="sample/hacc_io_read.darshan"
-        conf.io_req_out_path="sample/io_req_output.json"
-        conf.storage_req_out_path="sample/stor_req_output.json"
-        conf.storage_req_config_out_path="sample/stor_req_conf_output.json"
+        conf.job_spec="resources/job_info.json"
+        conf.darshan_trace_path="resources/hacc_io_read.darshan"
+        conf.io_req_out_path="resources/io_req_output.json"
+        conf.storage_req_out_path="resources/stor_req_output.json"
+        conf.storage_req_config_out_path="resources/stor_req_conf_output.json"
         conf.check_db = False
         conf.db_type = KVStoreType.REDIS
         conf.db_addr="127.0.0.1"
@@ -66,11 +66,11 @@ class TestLuxio(unittest.TestCase):
 
     def test_luxio_hacc_io_write(self):
         conf = ConfigurationManager.get_instance()
-        conf.job_spec="sample/job_info.json"
-        conf.darshan_trace_path="sample/hacc_io_write.darshan"
-        conf.io_req_out_path="sample/io_req_output.json"
-        conf.storage_req_out_path="sample/stor_req_output.json"
-        conf.storage_req_config_out_path="sample/stor_req_conf_output.json"
+        conf.job_spec="resources/job_info.json"
+        conf.darshan_trace_path="resources/hacc_io_write.darshan"
+        conf.io_req_out_path="resources/io_req_output.json"
+        conf.storage_req_out_path="resources/stor_req_output.json"
+        conf.storage_req_config_out_path="resources/stor_req_conf_output.json"
         conf.check_db = False
         conf.db_type = KVStoreType.REDIS
         conf.db_addr="127.0.0.1"

@@ -7,9 +7,9 @@ class ArgumentParser:
         self.parser.add_argument("-m", default='full', help="Mode (options include 'io', 'stor', 'conf', and 'full')")
         self.parser.add_argument("-j", default=None, help="Job spec (json)")
         self.parser.add_argument("-t", default=None, help="Trace file (Darshan)")
-        self.parser.add_argument("-i", default="sample/io_req_output.json", help="I/O Requirements file/template")
-        self.parser.add_argument("-s", default="sample/stor_req_output.json", help="Storage Requirements file/template")
-        self.parser.add_argument("-c", default="sample/stor_req_conf_output.json", help="Storage Configuration template")
+        self.parser.add_argument("-i", default="resources/io_req_output.json", help="I/O Requirements file/template")
+        self.parser.add_argument("-s", default="resources/stor_req_output.json", help="Storage Requirements file/template")
+        self.parser.add_argument("-c", default="resources/stor_req_conf_output.json", help="Storage Configuration template")
         self.parser.add_argument("-o", default=None, help="Output file")
         #     self.parser.add_argument(
         #         "-r",
@@ -35,11 +35,11 @@ class ArgumentParser:
     def run(self) -> ConfigurationManager:
         args = self.parser.parse_args()
         conf = ConfigurationManager.get_instance()
-        conf.job_spec=args.j #"sample/job_info.json"
-        conf.darshan_trace_path=args.t #"sample/sample.darshan"
-        conf.io_req_out_path=args.i #"sample/io_req_output.json"
-        conf.storage_req_out_path=args.s #"sample/stor_req_output.json"
-        conf.storage_req_config_out_path=args.c #"sample/stor_req_conf_output.json"
+        conf.job_spec=args.j #"resources/job_info.json"
+        conf.darshan_trace_path=args.t #"resources/sample.darshan"
+        conf.io_req_out_path=args.i #"resources/io_req_output.json"
+        conf.storage_req_out_path=args.s #"resources/stor_req_output.json"
+        conf.storage_req_config_out_path=args.c #"resources/stor_req_conf_output.json"
         conf.db_type = KVStoreType.REDIS
         conf.db_addr=args.redis_host
         conf.db_port=str(args.redis_port)
