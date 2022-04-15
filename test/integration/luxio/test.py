@@ -3,7 +3,7 @@ from common.error_codes import *
 from common.enumerations import *
 from common.configuration_manager import *
 from external_clients.json_client import *
-from luxio import LUXIO
+from luxio import LuxioBin
 
 class TestLuxio(unittest.TestCase):
 
@@ -19,7 +19,7 @@ class TestLuxio(unittest.TestCase):
         conf.db_addr="127.0.0.1"
         conf.db_port="6379"
 
-        tool = LUXIO()
+        tool = LuxioBin(conf)
         config = tool.run()
 
         JSONClient().dumps(JSONClient().strip(config))
@@ -38,7 +38,7 @@ class TestLuxio(unittest.TestCase):
         conf.db_addr="127.0.0.1"
         conf.db_port="6379"
 
-        tool = LUXIO()
+        tool = LuxioBin(conf)
         config = tool.run()
 
         JSONClient().dumps(JSONClient().strip(config))
@@ -57,7 +57,7 @@ class TestLuxio(unittest.TestCase):
         conf.db_addr="127.0.0.1"
         conf.db_port="6379"
 
-        tool = LUXIO()
+        tool = LuxioBin(conf)
         config = tool.run()
 
         JSONClient().dumps(JSONClient().strip(config))
@@ -76,7 +76,7 @@ class TestLuxio(unittest.TestCase):
         conf.db_addr="127.0.0.1"
         conf.db_port="6379"
 
-        tool = LUXIO()
+        tool = LuxioBin(conf)
         config = tool.run()
 
         JSONClient().dumps(JSONClient().strip(config))
