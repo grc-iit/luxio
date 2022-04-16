@@ -14,6 +14,8 @@ class IORequirementExtractor:
 
     def _initialize(self) -> None:
         self.conf = ConfigurationManager.get_instance()
+        if (self.conf.time_ops):
+            self.start_time = time.time()
 
     def run(self) -> dict:
         """
@@ -33,4 +35,5 @@ class IORequirementExtractor:
         return output
 
     def _finalize(self) -> None:
-        pass
+        if (self.conf.time_ops):
+            print(f"I/O req extractor time: {time.time() - self.start_time}")

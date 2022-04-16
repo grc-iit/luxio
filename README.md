@@ -47,7 +47,7 @@ Configure the tool:
 > conf.db_port = "6379"  
 
 Get the I/O configuration
-> storage_config = LuxioBin().run()
+> storage_config = LuxioBin(conf).run()
 
 ## Test
 

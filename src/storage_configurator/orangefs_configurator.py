@@ -8,12 +8,21 @@ class OrangefsConfigurator(StorageConfigurator):
     A class used to generate the Orangefs storage configuration
     """
     def __init__(self):
-        pass
+        self.conf = None
+
+    def _initialize(self) -> None:
+        self.conf = ConfigurationManager.get_instance()
+        if (self.conf.time_ops):
+            self.start_time = time.time()
 
     def load_json(self):
         """
         Load Orangefs configuration json file and return a python dictionary
         :return: dict
         """
-        conf = ConfigurationManager.get_instance()
-        return JSONClient().load(conf.storage_req_config_out_path)
+        return JSONClient().load(self.conf.storage_req_config_out_path)
+
+    def _finalize(self) -> None:
+        if (self.conf.time_ops):
+            print(f"OrangeFS configurator time: {time.time() - self.start_time}")
+

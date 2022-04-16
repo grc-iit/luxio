@@ -2,6 +2,7 @@
 from common.enumerations import *
 from common.error_codes import *
 import json
+import time
 
 class ConfigurationManager:
     """
@@ -39,6 +40,7 @@ class ConfigurationManager:
         self.run_mode = "full"
         self.output_file = None
         self.serializer_type = SerializerType.PICKLE
+        self.time_ops = False
 
     @staticmethod
     def load(filename):
