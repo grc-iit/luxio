@@ -11,6 +11,9 @@ class RFEXGBRegressor(RFEFeatureImportances,UniOutputModel):
             xgboost.XGBRegressor(n_estimators=n_estimators, eta=eta, max_depth=max_depth),
             n_features_to_select=n_features)
 
+    def _fit_init(self):
+        self.model_ = self._make_pipeline(self.base_model_)
+
     def get_search_space(self, level=0):
         if level == 0:
             return {

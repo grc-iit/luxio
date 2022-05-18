@@ -13,8 +13,7 @@ class DarshanTraceParser(TraceParser):
         df.loc[(df.TOTAL_STDIO_READS + df.TOTAL_STDIO_WRITES + df.TOTAL_STDIO_OPENS) > 0, "INTERFACE"] |= 4 #STDIO
 
         #Get total amount of I/O (MB)
-        df.loc[:, "TOTAL_IO"] = (df["TOTAL_BYTES_READ"] + df["TOTAL_BYTES_WRITTEN"])/(2**20)
-        df.loc[:, "TOTAL_IO_PER_PROC"] = df["TOTAL_IO"]/df.NPROCS
+        df.loc[:, "TOTAL_IO_MB"] = (df["TOTAL_BYTES_READ"] + df["TOTAL_BYTES_WRITTEN"])/(2**20)
 
         #Get total number of I/O ops
         df.loc[:, "TOTAL_READ_OPS"] = (
@@ -34,6 +33,91 @@ class DarshanTraceParser(TraceParser):
             df.TOTAL_MPIIO_NB_WRITES
         )
         df.loc[:, "TOTAL_IO_OPS"] = (df.TOTAL_READ_OPS + df.TOTAL_WRITE_OPS)
+        df.loc[:, 'READ_OP_FRAC'] = df.TOTAL_READ_OPS / df.TOTAL_IO_OPS
+        df.loc[:, 'WRITE_OP_FRAC'] = df.TOTAL_WRITE_OPS / df.TOTAL_IO_OPS
+
+        #Total READ OPS for different sizes
+        df.loc[:, "TOTAL_SMALL_READS"] = (
+                df.TOTAL_POSIX_SIZE_READ_0_100 +
+
+                df.TOTAL_MPIIO_SIZE_READ_AGG_0_100 +
+                df.TOTAL_POSIX_SIZE_READ_100_1K +
+
+                df.TOTAL_MPIIO_SIZE_READ_AGG_100_1K +
+                df.TOTAL_POSIX_SIZE_READ_1K_10K +
+
+                df.TOTAL_MPIIO_SIZE_READ_AGG_1K_10K +
+                df.TOTAL_POSIX_SIZE_READ_10K_100K +
+
+                df.TOTAL_MPIIO_SIZE_READ_AGG_10K_100K
+        )
+        df.loc[:, "TOTAL_MEDIUM_READS"] = (
+                df.TOTAL_POSIX_SIZE_READ_100K_1M +
+
+                df.TOTAL_MPIIO_SIZE_READ_AGG_100K_1M +
+                df.TOTAL_POSIX_SIZE_READ_1M_4M +
+
+                df.TOTAL_MPIIO_SIZE_READ_AGG_1M_4M
+        )
+        df.loc[:, "TOTAL_LARGE_READS"] = (
+                df.TOTAL_POSIX_SIZE_READ_4M_10M +
+
+                df.TOTAL_MPIIO_SIZE_READ_AGG_4M_10M +
+                df.TOTAL_POSIX_SIZE_READ_10M_100M +
+
+                df.TOTAL_MPIIO_SIZE_READ_AGG_10M_100M +
+                df.TOTAL_POSIX_SIZE_READ_1G_PLUS +
+
+                df.TOTAL_MPIIO_SIZE_READ_AGG_1G_PLUS
+        )
+
+        # Total WRITE OPS for different sizes
+        df.loc[:, "TOTAL_SMALL_WRITES"] = (
+                df.TOTAL_POSIX_SIZE_WRITE_0_100 +
+
+                df.TOTAL_MPIIO_SIZE_WRITE_AGG_0_100 +
+                df.TOTAL_POSIX_SIZE_WRITE_100_1K +
+
+                df.TOTAL_MPIIO_SIZE_WRITE_AGG_100_1K +
+                df.TOTAL_POSIX_SIZE_WRITE_1K_10K +
+
+                df.TOTAL_MPIIO_SIZE_WRITE_AGG_1K_10K +
+                df.TOTAL_POSIX_SIZE_WRITE_10K_100K +
+
+                df.TOTAL_MPIIO_SIZE_WRITE_AGG_10K_100K
+        )
+        df.loc[:, "TOTAL_MEDIUM_WRITES"] = (
+                df.TOTAL_POSIX_SIZE_WRITE_100K_1M +
+
+                df.TOTAL_MPIIO_SIZE_WRITE_AGG_100K_1M +
+                df.TOTAL_POSIX_SIZE_WRITE_1M_4M +
+
+                df.TOTAL_MPIIO_SIZE_WRITE_AGG_1M_4M
+        )
+        df.loc[:, "TOTAL_LARGE_WRITES"] = (
+                df.TOTAL_POSIX_SIZE_WRITE_4M_10M +
+
+                df.TOTAL_MPIIO_SIZE_WRITE_AGG_4M_10M +
+                df.TOTAL_POSIX_SIZE_WRITE_10M_100M +
+
+                df.TOTAL_MPIIO_SIZE_WRITE_AGG_10M_100M +
+                df.TOTAL_POSIX_SIZE_WRITE_1G_PLUS +
+
+                df.TOTAL_MPIIO_SIZE_WRITE_AGG_1G_PLUS
+        )
+
+        #Fraction of reads that are sequential
+        df.loc[:, "SEQUENTIAL_READ_FRAC"] = (df.TOTAL_POSIX_SEQ_READS + df.TOTAL_POSIX_CONSEC_READS) / df.TOTAL_POSIX_READS
+        df.loc[:, "SEQUENTIAL_WRITE_FRAC"] = (df.TOTAL_POSIX_SEQ_WRITES + df.TOTAL_POSIX_CONSEC_WRITES) / df.TOTAL_POSIX_WRITES
+        df.loc[:, "SEQUENTIAL_IO_FRAC"] = (
+            (df.TOTAL_POSIX_SEQ_WRITES + df.TOTAL_POSIX_CONSEC_WRITES + df.TOTAL_POSIX_SEQ_READS + df.TOTAL_POSIX_CONSEC_READS) /
+            (df.TOTAL_POSIX_READS + df.TOTAL_POSIX_WRITES)
+        )
+
+        #Mixedness
+        df.loc[:, "MIXEDNESS"] = (
+            (df.TOTAL_POSIX_RW_SWITCHES) / df.TOTAL_IO_OPS
+        )
 
         #Total IO ops for varying sizes
         df.loc[:, "TOTAL_SIZE_IO_0_100"] = (
@@ -150,6 +234,9 @@ class DarshanTraceParser(TraceParser):
             df.TOTAL_WRITE_TIME +
             df.TOTAL_MD_TIME
         )
+        df['READ_TIME_FRAC'] = df.TOTAL_READ_TIME / df.TOTAL_IO_TIME
+        df['WRITE_TIME_FRAC'] = df.TOTAL_WRITE_TIME / df.TOTAL_IO_TIME
+        df['METADATA_TIME_FRAC'] = df.TOTAL_MD_TIME / df.TOTAL_IO_TIME
 
         self.df = df
         return df

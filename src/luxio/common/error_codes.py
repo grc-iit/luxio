@@ -51,3 +51,8 @@ class ErrorCode:
 
     # Resource resolution
     RESROUCES_UNAVAILABLE = {"id": 4000, "msg": "Requested {} tier-{} resources, but only {} available"}
+
+    # Behavior Models
+    INVALID_FEATURE_WEIGHTS= {"id": 5000, "msg": "The method used for aggregating features {} is invalid"}
+    INVALID_SCORING_METHOD= {"id": 5001, "msg": "The method used for aggregating features {} is invalid"}
+

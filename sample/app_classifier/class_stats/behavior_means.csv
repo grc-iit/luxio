@@ -1,9 +1,0 @@
-NPROCS,TOTAL_BYTES_READ,TOTAL_BYTES_WRITTEN,TOTAL_MPIIO_COLL_OPENS,TOTAL_MPIIO_COLL_READS,TOTAL_MPIIO_COLL_WRITES,TOTAL_POSIX_MAX_BYTE_WRITTEN,TOTAL_POSIX_OPENS,TOTAL_POSIX_READS,TOTAL_POSIX_SEQ_WRITES,TOTAL_POSIX_SIZE_READ_100K_1M,TOTAL_POSIX_WRITES,TOTAL_STDIO_WRITES,TOTAL_IO,TOTAL_IO_PER_PROC,TOTAL_READ_OPS,TOTAL_WRITE_OPS,TOTAL_SIZE_IO_0_100,TOTAL_SIZE_IO_1K_10K,TOTAL_SIZE_IO_0_1M,TOTAL_READ_TIME,TOTAL_WRITE_TIME,TOTAL_MD_TIME,count
-medium,medium,low,low,low,low,low,medium,medium,low,low,low,low,low,low,medium,low,medium,medium,medium,medium,low,medium,0.24397352891989393
-medium,high,high,low,low,low,medium,low,low,medium,medium,low,medium,medium,low,medium,medium,medium,low,medium,medium,low,medium,0.12985880497885657
-medium,high,low,low,low,low,low,low,low,low,medium,low,low,medium,low,high,low,high,low,high,medium,low,medium,0.12524786774016294
-medium,high,high,medium,medium,medium,high,medium,low,medium,low,medium,low,medium,medium,medium,medium,low,low,medium,medium,medium,medium,0.12118642043146904
-medium,high,high,low,low,low,medium,low,low,medium,medium,low,medium,medium,low,high,medium,high,low,high,medium,low,medium,0.1202307857705999
-medium,high,high,medium,medium,medium,high,medium,medium,medium,low,medium,low,medium,low,medium,medium,medium,medium,medium,medium,medium,medium,0.11349356141147239
-medium,high,medium,low,low,low,low,medium,medium,low,low,low,low,medium,low,medium,low,medium,medium,medium,medium,low,medium,0.09297130706930741
-low,low,high,medium,low,medium,high,medium,low,medium,low,medium,low,high,medium,low,medium,low,low,low,low,medium,medium,0.05303772367823781

@@ -25,6 +25,7 @@ class GenericRegressor(BaseEstimator,RegressorMixin,ABC):
         self.n_features = n_features
         self.fitness_metric = fitness_metric
         self.error_metric = error_metric
+        self.random_seed = 132415
 
         self.transform_y_ = None
         self.fitness_ = 0

@@ -16,8 +16,7 @@ class ArgonneTraceParser(DarshanTraceParser):
         return
 
     def parse(self, params):
-        self.theta.parse(params)
-        self.mira.parse(params)
+        self.df = pd.read_csv(params['argonnne_all'])
 
     def standardize(self):
         """
@@ -28,19 +27,28 @@ class ArgonneTraceParser(DarshanTraceParser):
         """
 
         #Standardize the dataset
-        self.mira.standardize()
-        self.theta.standardize()
-        self.df = self.combine([self.mira.df, self.theta.df])
         super().standardize()
-
+        
+        df = self.df
+        
         #Load numerical features
         numerical_features = self._minimum_features(__file__, "numerical.csv")
-        #Remove negative entries
-        self.df = self.df[(self.df[numerical_features] >= 0).all(axis=1)]
+        #Remove negative counters
+        df = df[(df[numerical_features] >= 0).all(axis=1)]
         #Select apps where at least 10 seconds of I/O occurred
-        self.df = self.df[self.df.TOTAL_IO_TIME > 10000]
+        #df = df[df.TOTAL_IO_TIME > 10000]
         #Select apps where at least 15% of runtime is spent in I/O
-        self.df['IO_FRAC'] = (df.TOTAL_IO_TIME/1000) / df.RUN_TIME
-        self.df = self.df[self.IO_FRAC > .15]
+        df['IO_FRAC'] = (df.TOTAL_IO_TIME/1000) / df.RUN_TIME
+        #df = df[df.IO_FRAC > .15]
         #Fill NAs with 0s
-        self.df = self.df.fillna(0)
+        df = df.fillna(0)
+        df.replace([np.inf, -np.inf], 0, inplace=True)
+
+        #Fill categorical variables
+        CATEGORICAL = ["MACHINE_NAME"]
+        for categorial in CATEGORICAL:
+            df["MACHINE_NAME_ID"] = 0
+            df.loc[:, f"{categorial}_ID"] = pd.factorize(df[categorial])[0]
+
+        self.df = df
+        return df

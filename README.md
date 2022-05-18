@@ -1,24 +1,40 @@
 # LUXIO
 
-A tool for submitting I/O requirements to Flux scheduler.
+A tool for autconfiguring and provisioning storage.
+
+## Dependencies
+
+Luxio depends on the following:
+* SCSPKG (a tool for managing modulefiles)
+* Darshan
+* Redis
 
 ## Installation
 
+### Docker Container
+We have a dockerfile to make deployment easier
+```
+git clone https://github.com/scs-lab/luxio.git
+cd luxio
+sudo docker build -t luxio-img .
+sudo docker run -it --name luxio luxio-img
+```
+
 ### For Regular Users
 ```{bash}
-cd /path/to/luxio  
-python3 -m pip install -r requirements.txt  
-python3 setup.py sdist bdist_wheel  
-python3 -m pip install dist/*.whl  
-rm -r dist build *.egg_info MANIFEST  
+git clone https://github.com/scs-lab/luxio.git
+cd luxio
+bash dependencies.sh
+python3 -m pip . --user
+module load luxio
 ```
 
 ### For Developers
 
 ```{bash}
-cd /path/to/luxio  
-python3 -m pip install -r requirements.txt  
-python3 setup.py develop --user
+git clone git@github.com:scs-lab/luxio.git
+cd luxio
+python3 -m pip install -e .
 ```
 
 ### Uninstallation
@@ -26,49 +42,6 @@ python3 setup.py develop --user
 ```{bash}
 python3 -m pip uninstall luxio
 ```
-
-## Dependencies
-
-Luxio depends on the following:
-* Darshan
-* Redis
-* Clever
-
-### Darshan
-
-```{bash}
-#New repo: git clone https://github.com/darshan-hpc/darshan.git
-git clone https://xgitlab.cels.anl.gov/darshan/darshan.git
-cd darshan/darshan-util
-git checkout 932d69994064af315b736ab55f386cffd6289a15
-./configure --prefix=</path/to/wherever> --enable-pydarshan --enable-shared  
-make install
-cd pydarshan
-python3 -m pip install -r requirements.txt
-python3 setup.py sdist bdist_wheel  
-python3 -m pip install dist/*.whl  
-```
-
-```{bash}
-#New repo: git clone https://github.com/darshan-hpc/darshan.git
-git clone https://xgitlab.cels.anl.gov/darshan/darshan.git
-cd darshan/darshan-runtime
-git checkout 932d69994064af315b736ab55f386cffd6289a15
-./configure --prefix=</path/to/wherever> --with-log-path-by-env=DARSHAN_LOG_PATH --with-jobid-env=DARSHAN_JOB_ID
-make install
-```
-
-### Redis
-```{bash}
-wget http://download.redis.io/redis-stable.tar.gz
-tar xvzf redis-stable.tar.gz
-cd redis-stable
-make
-make test
-cp src/redis-server /path/to/bin
-cp src/redis-cli /path/to/bin
-```
-
 
 ## Usage
 
@@ -83,6 +56,12 @@ luxio-sched --conf [/path/to/luxio-conf.json]
 ```
 
 A sample conf is in sample/luxio_confs
+
+### Statistics
+
+```
+gdown
+```
 
 ## Test
 

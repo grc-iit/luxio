@@ -6,10 +6,11 @@ import pickle
 import copy
 
 class DimensionReducer(ABC,BaseEstimator,TransformerMixin):
-    def __init__(self, features, n_features, n_jobs):
+    def __init__(self, features, n_features, n_jobs, random_seed=132415):
         self.features = features
         self.n_features = n_features
         self.n_jobs = n_jobs
+        self.random_seed = random_seed
 
     def set_n_features(self, n_features):
         self.n_features = n_features

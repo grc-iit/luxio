@@ -10,8 +10,8 @@ class DimensionReducerFactory(DimensionReducer):
         "pca": "pca_"
     }
 
-    def __init__(self, features=None, n_features=.5, method=None, n_jobs=4):
-        super().__init__(features, n_features, n_jobs)
+    def __init__(self, features=None, n_features=.5, method=None, n_jobs=4, random_seed=132415):
+        super().__init__(features, n_features, n_jobs, random_seed)
         self.method = method
         self.random_forest_ = None
         self.variance_ = None

@@ -9,6 +9,9 @@ MANIFEST
 *~
 *.swp
 *.swo
+sample/app_classifier/class_stats
+sample/sslo_classifier/class_stats
+*class_stats
 
 # datasets
 *_test.pkl

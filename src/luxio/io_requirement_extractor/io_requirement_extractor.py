@@ -1,4 +1,4 @@
-from luxio.mapper.models.classification import   AppClassifier
+from luxio.mapper.models.behavior_models import   AppClassifier
 from luxio.external_clients.json_client import JSONClient
 from luxio.common.configuration_manager import *
 from luxio.common.enumerations import *

@@ -11,7 +11,8 @@ class RandomForestReducer(FeatureSelector):
 
     def _fit_init(self):
         super()._fit_init()
-        self.model_ = sklearn.ensemble.RandomForestRegressor(n_estimators=self.n_estimators, max_depth=self.max_depth, n_jobs=self.n_jobs, verbose=True)
+        self.model_ = sklearn.ensemble.RandomForestRegressor(
+            n_estimators=self.n_estimators, max_depth=self.max_depth, n_jobs=self.n_jobs, verbose=True, random_state=self.random_seed)
 
     def fit_transform(self, X, y=None):
         if not self.is_fitted_:
@@ -23,3 +24,6 @@ class RandomForestReducer(FeatureSelector):
         self.get_support()
         self.fitness_ = self.model_.score(X,y)
         return self.transform(X)
+
+    def predict(self, X):
+        return self.model_.predict(X)

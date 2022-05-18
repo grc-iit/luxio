@@ -53,7 +53,13 @@ class SCSStressTestParser(TraceParser):
 
         #Emulate write BW
         df.loc[df.device == 'nvme', 'write_bw'] = df[df.device == 'nvme']['read_bw']*.7
-        df.loc[df.device == 'ssd', 'write_bw'] = df[df.device == 'ssd']['read_bw']*.7
+        #df.loc[df.device == 'ssd', 'write_bw'] = df[df.device == 'ssd']['read_bw']*.7
+        df = df[df.device != 'ssd']
+        sub_df = df[df.device == 'nvme']
+        sub_df['device'] = 'ssd'
+        sub_df['write_bw'] *= .8
+        sub_df['read_bw'] *= .8
+        df = pd.concat([df, sub_df])
 
         # Set capacity
         df.loc[df.device == 'tmpfs', 'capacity'] = 32 * (GB / GB) * df[df.device == 'tmpfs']['servers'].to_numpy()  # 32GB / node

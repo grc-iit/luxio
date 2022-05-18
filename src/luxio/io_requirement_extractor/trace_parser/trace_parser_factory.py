@@ -24,6 +24,8 @@ class TraceParserFactory:
         :param type: TraceParserType
         :return: TraceParser
         """
+        if isinstance(type, str):
+            type = TraceParserType[type]
         if type == TraceParserType.DARSHAN:
             return DarshanTraceParser_3_2_1()
         elif type == TraceParserType.DARSHAN_DICT:
@@ -35,4 +37,4 @@ class TraceParserFactory:
         elif type == TraceParserType.SCS_SSLO:
             return SCSSSLOParser()
         else:
-            raise Error(ErrorCode.NOT_IMPLEMENTED)
+            raise Error(ErrorCode.NOT_IMPLEMENTED).format(type)

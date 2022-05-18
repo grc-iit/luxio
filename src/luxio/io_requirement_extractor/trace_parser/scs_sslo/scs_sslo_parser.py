@@ -56,6 +56,7 @@ class SCSSSLOParser(TraceParser):
         df['req_size_id'] = "small"
         df.loc[df.req_size <= 64, 'req_size_id'] = "small"
         df.loc[df.req_size > 64, 'req_size_id'] = "large"
+        #req_size_ids = ["small","large"]
         req_size_ids = ["small","large"]
         io_types = ["random", "sequential", "mixed-sequential", "mixed-random"]
 
@@ -76,6 +77,19 @@ class SCSSSLOParser(TraceParser):
         #Combine the partial dataframes
         df = reduce(lambda x, y: pd.merge(x, y, on=MERGE, how='outer'), dfs)
         df = df.fillna(0)
+
+        #Emulate mixedness
+        req_size_ids = ["large"]
+        io_types = ["mixed-sequential", "mixed-random"]
+        bws = [f"{io_type}_{bw_type}_{req_size_id}" for io_type in io_types for req_size_id in req_size_ids for bw_type in BWS]
+        tmpfs = df[df.device == 'tmpfs']
+        client_scales = np.array(tmpfs['clients'].drop_duplicates())
+        server_scales = np.array(tmpfs['servers'].drop_duplicates())
+        for client_scale in client_scales:
+            for server_scale in server_scales:
+                idx = (tmpfs.clients == client_scale) & (tmpfs.servers == server_scale)
+                tmpfs.loc[idx,bws] = tmpfs.loc[idx, bws].max().to_numpy()
+        df.loc[df.device == 'tmpfs',:] = tmpfs
 
         #Sensitivity to Concurrency (ratio of std to mean)
         CONC = [feature for feature in MERGE if feature != 'clients']

@@ -1,0 +1,214 @@
+{
+    "SMALL_IO_HEAVINESS" : {
+        "features": [
+            "TOTAL_SIZE_IO_0_100",
+            "TOTAL_SIZE_IO_100_1K",
+            "TOTAL_POSIX_SIZE_READ_0_100",
+            "TOTAL_POSIX_SIZE_READ_100_1K",
+            "TOTAL_MPIIO_SIZE_READ_AGG_0_100",
+            "TOTAL_MPIIO_SIZE_READ_AGG_100_1K",
+            "TOTAL_POSIX_SIZE_WRITE_0_100",
+            "TOTAL_POSIX_SIZE_WRITE_100_1K",
+            "TOTAL_MPIIO_SIZE_WRITE_AGG_0_100",
+            "TOTAL_MPIIO_SIZE_WRITE_AGG_100_1K",
+            "TOTAL_SMALL_IO"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "MEDIUM_IO_HEAVINESS" : {
+        "features": [
+            "TOTAL_SIZE_IO_1K_10K",
+            "TOTAL_SIZE_IO_10K_100K",
+            "TOTAL_SIZE_IO_100K_1M",
+            "MEDIUM_READ",
+            "MEDIUM_WRITE",
+            "TOTAL_POSIX_SIZE_READ_1K_10K",
+            "TOTAL_POSIX_SIZE_READ_10K_100K",
+            "TOTAL_POSIX_SIZE_READ_100K_1M",
+            "TOTAL_MPIIO_SIZE_READ_AGG_1K_10K",
+            "TOTAL_MPIIO_SIZE_READ_AGG_10K_100K",
+            "TOTAL_MPIIO_SIZE_READ_AGG_100K_1M",
+            "TOTAL_POSIX_SIZE_WRITE_1K_10K",
+            "TOTAL_POSIX_SIZE_WRITE_10K_100K",
+            "TOTAL_POSIX_SIZE_WRITE_100K_1M",
+            "TOTAL_MPIIO_SIZE_WRITE_AGG_1K_10K",
+            "TOTAL_MPIIO_SIZE_WRITE_AGG_10K_100K",
+            "TOTAL_MPIIO_SIZE_WRITE_AGG_100K_1M"
+        ],
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "transform": null,
+        "weight": null
+    },
+    "LARGE_IO_HEAVINESS" : {
+        "features": [
+            "TOTAL_SIZE_IO_1M_4M",
+            "TOTAL_SIZE_IO_4M_10M",
+            "TOTAL_SIZE_IO_10M_100M",
+            "TOTAL_SIZE_IO_100M_1G",
+            "TOTAL_SIZE_IO_1G_PLUS",
+            "LARGE_READ",
+            "LARGE_WRITE",
+            "TOTAL_POSIX_SIZE_READ_1M_4M",
+            "TOTAL_POSIX_SIZE_READ_4M_10M",
+            "TOTAL_POSIX_SIZE_READ_10M_100M",
+            "TOTAL_POSIX_SIZE_READ_100M_1G",
+            "TOTAL_POSIX_SIZE_READ_1G_PLUS",
+            "TOTAL_MPIIO_SIZE_READ_AGG_1M_4M",
+            "TOTAL_MPIIO_SIZE_READ_AGG_4M_10M",
+            "TOTAL_MPIIO_SIZE_READ_AGG_10M_100M",
+            "TOTAL_MPIIO_SIZE_READ_AGG_100M_1G",
+            "TOTAL_MPIIO_SIZE_READ_AGG_1G_PLUS",
+            "TOTAL_POSIX_SIZE_WRITE_1M_4M",
+            "TOTAL_POSIX_SIZE_WRITE_4M_10M",
+            "TOTAL_POSIX_SIZE_WRITE_10M_100M",
+            "TOTAL_POSIX_SIZE_WRITE_100M_1G",
+            "TOTAL_POSIX_SIZE_WRITE_1G_PLUS",
+            "TOTAL_MPIIO_SIZE_WRITE_AGG_1M_4M",
+            "TOTAL_MPIIO_SIZE_WRITE_AGG_4M_10M",
+            "TOTAL_MPIIO_SIZE_WRITE_AGG_10M_100M",
+            "TOTAL_MPIIO_SIZE_WRITE_AGG_100M_1G",
+            "TOTAL_MPIIO_SIZE_WRITE_AGG_1G_PLUS"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "IO_HEAVINESS": {
+        "features": [
+            "TOTAL_IO",
+            "TOTAL_POSIX_MAX_BYTE_READ",
+            "TOTAL_POSIX_MAX_BYTE_WRITTEN"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "MD_HEAVINESS" : {
+        "features": [
+            "TOTAL_MD_OPS",
+            "TOTAL_STDIO_OPENS",
+            "TOTAL_POSIX_OPENS",
+            "TOTAL_MPIIO_COLL_OPENS",
+            "TOTAL_MPIIO_INDEP_OPENS",
+            "TOTAL_POSIX_STATS",
+            "TOTAL_POSIX_FDSYNCS",
+            "TOTAL_MPIIO_SYNCS",
+            "TOTAL_STDIO_SEEKS",
+            "TOTAL_POSIX_SEEKS"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "READ_OP_HEAVINESS" : {
+        "features": [
+            "TOTAL_READ_OPS",
+            "TOTAL_MPIIO_COLL_READS",
+            "TOTAL_MPIIO_INDEP_READS",
+            "TOTAL_MPIIO_SPLIT_READS",
+            "TOTAL_POSIX_READS",
+            "TOTAL_STDIO_READS",
+            "READ_OP_FRAC"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "WRITE_OP_HEAVINESS" : {
+        "features": [
+            "TOTAL_WRITE_OPS",
+            "TOTAL_MPIIO_COLL_WRITES",
+            "TOTAL_MPIIO_INDEP_WRITES",
+            "TOTAL_MPIIO_SPLIT_WRITES",
+            "TOTAL_POSIX_WRITES",
+            "TOTAL_STDIO_WRITES",
+            "WRITE_OP_FRAC"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "READ_HEAVINESS": {
+        "features": [
+            "READ_OP_FRAC"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "WRITE_HEAVINESS": {
+        "features": [
+            "WRITE_OP_FRAC"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "SEQUENTIALITY" : {
+        "features": [
+            "TOTAL_POSIX_SEQ_READS",
+            "TOTAL_POSIX_SEQ_WRITES",
+            "TOTAL_POSIX_CONSEC_READS",
+            "TOTAL_POSIX_CONSEC_WRITES",
+            "TOTAL_MPIIO_COLL_READS",
+            "TOTAL_MPIIO_COLL_WRITES"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "MIXEDNESS": {
+        "features": [
+            "MIXEDNNESS"
+        ],
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "transform": null,
+        "weight": null
+    },
+    "SCALE" : {
+        "features": [
+            "NPROCS"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    }
+}

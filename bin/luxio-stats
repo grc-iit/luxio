@@ -12,8 +12,7 @@ import pandas as pd
 import numpy as np
 
 from luxio.mapper.models.common import *
-from luxio.mapper.models.classification import AppClassifier, StorageClassifier, BehaviorClassifier, ConfigGenerator
-
+from luxio.mapper.models.behavior_models import AppClassifier, StorageClassifier, BehaviorClassifier, ConfigGenerator
 from luxio.database.database import *
 from luxio.io_requirement_extractor.trace_parser.trace_parser_factory import *
 from luxio.common.configuration_manager import *
@@ -30,7 +29,7 @@ class ArgumentParser:
             "app_feature_select", "app_feature_select_stats", "app_gen", "app_gen_stats",
             "sslo_feature_select", "sslo_feature_select_stats", "sslo_gen", "sslo_gen_stats",
             "config_feature_select", "config_feature_select_stats", "config_model", "config_model_stats",
-            "filter", 'all'
+            "upload", "filter", "all", "analyze-darshan"
         ]
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument("-t", default=None, help=f"What your use case is: {self.use_cases}")
@@ -88,9 +87,10 @@ def feature_selector_stats(params):
 
 #Application Behavior Classifaction module
 def behavior_classifier(params, ModelType):
+    SCORE_CONF = JSONClient().load(params["score_conf"])
     df = pd.read_parquet(params["trace"])
     bc = BehaviorClassifier.load(params["classifier"])
-    bc.fit(df)
+    bc.fit(df, score_conf=SCORE_CONF)
     bc.save(params["classifier"])
 
 #Behavior Classification statistics module
@@ -98,14 +98,15 @@ def behavior_classifier_stats(params):
     df = pd.read_parquet(params["trace"])
     bc = BehaviorClassifier.load(params["classifier"])
     #bc.analyze_classes(dir=params["class_stats"])
-    bc.analyze_classes(df=df,dir=params["class_stats"])
+    #bc.analyze_classes(df=df,dir=params["class_stats"])
     bc.visualize(df)
 
 #Filter out sslos
 def filter_sslos(app_params, storage_params):
     ac = AppClassifier.load(app_params["classifier"])
     sc = StorageClassifier.load(storage_params["classifier"])
-    ac.filter_sslos(sc)
+    min_coverage_thresh = float(app_params["min_coverage_thresh"])
+    ac.filter_sslos(sc, min_coverage_thresh)
     ac.save(app_params["classifier"])
 
 #Create configuration builder model
@@ -145,6 +146,11 @@ def analyze_deployments(params):
     grps = df.groupby('capacity')
     print(df.iloc[grps.sequential_read_bw_large.idxmax(),:])
 
+#Find deployments that have nice properties
+def analyze_darshan(params):
+    parser = TraceParserFactory.get_parser(params['type'])
+    io_reqs = parser.preprocess(params)
+    io_reqs.transpose().to_csv(params['out'])
 
 ##############MAIN##################
 if __name__ == "__main__":
@@ -154,7 +160,7 @@ if __name__ == "__main__":
         ArgumentParser().parser.print_help()
 
     if args.tool == "preprocess":
-        if args.dataset == "traces":
+        if args.dataset == "app_traces":
             preprocess_dataset(args.conf["PREPROCESS_TRACES"])
         if args.dataset == "stress_tests":
             preprocess_dataset(args.conf["PREPROCESS_STRESS_TESTS"])
@@ -192,3 +198,6 @@ if __name__ == "__main__":
         upload_models(args.conf["APP_BEHAVIOR_MODEL"], args.conf["STORAGE_BEHAVIOR_MODEL"])
     if args.tool == "analyze_deployments":
         analyze_deployments(args.conf["STORAGE_BEHAVIOR_MODEL"])
+
+    if args.tool == "analyze-darshan":
+        analyze_darshan(args.conf["TRACE_ANALYSIS"])

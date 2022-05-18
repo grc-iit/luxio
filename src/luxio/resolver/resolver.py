@@ -6,7 +6,7 @@ from luxio.scheduler.client import LuxioSchedulerClient
 from luxio.external_clients.json_client import JSONClient
 from luxio.common.configuration_manager import ConfigurationManager
 from luxio.database.database import *
-from luxio.mapper.models.classification import   StorageClassifier
+from luxio.mapper.models.behavior_models import   StorageClassifier
 from luxio.common.enumerations import *
 from luxio.mapper.models.common import *
 import pandas as pd

@@ -20,7 +20,8 @@ class RFERandomForestRegressor(RFEFeatureImportances,MultiOutputModel):
         self.model_ = self._make_pipeline(sklearn.ensemble.RandomForestRegressor(
             n_estimators = self.n_estimators,
             max_depth = self.max_depth,
-            max_leaf_nodes = self.max_leaf_nodes
+            max_leaf_nodes = self.max_leaf_nodes,
+            random_state=self.random_seed
         ))
 
     def get_search_space(self, level=0):
