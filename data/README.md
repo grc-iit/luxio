@@ -1,3 +1,0 @@
-# DATA
-
-Luxio Datasets utilized

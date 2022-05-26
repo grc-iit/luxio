@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+from luxio.external_clients.json_client import JSONClient
+from luxio.common.configuration_manager import ConfigurationManager
+from luxio.scheduler.server import *
+from luxio.utils.argument_parser import *
+
+if __name__ == "__main__":
+    print("Started Luxio server")
+    ArgumentParser().run()
+    start_luxio_server()

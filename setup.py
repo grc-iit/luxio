@@ -2,7 +2,9 @@ import setuptools
 
 setuptools.setup(
     name="luxio",
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(where='src'),
+    package_dir = {'':'src'},
+    scripts=['bin/luxio-sched', 'bin/luxio-server', 'bin/luxio-stats'],
     version="0.0.1",
     author="Keith Bateman",
     author_email="kbateman@hawk.iit.edu",

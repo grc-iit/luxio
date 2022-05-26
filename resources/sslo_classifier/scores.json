@@ -1,0 +1,119 @@
+{
+    "SMALL_IO_HEAVINESS" : {
+        "features": [],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "MEDIUM_IO_HEAVINESS" : {
+        "features": [],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "LARGE_IO_HEAVINESS" : {
+        "features": [
+            "random_write_bw_large",
+            "random_read_bw_large",
+            "sequential_write_bw_large",
+            "sequential_read_bw_large",
+            "mixed-sequential_write_bw_large",
+            "mixed-sequential_read_bw_large",
+            "mixed-random_write_bw_large",
+            "mixed-random_read_bw_large"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "IO_HEAVINESS" : {
+        "features": [
+            "random_write_bw_large",
+            "random_read_bw_large",
+            "sequential_write_bw_large",
+            "sequential_read_bw_large",
+            "mixed-sequential_write_bw_large",
+            "mixed-sequential_read_bw_large",
+            "mixed-random_write_bw_large",
+            "mixed-random_read_bw_large"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "READ_HEAVINESS" : {
+        "features": [
+            "random_read_bw_large",
+            "sequential_read_bw_large",
+            "mixed-sequential_read_bw_large",
+            "mixed-random_read_bw_large"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "WRITE_HEAVINESS" : {
+        "features": [
+            "random_write_bw_large",
+            "sequential_write_bw_large",
+            "mixed-sequential_write_bw_large",
+            "mixed-random_write_bw_large"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "SEQUENTIALITY" : {
+        "features": [
+            "sequentiality"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "MIXEDNESS" : {
+        "features": [
+            "mixed-sequential_write_bw_large",
+            "mixed-sequential_read_bw_large",
+            "mixed-random_write_bw_large",
+            "mixed-random_read_bw_large"
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    },
+    "SCALE" : {
+        "features": [
+        ],
+        "transform": null,
+        "method": {
+            "type": "weighted-avg",
+            "weights": null
+        },
+        "weight": null
+    }
+}

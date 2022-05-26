@@ -1,0 +1,14 @@
+{
+  "job_spec_path": "sample/job_specs/basic_spec.json",
+  "price_conf": "sample/price_confs/avail_price.json",
+  "check_db": true,
+  "db_type": "REDIS",
+  "db_addr": "127.0.0.1",
+  "db_port": "6379",
+  "traces": [
+    {
+      "dir": "sample/traces/macsio_darshan",
+      "type": "DARSHAN"
+    }
+  ]
+}

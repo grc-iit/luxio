@@ -1,13 +1,13 @@
-import unittest
+import unittest, pytest
 import json
 from typing import Dict
 
-from io_requirement_extractor.trace_parser.darshan_trace_parser import DarshanTraceParser
-from common.error_codes import *
-from common.enumerations import *
-from common.configuration_manager import *
-from io_requirement_extractor.io_requirement_extractor import *
-from database.database import *
+from luxio.io_requirement_extractor.trace_parser.darshan_trace_parser import DarshanTraceParser
+from luxio.common.error_codes import *
+from luxio.common.enumerations import *
+from luxio.common.configuration_manager import *
+from luxio.io_requirement_extractor.io_requirement_extractor import *
+from luxio.database.database import *
 
 class TestIORequirementExtractor(unittest.TestCase):
     def test_redis_extract(self):

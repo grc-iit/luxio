@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+
+"""
+This file is used for three purposes:
+    1) To preprocess a trace dataset
+    2) Identify important features relating to I/O performance
+    3) To identify classes of I/O behavior based on those features
+"""
+
+import sys,os
+import pandas as pd
+import numpy as np
+
+from luxio.mapper.models.common import *
+from luxio.mapper.models.behavior_models import AppClassifier, StorageClassifier, BehaviorClassifier, ConfigGenerator
+from luxio.database.database import *
+from luxio.io_requirement_extractor.trace_parser.trace_parser_factory import *
+from luxio.common.configuration_manager import *
+from luxio.external_clients.json_client import *
+import argparse, configparser
+import pprint
+
+pp = pprint.PrettyPrinter(depth=6)
+
+class ArgumentParser:
+    def __init__(self):
+        self.use_cases = [
+            "preprocess", "preliminary", "app_dataset_analysis",
+            "app_feature_select", "app_feature_select_stats", "app_gen", "app_gen_stats",
+            "sslo_feature_select", "sslo_feature_select_stats", "sslo_gen", "sslo_gen_stats",
+            "config_feature_select", "config_feature_select_stats", "config_model", "config_model_stats",
+            "upload", "filter", "all", "analyze-darshan"
+        ]
+        self.parser = argparse.ArgumentParser()
+        self.parser.add_argument("-t", default=None, help=f"What your use case is: {self.use_cases}")
+        self.parser.add_argument("-c", default="sample/stats_conf/conf.ini", help="The properties file containing model paths and config parameters")
+        self.parser.add_argument("-d", default="sample/stats_conf/conf.ini", help="(For the preprocess tool), which dataset to process")
+
+    def parse(self):
+        args = self.parser.parse_args()
+        self.tool = args.t
+        self.conf = configparser.ConfigParser()
+        self.conf.read(args.c)
+        self.dataset = args.d
+        return self
+
+#Dataset preprocessing
+def preprocess_dataset(params):
+    dataset = params["dataset_type"]
+    parser = TraceParserFactory.get_parser(TraceParserType[dataset])
+    df = parser.preprocess(params)
+    if params['serializer_type'] == 'CSV':
+        df.to_csv(params["out"], index=False)
+    if params['serializer_type'] == 'PARQUET':
+        df.to_parquet(params["out"], index=False)
+
+#Preliminary analysis of a dataset
+def preliminary_analysis(params):
+    PERFORMANCE = load_features(params["vars"])
+    df = pd.read_parquet(params["trace"])
+    analysis = pd.DataFrame(analyze_df(df[PERFORMANCE], n=len(df)))
+    pp.pprint(analysis)
+    analysis.to_csv(params["trace_analysis"])
+
+#Feature selection module
+def feature_selector(params, ModelType):
+    FEATURES = load_features(params["features"])
+    if 'mandatory_features' in params:
+        MANDATORY_FEATURES = load_features(params["mandatory_features"])
+    else:
+        MANDATORY_FEATURES = None
+    PERFORMANCE = load_features(params["vars"])
+    SCORE_CONF = JSONClient().load(params["score_conf"])
+
+    df = pd.read_parquet(params["trace"])
+    bc = ModelType(FEATURES, MANDATORY_FEATURES, PERFORMANCE, SCORE_CONF, params["trace"])
+    bc.feature_selector(df[FEATURES], df[PERFORMANCE])
+    bc.save(params["classifier"])
+    if bc.feature_selector_:
+        bc.feature_selector_.save_importances(params["importances"], order=True)
+
+#Feature selection statistics module
+def feature_selector_stats(params):
+    df = pd.read_parquet(params["trace"])
+    bc = BehaviorClassifier.load(params["classifier"])
+    bc.feature_selector_stats(df[bc.features], df[bc.output_vars], importances_path=params["importances"])
+
+#Application Behavior Classifaction module
+def behavior_classifier(params, ModelType):
+    SCORE_CONF = JSONClient().load(params["score_conf"])
+    df = pd.read_parquet(params["trace"])
+    bc = BehaviorClassifier.load(params["classifier"])
+    bc.fit(df, score_conf=SCORE_CONF)
+    bc.save(params["classifier"])
+
+#Behavior Classification statistics module
+def behavior_classifier_stats(params):
+    df = pd.read_parquet(params["trace"])
+    bc = BehaviorClassifier.load(params["classifier"])
+    #bc.analyze_classes(dir=params["class_stats"])
+    #bc.analyze_classes(df=df,dir=params["class_stats"])
+    bc.visualize(df)
+
+#Filter out sslos
+def filter_sslos(app_params, storage_params):
+    ac = AppClassifier.load(app_params["classifier"])
+    sc = StorageClassifier.load(storage_params["classifier"])
+    min_coverage_thresh = float(app_params["min_coverage_thresh"])
+    ac.filter_sslos(sc, min_coverage_thresh)
+    ac.save(app_params["classifier"])
+
+#Create configuration builder model
+def config_feature_selector(params):
+    df = pd.read_csv(params['stress_tests'])
+    stress_test_config_features = load_features(params['stress_test_config_features'])
+    stress_test_dpl_features = load_features(params['stress_test_dpl_features'])
+    stress_test_output_vars = load_features(params['stress_test_output_vars'])
+    sslo_features = load_features(params['sslo_features'])
+    sslo_output_vars = load_features(params['sslo_output_vars'])
+    model = ConfigGenerator(stress_test_config_features, stress_test_dpl_features, stress_test_output_vars,
+                 sslo_features, sslo_output_vars)
+    model.config_feature_select(df)
+    model.save(params['constructor'])
+
+def config_feature_selector_stats(params):
+    df = pd.read_csv(params['stress_tests'])
+    model = ConfigGenerator.load(params['constructor'])
+    model.config_feature_select_stats(df)
+
+#Upload storage and app classifier to DB
+def upload_models(app_params, storage_params):
+    ac = AppClassifier.load(app_params["classifier"])
+    sc = StorageClassifier.load(storage_params["classifier"])
+    db = DataBase.get_instance()
+    db.put("app_classifier", ac)
+    db.put("storage_classifier", sc)
+
+#Find deployments that have nice properties
+def analyze_deployments(params):
+    df = pd.read_parquet(params["trace"])
+    df = df[(
+        ((df.servers == 8) |
+        (df.servers == 16)) &
+        df.storage == "OrangeFS"
+    )]
+    grps = df.groupby('capacity')
+    print(df.iloc[grps.sequential_read_bw_large.idxmax(),:])
+
+#Find deployments that have nice properties
+def analyze_darshan(params):
+    parser = TraceParserFactory.get_parser(params['type'])
+    io_reqs = parser.preprocess(params)
+    io_reqs.transpose().to_csv(params['out'])
+
+##############MAIN##################
+if __name__ == "__main__":
+    args = ArgumentParser().parse()
+
+    if args.tool is None or args.tool not in args.use_cases:
+        ArgumentParser().parser.print_help()
+
+    if args.tool == "preprocess":
+        if args.dataset == "app_traces":
+            preprocess_dataset(args.conf["PREPROCESS_TRACES"])
+        if args.dataset == "stress_tests":
+            preprocess_dataset(args.conf["PREPROCESS_STRESS_TESTS"])
+        if args.dataset == "sslos":
+            preprocess_dataset(args.conf["PREPROCESS_DEPLOYMENTS"])
+
+    if args.tool == "app_prelim_stats":
+        preliminary_analysis(args.conf["APP_BEHAVIOR_MODEL"])
+    if args.tool == "app_feature_select" or args.tool == "all":
+        feature_selector(args.conf["APP_BEHAVIOR_MODEL"], AppClassifier)
+    if args.tool == "app_feature_select_stats" or args.tool == "all" or args.tool == "app_feature_select":
+        feature_selector_stats(args.conf["APP_BEHAVIOR_MODEL"])
+    if args.tool == "app_gen" or args.tool == "all":
+        behavior_classifier(args.conf["APP_BEHAVIOR_MODEL"], AppClassifier)
+    if args.tool == "app_gen_stats" or args.tool == "all" or args.tool == "app_gen":
+        behavior_classifier_stats(args.conf["APP_BEHAVIOR_MODEL"])
+
+    if args.tool == "sslo_prelim_stats":
+        preliminary_analysis(args.conf["STORAGE_BEHAVIOR_MODEL"])
+    if args.tool == "sslo_feature_select" or args.tool == "all":
+        feature_selector(args.conf["STORAGE_BEHAVIOR_MODEL"], StorageClassifier)
+    if args.tool == "sslo_gen" or args.tool == "all":
+        behavior_classifier(args.conf["STORAGE_BEHAVIOR_MODEL"], StorageClassifier)
+    if args.tool == "sslo_gen_stats" or args.tool == "all" or args.tool == "sslo_gen":
+        behavior_classifier_stats(args.conf["STORAGE_BEHAVIOR_MODEL"])
+
+    if args.tool == 'config_feature_select':
+        config_feature_selector(args.conf['CONFIGURATION_MODEL'])
+    if args.tool == 'config_feature_select_stats' or args.tool == 'config_feature_select':
+        config_feature_selector_stats(args.conf['CONFIGURATION_MODEL'])
+
+    if args.tool == "filter" or args.tool == "all":
+        filter_sslos(args.conf["APP_BEHAVIOR_MODEL"], args.conf["STORAGE_BEHAVIOR_MODEL"])
+    if args.tool == "upload" or args.tool == "filter" or args.tool == "all":
+        upload_models(args.conf["APP_BEHAVIOR_MODEL"], args.conf["STORAGE_BEHAVIOR_MODEL"])
+    if args.tool == "analyze_deployments":
+        analyze_deployments(args.conf["STORAGE_BEHAVIOR_MODEL"])
+
+    if args.tool == "analyze-darshan":
+        analyze_darshan(args.conf["TRACE_ANALYSIS"])
