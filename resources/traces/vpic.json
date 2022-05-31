@@ -1,14 +1,10 @@
-{"total_reads": {"val": 0},
- "total_writes": {"val": 57},
- "total_bytes_read": {"val": 0},
- "total_bytes_written": {"val": 2147492808},
- "read_time": {"val": 0.0},
- "write_time": {"val": 1.347400426864624},
- "total_consec_reads": {"val": 0},
- "total_consec_writes": {"val": 12},
- "max_byte_read": {"val": 0},
- "max_byte_written": {"val": 1073748103},
- "max_read_time": {"val": 0},
- "max_read_time_size": {"val": 0},
- "max_write_time": {"val": 0.0950157642364502},
- "max_write_time_size": {"val": 134217728}}
+{
+    "NPROCS": 640,
+    "TOTAL_BYTES_WRITTEN": 3.2*10**12,
+    "TOTAL_BYTES_READ": 0,
+    "TOTAL_MD_OPS": 640*8,
+    "TOTAL_LARGE_WRITES": 640*8,
+    "TOTAL_LARGE_READS": 0,
+    "TOTAL_SMALL_WRITES": 0,
+    "TOTAL_SMALL_READS": 0
+}
