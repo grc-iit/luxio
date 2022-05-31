@@ -59,15 +59,7 @@ A sample conf is in sample/luxio_confs
 
 ### Datasets
 
-Our datasets can be downloaded from here:
-```
-mkdir datasets
-cd datasets
-#Argonne Dataset
-gdown https://drive.google.com/uc?id=1rLOmmFz6TexGDgIaR6qgOp_FMoEJjAeV
-#SSLO data parquet
-gdown https://drive.google.com/uc?id=1Rgg3S7gVW48L28dEQiA5p8ZWKisNutPk
-```
+The app class and SSLO datasets are located under the "data" directory.
 
 ## Test
 
